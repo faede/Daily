@@ -312,13 +312,28 @@ printYard(tileMissingYard(4, 5, 7))
 
 记忆化
 
+# Puzzle 9: The Disorganized Handyman
+
+## question
+
+100个螺母、100个螺栓，每个螺栓都是不同的，螺母相对应，只能做check。
+
+（一一对应）
 
 
 
+## answer A
 
+枚举
 
+O(n^2)
 
+## answer B
 
+快速排序算法思想，pivoting
 
+check后可以把螺母，螺栓都分成两组（第一次2n次check）
 
+O（nlogn）（常规意义下）
 
+双指针滤分开ßß
