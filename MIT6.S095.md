@@ -310,7 +310,7 @@ printYard(tileMissingYard(4, 5, 7))
 
 搜索
 
-记忆话
+记忆化
 
 
 
