@@ -336,4 +336,43 @@ check后可以把螺母，螺栓都分成两组（第一次2n次check）
 
 O（nlogn）（常规意义下）
 
-双指针滤分开ßß
+双指针滤分开
+
+# Puzzle 10: A Weekend To Remember
+
+## question
+
+nodes are friendes
+
+Edge between nodes imples a "dislike"
+
+2天
+
+
+
+1)朋友要参加其中一个聚会
+
+2）相互不喜欢的不能在一个聚会上
+
+
+
+二分图
+
+可以用两种颜色着色
+
+有奇数环时不可二分
+
+dfs
+
+# Puzzle 11: Memory Serves You Well
+
+你有一排的连续的面值不同硬币
+
+最大化选择硬币的面值之和，如果选择其中一个，那么不能选择下一个
+
+
+
+动态规划
+
+f(n) = max (f(n-2)+value(n) , f(n-1))
+
