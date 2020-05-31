@@ -13,8 +13,6 @@ reader = csv.reader(csvFile)
 # 建立空字典
 result = {}
 for item in reader:
-    #print(item[2])
-    #print(1111)
     # 忽略第一行
     if reader.line_num == 1:
         continue
