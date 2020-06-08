@@ -166,7 +166,7 @@ second :
 
 all n < r ^d
 
-# Puzzle 5 Keep Those Queens Apart
+# Puzzle 5:Keep Those Queens Apart
 
 在8*8棋盘上放8和皇后，不会相互攻击
 
@@ -174,5 +174,207 @@ all n < r ^d
 
 斜着正方形，看增量
 
-# Puzzle 6 A Profusion of Queens
+# Puzzle 6: A Profusion of Queens
+
+普通n皇后问题
+
+# Puzzle 7: Tile That Courtyard Please
+
+## question
+
+8*8 的院子，2^n * 2^n 
+
+L-shaoped tile。   （trominoe）3个方格
+
+铺满院子，
+
+(先讲解了归并排序)
+
+此时无法做到，因为院子块数不是3的倍数，现增加一个雕像，占一个位置（位置任意但固定）。
+
+此时2^(2n)-1,  给出铺满的方法（给出一种即可,不是问种数（好像唯一？））
+
+
+
+ ## answer
+
+要创建更小的相同的问题。
+
+将区域分为四个象限，那么其中一个象限一定有一个雕像，很明显，此时还不能进行递归调用，因为子问题不相同，将L型砖放在原点处，凹口朝向已有砖块的位置，此时四个象限中每个象限都有一个砖块，并且问题被分解为完全相同的四个子问题（只是改变了一下雕像的位置），四个砖块时是递归基（其中一个雕像）。
+
+
+
+## py code
+
+```python
+#Programming for the Puzzled -- Srini Devadas
+#Tile that Courtyard, Please
+#Given n in a 2^n x 2^n checkyard with a missing square at position (r, c), 
+#find tiling of yard with trominoes (L-shaped dominoes).
+#This version works directly on the given grid, and does NOT make copies
+#of the grid for recursive calls.
+
+EMPTYPIECE = -1
+
+
+
+#This procedure is the main engine of recursive algorithm
+#nextPiece is the number of next available tromino piece
+#The origin coordinates of the yard are given by originR and originC
+def recursiveTile(yard, size, originR, originC, rMiss, cMiss, nextPiece):
+
+    #quadrant of missing square: 0 (upper left), 1 (upper right),
+    #                            2 (lower left), 3 (lower right)
+    quadMiss = 2*(rMiss >= size//2) + (cMiss >= size//2)
+    
+    #base case of 2x2 yard
+    if size == 2: 
+        piecePos = [(0,0), (0,1), (1,0), (1,1)]
+        piecePos.pop(quadMiss)
+        for (r, c) in piecePos:
+            yard[originR + r][originC + c] = nextPiece
+        nextPiece = nextPiece + 1
+        return nextPiece
+
+    #recurse on each quadrant
+    
+    for quad in range(4):
+        #Each quadrant has a different origin
+        #Quadrant 0 has origin (0, 0), Quadrant 1 has origin (0, size//2)
+        #Quadrant 2 has origin (size//2, 0), Quadrant 3 has origin (size//2, size//2)
+        shiftR = size//2 * (quad >= 2)
+        shiftC = size//2 * (quad % 2 == 1)
+        if quad == quadMiss:
+            #Pass the new origin and the shifted rMiss and cMiss
+            nextPiece = recursiveTile(yard, size//2, originR + shiftR,\
+                originC + shiftC, rMiss - shiftR, cMiss - shiftC, nextPiece)
+
+        else:
+            #The missing square is different for each of the other 3 quadrants
+            newrMiss = (size//2 - 1) * (quad < 2)
+            newcMiss = (size//2 - 1) * (quad % 2 == 0)
+            nextPiece = recursiveTile(yard, size//2, originR + shiftR,\
+                            originC + shiftC, newrMiss, newcMiss, nextPiece)
+
+
+    #place center tromino
+    centerPos = [(r + size//2 - 1, c + size//2 - 1)
+                 for (r,c) in [(0,0), (0,1), (1,0), (1,1)]]
+    centerPos.pop(quadMiss)
+    for (r,c) in centerPos: # assign tile to 3 center squares
+        yard[originR + r][originC + c] = nextPiece
+    nextPiece = nextPiece + 1
+
+    return nextPiece
+
+#This procedure is a wrapper for recursiveTile that does all the work
+def tileMissingYard(n, rMiss, cMiss):
+    #Initialize yard, this is the only memory that will be modified!
+    yard = [[EMPTYPIECE for i in range(2**n)]
+            for j in range(2**n)] 
+    recursiveTile(yard, 2**n, 0, 0, rMiss, cMiss, 0)
+    return yard
+
+#This procedure prints a given tiled yard using letters for tiles
+def printYard(yard):
+    for i in range(len(yard)):
+        row = ''
+        for j in range(len(yard[0])):
+            if yard[i][j] != EMPTYPIECE:
+                row += chr((yard[i][j] % 26) + ord('A'))
+            else:
+                row += ' '
+        print (row)
+
+
+printYard(tileMissingYard(3, 4, 6))
+printYard(tileMissingYard(4, 5, 7))
+
+```
+
+
+
+# Puzzle 8: You Won't Want to Play Sudoku Again
+
+9*9 Sudoku :  1 - 9
+
+1)每行都有所有的数字
+
+2)每列也有所有的数字
+
+3)每个sector出现所有数字
+
+
+
+
+
+搜索
+
+记忆化
+
+# Puzzle 9: The Disorganized Handyman
+
+## question
+
+100个螺母、100个螺栓，每个螺栓都是不同的，螺母相对应，只能做check。
+
+（一一对应）
+
+
+
+## answer A
+
+枚举
+
+O(n^2)
+
+## answer B
+
+快速排序算法思想，pivoting
+
+check后可以把螺母，螺栓都分成两组（第一次2n次check）
+
+O（nlogn）（常规意义下）
+
+双指针滤分开
+
+# Puzzle 10: A Weekend To Remember
+
+## question
+
+nodes are friendes
+
+Edge between nodes imples a "dislike"
+
+2天
+
+
+
+1)朋友要参加其中一个聚会
+
+2）相互不喜欢的不能在一个聚会上
+
+
+
+二分图
+
+可以用两种颜色着色
+
+有奇数环时不可二分
+
+dfs
+
+# Puzzle 11: Memory Serves You Well
+
+你有一排的连续的面值不同硬币
+
+最大化选择硬币的面值之和，如果选择其中一个，那么不能选择下一个
+
+
+
+动态规划
+
+​                      选。                   不选
+
+f(n) = max (f(n-2)+value(n) , f(n-1))
 
