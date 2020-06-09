@@ -625,7 +625,121 @@ PATH=$PATH:.
 
 
 
+当你登录Linux时，bash shell会作为登录shell启动，登录shell会从5个不同的启动文件读取命令。
+
+/etc/profile
+
+$HOME/.bash_profile
+
+$HOME/.bashrc
+
+$HOME/.bash_login
+
+$HOME/.profile
 
 
 
+在bash shell输入bash启动的是交互式shell，系统执行的是非交互式shell 
+
+
+
+环境变量持久啊
+
+对于系统所有用户都使用的变量可以放到/etc/profile中，但是一旦你升级了所用的发行版，那么这个文件也会更新，最好是在/etc/profile.d目录中创建一个以.sh为结尾的文件，把新的或修改过的文件放到这里。
+
+对大多是发行版中，存储个人用户永久性bash shell 变量的地方是$HOME/.bash_src，这适用于所有类型的shell，但是如果设置了BASH_EV变量，那么除非它指向$HOME/.bashrc，否则你应该将非交互式shell 的用户变量放到其它位置。
+
+
+
+数组变量
+
+mytest = (one two three four five)
+
+但是
+
+$ echo $mytest
+
+one
+
+$ echo ${mytest[2]}
+
+three
+
+$ echo ${mytest[*]}
+
+one two three four five
+
+$mytest[2] = seven
+
+$ echo ${mytest[*]}
+
+one two seven four five
+
+$ unset mytest[2]
+
+$
+
+$ echo ${mytest[*]}
+
+one two  four five
+
+$ echo ${mytest[2]}
+
+
+
+$ echo ${mytest[3]}
+
+four
+
+## 7理解Linux文件权限
+
+用户权限是通过创建用户时分配的UID来跟踪。
+
+
+
+/etc/passwd
+
+root是管理员，UID为0
+
+字段包括：登录用户名、用户密码、用户账户的UID、用户账户组的ID、用户账户的文本描述、用户HOME目录的位置、用户默认shell，密码字段都为x是为了安全。
+
+现在密码都放在了/etc/shadow 文件中，只有特定的程序（比如登录程序）才能访问。
+
+
+
+/etc/shadow文件
+
+9个字段：
+
+与etc/passwd文件中的登录名字字段对应的登录名
+
+加密后的密码
+
+自上次修改密码过后的天数（自1970年1月1日开始计算）
+
+多少天后才能更改密码
+
+多少天后必须更改密码
+
+密码过期前提前多少天提醒用户更改密码
+
+密码过期后多少天禁用用户账户
+
+用户账户被禁用的日期（自1970年1月1日到当天的天数表示）
+
+预留字段给将来使用。
+
+
+
+添加新用户
+
+useradd
+
+系统默认值被设置在/etc/default/useradd文件中，使用useradd的-D选项可以查看。
+
+/usr/sbin/useradd -D
+
+
+
+删除用户
 
