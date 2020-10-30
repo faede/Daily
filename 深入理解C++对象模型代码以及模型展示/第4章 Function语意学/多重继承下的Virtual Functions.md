@@ -1,36 +1,5 @@
 ### 多重继承下的Virtual Functions
 
- ```cpp
-class Base1 {
-public:
-	Base1();
-	virtual ~Base1();
-	virtual void speakClearly();
-	virtual Base1 * clone() const;
-protected:
-	float data_Base1;
-};
-class Base2 {
-public:
-	Base2();
-	virtual ~Base2();
-	virtual void mumble();
-	virtual Base2 * clone() const;
-protected:
-	float data_Base2;
-};
-class Derived :public Base1, public Base2 {
-public:
-	Derived();
-	virtual ~Derived();
-	virtual Derived * clone() const;
-protected:
-	float data_Derived;
-};
- ```
-
-
-
 ```cpp
 class Derived	size(20):
 	+---
@@ -46,14 +15,14 @@ class Derived	size(20):
 	+---
 
 Derived::$vftable@Base1@:
-	| &Derived_meta
+	| &Derived_meta //informaion 表示class的类型 (为了支持多态)
 	|  0
  0	| &Derived::{dtor} 
  1	| &Base1::speakClearly 
  2	| &Derived::clone 
 
 Derived::$vftable@Base2@:
-	| -8
+	| -8 // offset 同下
  0	| &thunk: this-=8; goto Derived::{dtor} //指向Base2首部的this指针需要调整位置(this -= sizeof(Base2))使其指向Derived的首部，之后再调用Derived的析构函数
  1	| &Base2::mumble 
  2	| &thunk: this-=8; goto Base2* Derived::clone 
