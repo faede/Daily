@@ -743,7 +743,7 @@ useradd
 
 删除用户
 
-## 构建基本脚本
+### 构建基本脚本
 
 有两种方法可以将**命令**输出赋给变量：
 
@@ -856,7 +856,7 @@ exit命令允许你在脚本结束时指定一个退出状态码。`exit 5`
 ```shell
 if command
 then
-commands
+	commands
 fi
 ```
 
@@ -864,7 +864,7 @@ bash shell的if语句会运行if后面的那个命令。如果该命令的退出
 
 ```shell
 if command; then
-commands
+	commands
 fi
 ```
 
@@ -873,9 +873,9 @@ fi
 ```shell
 if command
 then
-commands
+	commands
 else
-commands
+	commands
 fi
 ```
 
@@ -884,10 +884,10 @@ fi
 ```shell
 if command1
 then
-commands
+	commands
 elif command2
 then
-more commands
+	more commands
 fi
 ```
 
@@ -920,7 +920,7 @@ bash shell提供了另一种条件测试方法，无需在if-then语句中声明
 ```shell
 if [ condition ]
 then
-commands
+	commands
 fi
 ```
 
@@ -981,4 +981,320 @@ if [ $val1 \> $val2 ]
 比较测试中使用的是标准的ASCII顺序，根据每个字符的ASCII数值来决定排序结果。sort命令使用的是系统的本地化语言设置中定义的排序顺序。对于英语，本地化设置指定了在排序顺序中小写字母出现在大写字母前。
 
 ### 文件比较
+
+```
+-d file 检查file是否存在并是一个目录
+-e file 检查file是否存在
+-f file 检查file是否存在并是一个文件
+-r file 检查file是否存在并可读
+-s file 检查file是否存在并非空
+-w file 检查file是否存在并可写
+-x file 检查file是否存在并可执行
+-O file 检查file是否存在并属当前用户所有
+-G file 检查file是否存在并且默认组与当前用户相同
+file1 -nt file2 检查file1是否比file2新
+file1 -ot file2 检查file1是否比file2旧
+```
+
+### 复合条件测试
+
+if-then语句允许你使用布尔逻辑来组合测试。有两种布尔运算符可用：
+
+```shell
+[ condition1 ] && [ condition2 ]
+
+[ condition1 ] || [ condition2 ]
+```
+
+### if-then 的高级特性
+
+### 使用双括号
+
+双括号命令允许你在比较过程中使用高级数学表达式。test命令只能在比较中使用简单的算术操作。双括号命令提供了更多的数学符号，这些符号对于用过其他编程语言的程序员而言并不陌生。双括号命令的格式如下：
+
+`(( expression ))`
+
+expression可以是任意的数学赋值或比较表达式.
+
+```
+符 号 描 述
+val++ 后增
+val-- 后减
+++val 先增
+--val 先减
+! 逻辑求反
+~ 位求反
+** 幂运算
+<< 左位移
+>> 右位移
+& 位布尔和
+| 位布尔或
+&& 逻辑和
+|| 逻辑或
+```
+
+### 使用双方括号
+
+双方括号命令提供了针对字符串比较的高级特性。
+
+`[[ expression ]]`
+
+**双方括号在bash shell中工作良好。不过要小心，不是所有的shell都支持双方括号。**
+
+### case 命令
+
+```shell
+case variable in
+pattern1 | pattern2) commands1;;
+pattern3) commands2;;
+*) default commands;;
+esac
+```
+
+## 使用更多的结构化命令
+
+### for命令
+
+```shell
+for var in list
+do
+commands
+done
+```
+
+只要你愿意，也可以将do语句和for语句放在同一行，但必须用分号将其同列表中的值分
+
+开：`for var in list; do`
+
+### 读取列表中的复杂值
+
+`for test in I don't know if this'll work`
+
+```shell
+1.使用转义字符（反斜线）来将单引号转义；
+2.使用双引号来定义用到单引号的值。
+```
+
+如果有包含空格的数据值
+
+`for test in Nevada "New Hampshire" "New Mexico" "New York"`
+
+### 从变量读取列表
+
+`for state in $list`
+
+### 从命令读取值
+
+```shell
+for state in $(cat $file)
+```
+
+如果你列出了一个名字中有空格的单词，for命令仍然会将每个单词当作单独的值。
+
+### 更改字段分隔符
+
+默认情况下，bash shell会将下列字符当作字段分隔符：
+
+```
+空格
+制表符
+换行符
+```
+
+要解决这个问题，可以在shell脚本中临时更改IFS环境变量的值来限制被bash shell当作字段分隔符的字符
+
+`IFS=$'\n'`
+
+将这个语句加入到脚本中，告诉bash shell在数据值中忽略空格和制表符
+
+```
+在处理代码量较大的脚本时，可能在一个地方需要修改IFS的值，然后忽略这次修改，在
+脚本的其他地方继续沿用IFS的默认值。一个可参考的安全实践是在改变IFS之前保存原
+来的IFS值，之后再恢复它。
+这种技术可以这样实现：
+IFS.OLD=$IFS
+IFS=$'\n'
+<在代码中使用新的IFS值>
+IFS=$IFS.OLD
+这就保证了在脚本的后续操作中使用的是IFS的默认值。
+```
+
+要遍历一个文件中用冒号分隔的值 `IFS=:`
+
+如果要指定多个IFS字符，只要将它们在赋值行串起来就行。
+
+`IFS=$'\n':;"`
+
+### 用通配符读取目录
+
+可以用for命令来自动遍历目录中的文件。进行此操作时，必须在文件名或路径名中使用通配符。它会强制shell使用文件扩展匹配。文件扩展匹配是生成匹配指定通配符的文件名或路径名的过程。
+
+`if [ -d "$file" ]`
+
+在Linux中，**目录名和文件名中包含空格当然是合法的**。要适应这种情况，应该将$file变
+
+量用双引号圈起来。如果不这么做，遇到含有空格的目录名或文件名时就会有错误产生。
+
+### C 语言的for 命令
+
+```shell
+for (( variable assignment ; condition ; iteration process ))
+```
+
+```
+注意，有些部分并没有遵循bash shell标准的for命令：
+1.变量赋值可以有空格；
+2.条件中的变量不以美元符开头；
+3.迭代过程的算式未用expr命令格式。
+```
+
+```shell
+#!/bin/bash
+# testing the C-style for loop
+for (( i=1; i <= 10; i++ ))
+do
+	echo "The next number is $i"
+done
+```
+
+### 使用多个变量
+
+C语言风格的for命令也允许为迭代使用多个变量。循环会单独处理每个变量，你可以为每个变量定义不同的迭代过程。尽管可以使用多个变量，但你只能在for循环中定义一种条件。
+
+### while 命令
+
+```shell
+while test command
+do
+	other commands
+done
+```
+
+### 使用多个测试命令
+
+while命令允许你在while语句行定义多个测试命令。**只有最后一个测试命令**的退出状态码
+
+会被用来决定什么时候结束循环。
+
+### until 命令
+
+ntil命令要求你指定一个通常返回非零退出状态码的测试命令。
+
+```shel
+until test commands
+do
+	other commands
+done
+```
+
+和while命令类似，你可以在until命令语句中放入多个测试命令。只有最后一个命令的退
+
+出状态码决定了bash shell是否执行已定义的other commands
+
+### 嵌套循环
+
+循环语句可以在循环内使用任意类型的命令，包括其他循环命令。
+
+### 循环处理文件数据
+
+```shell
+#!/bin/bash
+# changing the IFS value
+IFS.OLD=$IFS
+IFS=$'\n'
+for entry in $(cat /etc/passwd)
+do
+	echo "Values in $entry –"
+	IFS=:
+	for value in $entry
+	do
+		echo " $value"
+	done
+done
+$
+```
+
+### 控制循环
+
+```
+break命令
+continue命令
+```
+
+### break 命令
+
+1. 跳出单个循环
+
+在shell执行break命令时，它会尝试跳出当前正在执行的循环。
+
+2. 跳出内部循环
+
+在处理多个循环时，break命令会自动终止你所在的最内层的循环。
+
+3. 跳出外部循环
+
+`break n`
+
+其中n指定了要跳出的循环层级。默认情况下，n为1，表明跳出的是当前的循环。如果你将n设为2，break命令就会停止下一级的外部循环。
+
+### continue 命令
+
+`continue n`
+
+### 处理循环的输出
+
+```shell
+for file in /home/rich/*
+do
+if [ -d "$file" ]
+then
+	echo "$file is a directory"
+elif
+	echo "$file is a file"
+fi
+done > output.txt
+```
+
+### 查找可执行文件
+
+```shell
+#!/bin/bash
+# finding files in the PATH
+IFS=:
+for folder in $PATH
+do
+	echo "$folder:"
+	for file in $folder/*
+	do
+		if [ -x $file ]
+		then
+		echo " $file"
+		fi
+	done
+done
+```
+
+
+
+### 创建多个用户账户
+
+`while IFS=’,’ read –r userid name`
+
+read命令会自动读取.csv文本文件的下一行内容，所以不需要专门再写一个循环来处理。当read命令返回FALSE时（也就是读取完整个文件时），while命令就会退出。妙极了！
+
+```shell
+$ cat test26
+#!/bin/bash
+# process new user accounts
+input="users.csv"
+while IFS=',' read -r userid name
+do
+	echo "adding $userid"
+	useradd -c "$name" -m $userid
+done < "$input"
+```
+
+## 14处理用户输入
+
+
 
