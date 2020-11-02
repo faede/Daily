@@ -1178,7 +1178,7 @@ while命令允许你在while语句行定义多个测试命令。**只有最后�
 
 ### until 命令
 
-ntil命令要求你指定一个通常返回非零退出状态码的测试命令。
+until命令要求你指定一个通常返回非零退出状态码的测试命令。
 
 ```shel
 until test commands
@@ -1296,5 +1296,173 @@ done < "$input"
 
 ## 14处理用户输入
 
+```shell
+#!/bin/bash
+# using one command line parameter
+#
+factorial=1
+for (( number = 1; number <= $1 ; number++ ))
+do
+factorial=$[ $factorial * $number ]
+done
+echo The factorial of $1 is $factorial
+```
 
+$ >= 10 ${10}
+
+basename命令会返回不包含路径的脚本名
+
+```shell
+#!/bin/bash
+# Using basename with the $0 parameter
+#
+name=$(basename $0)
+echo
+echo The script name is: $name
+#
+```
+
+### 测试参数
+
+当脚本认为参数变量中会有数据而实际上并没有时，脚本很有可能会产生错误消息。这种写
+
+脚本的方法并不可取。在使用参数前一定要检查其中是否存在数据。
+
+```shell
+#!/bin/bash
+# testing parameters before use
+#
+if [ -n "$1" ]
+then
+echo Hello $1, glad to meet you.
+else
+echo "Sorry, you did not identify yourself. "
+fi
+```
+
+
+
+### 特殊参数变量
+
+### 参数统计
+
+特殊变量`$#`含有脚本运行时携带的命令行参数的个数
+
+或许`$#`变量含有参数的总数，那么变量`${$#}`代表最后一个参数，但是并不能在画括号中使用美元符号
+
+`params=$#`
+
+`${!#}`
+
+### 抓取所有的数据
+
+`$*`和`$@`变量可以用来轻松访问所有的参数。
+
+`$*`变量会将命令行上提供的所有参数当作一个单词保存。这个单词包含了命令行中出现每一个参数值。基本上`$*`变量会将这些参数视为一个整体，而不是多个个体。
+
+$@变量会将命令行上提供的所有参数当作同一字符串中的多个独立的单词。这样你就能够遍历所有的参数值，得到每个参数。这通常通过for命令完成。
+
+
+
+### 移动变量
+
+在使用shift命令时，默认情况下它会将每个参数变量向左移动一个位置。所以，变量$3的值会移到$2中，变量$2的值会移到$1中，而变量$1的值则会被删除（注意，变量$0的值，也就是程序名，不会改变）。
+
+```shell
+#!/bin/bash
+# demonstrating the shift command
+echo
+count=1
+while [ -n "$1" ]
+do
+echo "Parameter #$count = $1"
+count=$[ $count + 1 ]
+shift
+done
+```
+
+`shift n  ` 一次移动n个位置
+
+### 处理选项
+
+### 查找选项
+
+1. 处理简单选项
+
+```shell
+#!/bin/bash
+# extracting command line options as parameters
+#
+echo
+while [ -n "$1" ]
+do
+case "$1" in
+-a) echo "Found the -a option" ;;
+-b) echo "Found the -b option" ;;
+-c) echo "Found the -c option" ;;
+*) echo "$1 is not an option" ;;
+esac
+shift
+done
+```
+
+2. 分离参数和选项
+
+你会经常遇到想在shell脚本中同时使用选项和参数的情况。Linux中处理这个问题的标准方式是用特殊字符来将二者分开，该字符会告诉脚本何时选项结束以及普通参数何时开始。
+
+对Linux来说，这个特殊字符是双破折线（--）。shell会用双破折线来表明选项列表结束。在双破折线之后，脚本就可以放心地将剩下的命令行参数当作参数，而不是选项来处理了。
+
+```shell
+#!/bin/bash
+# extracting options and parameters
+echo
+while [ -n "$1" ]
+do
+case "$1" in
+-a) echo "Found the -a option" ;;
+-b) echo "Found the -b option";;
+-c) echo "Found the -c option" ;;
+--) shift
+break ;;
+*) echo "$1 is not an option";;
+esac
+shift
+done
+#
+count=1
+for param in $@
+do
+echo "Parameter #$count: $param"
+count=$[ $count + 1 ]
+done
+```
+
+3. 处理带值的选项
+
+```shell
+#!/bin/bash
+# extracting command line options and values
+echo
+while [ -n "$1" ]
+do
+case "$1" in
+-a) echo "Found the -a option";;
+-b) param="$2"
+echo "Found the -b option, with parameter value $param"
+shift ;;
+-c) echo "Found the -c option";;
+--) shift
+break ;;
+*) echo "$1 is not an option";;
+esac
+shift
+done
+#
+count=1
+for param in "$@"
+do
+echo "Parameter #$count: $param"
+count=$[ $count + 1 ]
+done
+```
 
