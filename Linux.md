@@ -1466,3 +1466,239 @@ count=$[ $count + 1 ]
 done
 ```
 
+### 使用getopt 命令
+
+1. 命令的格式
+
+```  shell
+getopt optstring parameters
+```
+
+在optstring中列出你要在脚本中用到的每个命令行选项字母。然后，在每个需要参数值的选项字母后加一个冒号。getopt命令会基于你定义的optstring解析提供的参数。
+
+`getopt ab:cd -a -b test1 -cd test2 test3`
+
+optstring定义了四个有效选项字母：a、b、c和d。冒号（:）被放在了字母b后面，因为选项需要一个参数值。当getopt命令运行时，它会检查提供的参数列表（-a -b test1 -cd
+
+test2 test3），并基于提供的optstring进行解析。注意，它会自动将-cd选项分成两个单独
+
+的选项，并插入双破折线来分隔行中的额外参数。如果指定了一个不在optstring中的选项，默认情况下，getopt命令会产生一条错误消息。如果想忽略这条错误消息，可以在命令后加-q选项。
+
+`getopt -q ab:cd -a -b test1 -cde test2 test3`
+
+### set
+
+The `set` command (when not setting options) sets the positional parameters eg
+
+```bsh
+$ set a b c
+$ echo $1
+a
+$ echo $2
+b
+$ echo $3
+c
+```
+
+The `--` is the standard "don't treat anything following this as an option"
+
+The `"$@"` are all the existing position paramters.
+
+So the sequence
+
+```bsh
+set -- haproxy "$@"
+```
+
+Will put the word `haproxy` in front of `$1` `$2` etc.
+
+### 在脚本中使用getopt
+
+```shell
+set -- $(getopt -q ab:cd "$@")
+```
+
+
+
+getopt命令并不擅长处理带空格和引号的参数值。它会将空格当作参数分隔符，而不是根
+
+据双引号将二者当作一个参数。幸而还有另外一个办法能解决这个问题。
+
+### 使用更高级的getopts
+
+与getopt不同，前者将命令行上选项和参数处理后只生成一个输出，而getopts命令能够
+
+和已有的shell参数变量配合默契。
+
+`getopts optstring variable`
+
+optstring值类似于getopt命令中的那个。有效的选项字母都会列在optstring中，如果选项字母要求有个参数值，就加一个冒号。要去掉错误消息的话，可以在optstring之前加一个冒号。getopts命令将当前参数保存在命令行中定义的variable中。
+
+getopts命令会用到两个环境变量。如果选项需要跟一个参数值，OPTARG环境变量就会保存这个值。OPTIND环境变量保存了参数列表中getopts正在处理的参数位置。这样你就能在处理完选项之后继续处理其他命令行参数了。
+
+```shell
+#!/bin/bash
+# simple demonstration of the getopts command
+#
+echo
+while getopts :ab:c opt
+do
+case "$opt" in
+a) echo "Found the -a option" ;;
+b) echo "Found the -b option, with value $OPTARG";;
+c) echo "Found the -c option" ;;
+*) echo "Unknown option: $opt";;
+esac
+done
+```
+
+while语句定义了getopts命令，指明了要查找哪些命令行选项，以及每次迭代中存储它们的变量名（opt）。
+
+你会注意到在本例中case语句的用法有些不同。getopts命令解析命令行选项时会移除开头的单破折线，所以在case定义中不用单破折线。
+
+getopts命令有几个好用的功能。对新手来说，可以在参数值中包含空格。
+
+另一个好用的功能是将选项字母和参数值放在一起使用，而不用加空格。
+
+`./test19.sh -abtest1`
+
+getopts命令知道何时停止处理选项，并将参数留给你处理。在getopts处理每个选项时，它会将OPTIND环境变量值增一。在getopts完成处理时，你可以使用shift命令和OPTIND值来移动参数。
+
+```shell
+#!/bin/bash
+# Processing options & parameters with getopts
+#
+echo
+while getopts :ab:cd opt
+do
+case "$opt" in
+a) echo "Found the -a option" ;;
+b) echo "Found the -b option, with value $OPTARG" ;;
+c) echo "Found the -c option" ;;
+d) echo "Found the -d option" ;;
+*) echo "Unknown option: $opt" ;;
+esac
+done
+#
+shift $[ $OPTIND - 1 ]
+#
+echo
+count=1
+for param in "$@"
+do
+echo "Parameter $count: $param"
+count=$[ $count + 1 ]
+done
+#
+```
+
+`$[ $OPTIND - 1 ]`是`$OPTIND - 1`的值。
+
+### 将选项标准化
+
+```shell
+选 项 描 述
+-a 显示所有对象
+-c 生成一个计数
+-d 指定一个目录
+-e 扩展一个对象
+-f 指定读入数据的文件
+-h 显示命令的帮助信息
+-i 忽略文本大小写
+-l 产生输出的长格式版本
+-n 使用非交互模式（批处理）
+-o 将所有输出重定向到的指定的输出文件
+-q 以安静模式运行
+-r 递归地处理目录和文件
+-s 以安静模式运行
+-v 生成详细输出
+-x 排除某个对象
+-y 对所有问题回答yes
+```
+
+### 获得用户输入
+
+尽管命令行选项和参数是从脚本用户处获得输入的一种重要方式，但有时脚本的交互性还需要更强一些。比如你想要在脚本运行时问个问题，并等待运行脚本的人来回答。bash shell为此提供了read命令。
+
+### 基本的读取
+
+read命令从标准输入（键盘）或另一个文件描述符中接受输入。在收到输入后，read命令
+
+会将数据放进一个变量。下面是read命令的最简单用法。
+
+```shell
+#!/bin/bash
+# testing the read command
+#
+echo -n "Enter your name: "
+read name
+echo "Hello $name, welcome to my program. "
+```
+
+相当简单。注意，生成提示的echo命令使用了-n选项。该选项不会在字符串末尾输出换行符，允许脚本用户紧跟其后输入数据，而不是下一行。这让脚本看起来更像表单。实际上，read命令包含了-p选项，允许你直接在read命令行指定提示符。
+
+```shell
+#!/bin/bash
+# testing the read -p option
+#
+read -p "Please enter your age: " age
+days=$[ $age * 365 ]
+echo "That makes you over $days days old! "
+#
+```
+
+指定多个变量,输入的每个数据值都会分配给变量列表中的下一个变量。如果变量数量不够，剩下的数据就全部分配给最后一个变量。
+
+也可以在read命令行中不指定变量。如果是这样，read命令会将它收到的任何数据都放进特殊环境变量`REPLY`中。
+
+### 超时
+
+使用read命令时要当心。脚本很可能会一直苦等着脚本用户的输入。如果不管是否有数据输入，脚本都必须继续执行，你可以用-t选项来指定一个计时器。-t选项指定了read命令等待输入的秒数。当计时器过期后，read命令会返回一个非零退出状态码。可以使用如if-then语句或while循环这种标准的结构化语句来理清所发生的具体情况。
+
+也可以不对输入过程计时，而是让read命令来统计输入的字符数。当输入的字符达到预设的字符数时，就自动退出，将输入的数据赋给变量。
+
+```shell
+#!/bin/bash
+# getting just one character of input
+#
+read -n1 -p "Do you want to continue [Y/N]? " answer
+case $answer in
+Y | y) echo
+echo "fine, continue on…";;
+N | n) echo
+echo OK, goodbye
+exit;;
+esac
+echo "This is the end of the script"
+```
+
+本例中将-n选项和值1一起使用，告诉read命令在接受单个字符后退出。只要按下单个字符回答后，read命令就会接受输入并将它传给变量，无需按回车键。
+
+### 隐藏方式读取
+
+-s选项可以避免在read命令中输入的数据出现在显示器上（实际上，数据会被显示，只是read命令会将文本颜色设成跟背景色一样）。这里有个在脚本中使用-s选项的例子。
+
+```shell
+#!/bin/bash
+# hiding input data from the monitor
+#
+read -s -p "Enter your password: " pass
+echo
+echo "Is your password really $pass? "
+```
+
+### 从文件中读取
+
+```shell
+#!/bin/bash
+# reading data from a file
+#
+count=1
+cat test | while read line
+do
+echo "Line $count: $line"
+count=$[ $count + 1]
+done
+echo "Finished processing the file"
+```
+
