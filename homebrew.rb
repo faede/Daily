@@ -1,4 +1,19 @@
 #!/usr/bin/ruby
+
+
+# Actual I find this rb before on net, but I find that the reason of can't install homebrew is 
+# DNS Pollution you can Download SwitchHosts and use https://www.ipaddress.com/ get ip
+# And add it to hosts :
+# This Time we need to add:
+# # My hosts
+# 199.232.68.133 raw.github.com
+# 199.232.68.133 user-images.github.com
+# 199.232.68.133 avatars2.github.com
+# 199.232.68.133 avatars1.github.com
+
+
+
+
 # This script installs to /usr/local only. To install elsewhere (which is
 # unsupported) you can untar https://github.com/Homebrew/brew/tarball/master
 # anywhere you like.
