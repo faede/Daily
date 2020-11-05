@@ -90,7 +90,7 @@ A typical memory representation of C program consists of following sections.
 4. Stack
 5. Heap
 
-![memoryLayoutC](/Users/zyy/Documents/GitHub/Daily/C++ learn from the past/memoryLayoutC.jpg)
+![memoryLayoutC](./memoryLayoutC.jpg)
 
  **1. Text Segment:**
 
