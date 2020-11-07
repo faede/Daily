@@ -1702,3 +1702,591 @@ done
 echo "Finished processing the file"
 ```
 
+## 15呈现数据
+
+### 标准文件描述符
+
+文件描述符是一个非负整数，可以唯一标识会话中打开
+
+的文件。每个进程一次最多可以有九个文件描述符。出于特殊目的，bash shell保留了前三个文
+
+件描述符（0、1和2）
+
+```shell
+文件描述符 缩 写 描 述
+0 STDIN 标准输入
+1 STDOUT 标准输出
+2 STDERR 标准错误
+```
+
+1. STDIN
+
+STDIN文件描述符代表shell的标准输入。对终端界面来说，标准输入是键盘。shell从STDIN文件描述符对应的键盘获得输入，在用户输入时处理每个字符。
+
+在使用输入重定向符号（<）时，Linux会用重定向指定的文件来替换标准输入文件描述符。它会读取文件并提取数据，就如同它是键盘上键入的。
+
+2. STDOUT
+
+STDOUT文件描述符代表shell的标准输出
+
+3. STDER
+
+shell通过特殊的STDERR文件描述符来处理错误消息。STDERR文件描述符代表shell的标准错误输出。shell或shell中运行的程序和脚本出错时生成的错误消息都会发送到这个位置。
+
+### 重定向错误
+
+1. 只重定向错误
+
+```shell
+ls -al badfile 2> test4
+```
+
+该值必须紧紧地放在重定向符号前，否则不会工作。
+
+2. 重定向错误和数据
+
+```shell
+ls -al test test2 test3 badtest 2> test6 1> test7
+```
+
+shell利用1>符号将ls命令的正常输出重定向到了test7文件，而这些输出本该是进入STDOUT的。所有本该输出到STDERR的错误消息通过2>符号被重定向到了test6文件。，如果愿意，也可以将STDERR和STDOUT的输出重定向到同一个输出文件。为此bash shell提供了特殊的重定向符号`&>`。
+
+### 在脚本中重定向输出
+
+### 临时重定向
+
+如果有意在脚本中生成错误消息，可以将单独的一行输出重定向到STDERR。你所需要做的是使用输出重定向符来将输出信息重定向到STDERR文件描述符。在重定向到文件描述符时，你必须在文件描述符数字之前加一个&
+
+```shell
+#!/bin/bash
+# testing STDERR messages
+echo "This is an error" >&2
+echo "This is normal output"
+```
+
+
+
+```shell
+$ ./test8 2> test9
+This is normal output
+$ cat test9
+This is an error
+$
+```
+
+### 永久重定向
+
+如果脚本中有大量数据需要重定向，那重定向每个echo语句就会很烦琐。取而代之，你可以用`exec`命令告诉shell在脚本执行期间重定向某个特定文件描述符。
+
+```shell
+#!/bin/bash
+# redirecting all output to a file
+exec 1>testout
+echo "This is a test of redirecting all output"
+echo "from a script to another file."
+echo "without having to redirect every individual line"
+```
+
+exec命令会启动一个新shell并将STDOUT文件描述符重定向到文件。脚本中发给STDOUT的所有输出会被重定向到文件。
+
+
+
+`exec 2>testerror`
+
+### 在脚本中重定向输入
+
+`exec 0< testfile`
+
+### 创建自己的重定向
+
+在脚本中重定向输入和输出时，并不局限于这3个默认的文件描述符。我曾提到过，在shell中最多可以有9个打开的文件描述符。其他6个从3~8的文件描述符均可用作输入或输出重定向。你可以将这些文件描述符中的任意一个分配给文件，然后在脚本中使用它们。
+
+创建输出文件描述符
+
+可以用exec命令来给输出分配文件描述符。和标准的文件描述符一样，一旦将另一个文件描述符分配给一个文件，这个重定向就会一直有效，直到你重新分配。
+
+```shell
+#!/bin/bash
+# using an alternative file descriptor
+exec 3>test13out
+echo "This should display on the monitor"
+echo "and this should be stored in the file" >&3
+```
+
+### 重定向文件描述符
+
+现在介绍怎么恢复已重定向的文件描述符。你可以分配另外一个文件描述符给标准文件描述符，反之亦然。
+
+```shell
+#!/bin/bash
+# storing STDOUT, then coming back to it
+exec 3>&1
+exec 1>test14out
+echo "This should store in the output file"
+echo "along with this line."
+exec 1>&3
+echo "Now things should be back to normal"
+
+
+$
+$ ./test14
+Now things should be back to normal
+$ cat test14out
+This should store in the output file
+along with this line.
+$
+```
+
+这个例子有点叫人抓狂，来一段一段地看。首先，脚本将文件描述符3重定向到文件描述符1的当前位置，也就是STDOUT。这意味着任何发送给文件描述符3的输出都将出现在显示器上。
+
+第二个exec命令将STDOUT重定向到文件，shell现在会将发送给STDOUT的输出直接重定向到输出文件中。但是，文件描述符3仍然指向STDOUT原来的位置，也就是显示器。如果此时将输出数据发送给文件描述符3，它仍然会出现在显示器上，尽管STDOUT已经被重定向了。
+
+在向STDOUT（现在指向一个文件）发送一些输出之后，脚本将STDOUT重定向到文件描述符3的当前位置（现在仍然是显示器）。这意味着现在STDOUT又指向了它原来的位置：显示器。
+
+
+
+###  创建输入文件描述符
+
+可以用和重定向输出文件描述符同样的办法重定向输入文件描述符。在重定向到文件之前，先将STDIN文件描述符保存到另外一个文件描述符，然后在读取完文件之后再将STDIN恢复到它原来的位置。
+
+```shell
+#!/bin/bash
+# redirecting input file descriptors
+exec 6<&0
+exec 0< testfile
+count=1
+while read line
+do
+echo "Line #$count: $line"
+count=$[ $count + 1 ]
+done
+exec 0<&6
+read -p "Are you done now? " answer
+case $answer in
+Y|y) echo "Goodbye";;
+N|n) echo "Sorry, this is the end.";;
+esac
+```
+
+### 创建读写文件描述符
+
+也可以打开单个文件描述符来作为输入和输出,由于你是对同一个文件进行数据读写，shell会维护一个
+
+内部指针，指明在文件中的当前位置。任何读或写都会从文件指针上次的位置开始
+
+```shell
+#!/bin/bash
+# testing input/output file descriptor
+exec 3<> testfile
+read line <&3
+echo "Read: $line"
+echo "This is a test line" >&3
+```
+
+
+
+当脚本向文件中写入数据时，它会从文件指针所处的位置开始。read命令读取了第一行数据，所以它使得文件指针指向了第二行数据的第一个字符。在echo语句将数据输出到文件时，它会将数据放在文件指针的当前位置，覆盖了该位置的已有数据。
+
+### 关闭文件描述符
+
+`exec 3>&-`
+
+一旦关闭了文件描述符，就不能在脚本中向它写入任何数据，否则shell会生成错误消息。在关闭文件描述符时还要注意另一件事。如果随后你在脚本中打开了同一个输出文件，shell会用一个新文件来替换已有文件。这意味着如果你输出数据，它就会覆盖已有文件。考虑下面这个问题的例子。
+
+```shell
+$ cat test17
+#!/bin/bash
+# testing closing file descriptors
+exec 3> test17file
+echo "This is a test line of data" >&3
+exec 3>&-
+cat test17file
+exec 3> test17file
+echo "This'll be bad" >&3
+$ ./test17
+This is a test line of data
+$ cat test17file
+This'll be bad
+$
+```
+
+在向test17file文件发送一个数据字符串并关闭该文件描述符之后，脚本用了cat命令来显示文件的内容。到目前为止，一切都还好。下一步，脚本重新打开了该输出文件并向它发送了另一个数据字符串。当显示该输出文件的内容时，你所能看到的只有第二个数据字符串。shell覆盖了原来的输出文件。
+
+### 列出打开的文件描述符
+
+lsof命令会列出整个Linux系统打开的所有文件描述符。这是个有争议的功能，因为它会向非系统管理员用户提供Linux系统的信息。鉴于此，许多Linux系统隐藏了该命令，这样用户就不会一不小心就发现了。
+
+在很多Linux系统中（如Fedora），lsof命令位于/usr/sbin目录。要想以普通用户账户来运行它，必须通过全路径名来引用：`$ /usr/sbin/lsof`
+
+有大量的命令行选项和参数可以用来帮助过滤lsof的输出。最常用的有-p和-d，前者允许指定进程ID（PID），后者允许指定要显示的文件描述符编号。
+
+要想知道进程的当前PID，可以用特殊环境变量$$（shell会将它设为当前PID）。-a选项用来对其他两个选项的结果执行布尔AND运算，这会产生如下输出。
+
+```shell
+$ /usr/sbin/lsof -a -p $$ -d 0,1,2
+COMMAND PID USER FD TYPE DEVICE SIZE NODE NAME
+bash 3344 rich 0u CHR 136,0 2 /dev/pts/0
+bash 3344 rich 1u CHR 136,0 2 /dev/pts/0
+bash 3344 rich 2u CHR 136,0 2 /dev/pts/0
+$
+```
+
+```
+列 描 述
+COMMAND 正在运行的命令名的前9个字符
+PID 进程的PID
+USER 进程属主的登录名
+FD 文件描述符号以及访问类型（r代表读，w代表写，u代表读写）
+TYPE 文件的类型（CHR代表字符型，BLK代表块型，DIR代表目录，REG代表常规文件）
+DEVICE 设备的设备号（主设备号和从设备号）
+SIZE 如果有的话，表示文件的大小
+NODE 本地文件的节点号
+NAME 文件名
+```
+
+## 阻止命令输出
+
+将STDERR重定向到一个叫作null文件的特殊文件。null文件跟它的名字很像，文件里什么都没有。shell输出到null文件的任何数据都不会保存，全部都被丢掉了。
+
+```shell
+ls -al > /dev/null
+```
+
+### 创建临时文件
+
+mktemp命令可以在/tmp目录中创建一个唯一的临时文件。shell会创建这个文件，但不用默认的umask值（参见第7章）。它会将文件的读和写权限分配给文件的属主，并将你设成文件的属主。一旦创建了文件，你就在脚本中有了完整的读写权限，但其他人没法访问它（当然，root用户除外）。
+
+### 创建本地临时文件
+
+要用mktemp命令在本地目录中创建一个临时文件，你只要指定一个文件名模板就行了。模板可以包含任意文本文件名，在文件名末尾加上6个X就行了。`mktemp testing.XXXXXX`
+
+mktemp命令会用6个字符码替换这6个X，从而保证文件名在目录中是唯一的。你可以创建多个临时文件，它可以保证每个文件都是唯一的。
+
+在脚本中使用mktemp命令时，可能要将文件名保存到变量中，这样就能在后面的脚本中引用了。
+
+
+
+```shell
+#!/bin/bash
+# creating and using a temp file
+tempfile=$(mktemp test19.XXXXXX)
+exec 3>$tempfile
+echo "This script writes to temp file $tempfile"
+echo "This is the first line" >&3
+echo "This is the second line." >&3
+echo "This is the last line." >&3
+exec 3>&-
+echo "Done creating temp file. The contents are:"
+cat $tempfile
+rm -f $tempfile 2> /dev/null
+```
+
+### 在tmp 目录创建临时文件
+
+-t选项会强制mktemp命令来在系统的临时目录来创建该文件。在用这个特性时，mktemp命令会返回用来创建临时文件的全路径，而不是只有文件名。` mktemp -t test.XXXXXX`
+
+由于mktemp命令返回了全路径名，你可以在Linux系统上的任何目录下引用该临时文件，不管临时目录在哪里。
+
+### 创建临时目录
+
+-d选项告诉mktemp命令来创建一个临时目录而不是临时文件。
+
+```shell
+#!/bin/bash
+# using a temporary directory
+tempdir=$(mktemp -d dir.XXXXXX)
+cd $tempdir
+tempfile1=$(mktemp temp.XXXXXX)
+tempfile2=$(mktemp temp.XXXXXX)
+exec 7> $tempfile1
+exec 8> $tempfile2
+echo "Sending data to directory $tempdir"
+echo "This is a test line of data for $tempfile1" >&7
+echo "This is a test line of data for $tempfile2" >&8
+```
+
+### 记录消息
+
+将输出同时发送到显示器和日志文件，这种做法有时候能够派上用场。你不用将输出重定向两次，只要用特殊的tee命令就行。
+
+tee命令相当于管道的一个T型接头。它将从STDIN过来的数据同时发往两处。一处是STDOUT，另一处是tee命令行所指定的文件名：
+
+`tee filename`
+
+由于tee会重定向来自STDIN的数据，你可以用它配合管道命令来重定向命令输出。
+
+```shell
+date | tee testfile
+```
+
+如果你想将数据追加到文件中，必须用-a选项。
+
+```shell
+date | tee -a testfile
+```
+
+### 实例
+
+```shell
+#!/bin/bash
+# read file and create INSERT statements for MySQL
+outfile='members.sql'
+IFS=','
+while read lname fname address city state zip
+do
+cat >> $outfile << EOF
+INSERT INTO members (lname,fname,address,city,state,zip) VALUES
+('$lname', '$fname', '$address', '$city', '$state', '$zip');
+EOF
+done < ${1}
+```
+
+done < ${1}
+
+当运行程序test23时，$1代表第一个命令行参数。它指明了待读取数据的文件。read语句会使用IFS字符解析读入的文本，我们在这里将IFS指定为逗号。
+
+cat >> $outfile << EOF
+
+这条语句中包含一个输出追加重定向（双大于号）和一个输入追加重定向（双小于号）。输出重定向将cat命令的输出追加到由$outfile变量指定的文件中。
+
+## 16控制脚本
+
+### 处理信号
+
+### 重温Linux 信号
+
+常见信号：
+
+```shell
+信 号 值 描 述
+1 SIGHUP 挂起进程
+2 SIGINT 终止进程
+3 SIGQUIT 停止进程
+9 SIGKILL 无条件终止进程
+15 SIGTERM 尽可能终止进程
+17 SIGSTOP 无条件停止进程，但不是终止进程
+18 SIGTSTP 停止或暂停进程，但不终止进程
+19 SIGCONT 继续运行停止的进程
+```
+
+默认情况下，bash shell会忽略收到的任何SIGQUIT (3)和SIGTERM (5)信号（正因为这样，交互式shell才不会被意外终止）。但是bash shell会处理收到的SIGHUP (1)和SIGINT (2)信号。
+
+shell会将这些信号传给shell脚本程序来处理。而shell脚本的默认行为是忽略这些信号。它们可能会不利于脚本的运行。要避免这种情况，你可以脚本中加入识别信号的代码，并执行命令来处理信号。
+
+### 生成信号
+
+bash shell允许用键盘上的组合键生成两种基本的Linux信号。这个特性在需要停止或暂停失控程序时非常方便。
+
+1. 中断进程
+
+Ctrl+C组合键会生成SIGINT信号，并将其发送给当前在shell中运行的所有进程。可以运行一条需要很长时间才能完成的命令，然后按下Ctrl+C组合键来测试它。
+
+2. 暂停进程
+
+尽管有时这可能会比较危险（比如，脚本打开了一个关键的系统文件的文件锁），但通常它可以在不终止进程的情况下使你能够深入脚本内部一窥究竟。
+
+Ctrl+Z组合键会生成一个SIGTSTP信号，停止shell中运行的任何进程。停止（stopping）进程跟终止（terminating）进程不同：停止进程会让程序继续保留在内存中，并能从上次停止的位置继续运行。
+
+方括号中的数字是shell分配的作业号（job number）。shell将shell中运行的每个进程称为作业，并为每个作业分配唯一的作业号。它会给第一个作业分配作业号1，第二个作业号2，以此类推。
+
+`ps -l`
+
+在S列中（进程状态），ps命令将已停止作业的状态为显示为T。这说明命令要么被跟踪，要么被停止了。
+
+如果在有已停止作业存在的情况下，你仍旧想退出shell，只要再输入一遍exit命令就行了。shell会退出，终止已停止作业。或者，既然你已经知道了已停止作业的PID，就可以用kill命令来发送一个SIGKILL信号来终止它。
+
+### 捕获信号
+
+也可以不忽略信号，在信号出现时捕获它们并执行其他命令。trap命令允许你来指定shell脚本要监看并从shell中拦截的Linux信号。如果脚本收到了trap命令中列出的信号，该信号不再由shell处理，而是交由本地处理。
+
+```shell
+trap commands signals
+```
+
+```shell
+#!/bin/bash
+# Testing signal trapping
+#
+trap "echo ' Sorry! I have trapped Ctrl-C'" SIGINT
+#
+echo This is a test script
+#
+count=1
+while [ $count -le 10 ]
+do
+echo "Loop #$count"
+sleep 1
+count=$[ $count + 1 ]
+done
+#
+echo "This is the end of the test script"
+#
+```
+
+### 捕获脚本退出
+
+要捕获shell脚本的退出，只要在trap命令后加上EXIT信号就行。
+
+```shell
+#!/bin/bash
+# Trapping the script exit
+#
+trap "echo Goodbye..." EXIT
+#
+count=1
+while [ $count -le 5 ]
+do
+echo "Loop #$count"
+sleep 1
+count=$[ $count + 1 ]
+done
+#
+```
+
+当脚本运行到正常的退出位置时，捕获就被触发了，shell会执行在trap命令行指定的命令。如果提前退出脚本，同样能够捕获到EXIT。
+
+### 修改或移除捕获
+
+```shell
+#!/bin/bash
+# Modifying a set trap
+#
+trap "echo ' Sorry... Ctrl-C is trapped.'" SIGINT
+#
+count=1
+while [ $count -le 5 ]
+do
+echo "Loop #$count"
+sleep 1
+count=$[ $count + 1 ]
+done
+#
+trap "echo ' I modified the trap!'" SIGINT
+#
+count=1
+while [ $count -le 5 ]
+do
+echo "Second Loop #$count"
+sleep 1
+count=$[ $count + 1 ]
+done
+#
+```
+
+
+
+也可以删除已设置好的捕获。只需要在trap命令与希望恢复默认行为的信号列表之间加上两个破折号就行了。
+
+```shell
+trap -- SIGINT
+```
+
+也可以在trap命令后使用单破折号来恢复信号的默认行为。单破折号和双破折号都可以正常发挥作用。
+
+### 后台运行脚本
+
+以后台模式运行shell脚本非常简单。只要在命令后加个&符就行了。
+
+当&符放到命令后时，它会将命令和bash shell分离开来，将命令作为系统中的一个独立的后台进程运行。
+
+方括号中的数字是shell分配给后台进程的作业号。下一个数是Linux系统分配给进程的进程ID（PID）。Linux系统上运行的每个进程都必须有一个唯一的PID。
+
+最好是将后台运行的脚本的STDOUT和STDERR进行重定向，避免杂乱的输出。
+
+### 运行多个后台作业
+
+都加&
+
+在终端会话中使用后台进程时一定要小心。注意，在ps命令的输出中，每一个后台进程都和终端会话（pts/0）终端联系在一起。如果终端会话退出，那么后台进程也会随之退出。
+
+### 在非控制台下运行脚本
+
+nohup命令运行了另外一个命令来阻断所有发送给该进程的SIGHUP信号。这会在退出终端会话时阻止进程退出。
+
+`nohup ./test1.sh &`
+
+由于nohup命令会解除终端与进程的关联，进程也就不再同STDOUT和STDERR联系在一起。为了保存该命令产生的输出，nohup命令会自动将STDOUT和STDERR的消息重定向到一个名为nohup.out的文件中。
+
+如果使用nohup运行了另一个命令，该命令的输出会被追加到已有的nohup.out文件中。当运行位于同一个目录中的多个命令时一定要当心，因为所有的输出都会被发送到同一个nohup.out文件中，结果会让人摸不清头脑。
+
+### 作业控制
+
+启动、停止、终止以及恢复作业的这些功能统称为作业控制。通过作业控制，就能完全控制shell环境中所有进程的运行方式了。
+
+### 查看作业
+
+作业控制中的关键命令是jobs命令。jobs命令允许查看shell当前正在处理的作业。
+
+```shell
+#!/bin/bash
+# Test job control
+#
+echo "Script Process ID: $$"   #$$变量来显示Linux系统分配给该脚本的PID
+#
+count=1
+while [ $count -le 10 ]
+do
+echo "Loop #$count"   
+sleep 10
+count=$[ $count + 1 ]
+done
+#
+echo "End of script..."
+#
+```
+
+jobs命令可以查看分配给shell的作业。jobs命令会显示已停止/运行中的作业，以及它们的作业号和作业中使用的命令。要想查看作业的PID，可以在jobs命令中加入-l选项（小写的L）。
+
+```shell
+参 数 描 述
+-l 列出进程的PID以及作业号
+-n 只列出上次shell发出的通知后改变了状态的作业
+-p 只列出作业的PID
+-r 只列出运行中的作业
+-s 只列出已停止的作业
+```
+
+你可能注意到了jobs命令输出中的加号和减号。带加号的作业会被当做默认作业。在使用作业控制命令时，如果未在命令行指定任何作业号，该作业会被当成作业控制命令的操作对象。当前的默认作业完成处理后，带减号的作业成为下一个默认作业。任何时候都只有一个带加号的作业和一个带减号的作业，不管shell中有多少个正在运行的作业。
+
+### 重启停止的作业
+
+要以后台模式重启一个作业，可用bg命令加上作业号。
+
+作业是默认作业（从加号可以看出），只需要使用bg命令就可以将其以后台模式重启。注意，当作业被转入后台模式时，并不会列出其PID。
+
+要以前台模式重启作业，可用带有作业号的fg命令。
+
+### 调整谦让度
+
+在多任务操作系统中（Linux就是），内核负责将CPU时间分配给系统上运行的每个进程。调度优先级（scheduling priority）是内核分配给进程的CPU时间（相对于其他进程）。在Linux系统中，由shell启动的所有进程的调度优先级默认都是相同的。
+
+调度优先级是个整数值，从-20（最高优先级）到+19（最低优先级）。默认情况下，bash shell以优先级0来启动所有进程。
+
+### nice 命令
+
+nice命令允许你设置命令启动时的调度优先级。要让命令以更低的优先级运行，只要用nice的-n命令行来指定新的优先级级别。
+
+nice命令允许你设置命令启动时的调度优先级。要让命令以更低的优先级运行，只要用nice的-n命令行来指定新的优先级级别。
+
+nice命令阻止普通系统用户来提高命令的优先级。注意，指定的作业的确运行了，但是试图使用nice命令提高其优先级的操作却失败了。nice命令的-n选项并不是必须的，只需要在破折号后面跟上优先级就行了。
+
+### renice 命令
+
+有时你想改变系统上已运行命令的优先级。这正是renice命令可以做到的。它允许你指定运行进程的PID来改变它的优先级。
+
+```shell
+  只能对属于你的进程执行renice；
+  只能通过renice降低进程的优先级；
+  root用户可以通过renice来任意调整进程的优先级。
+如果想完全控制运行进程，必须以root账户身份登录或使用sudo命令。
+```
+
+### 定时运行作业
+
+当你开始使用脚本时，可能会想要在某个预设时间运行脚本，这通常是在你不在场的时候。Linux系统提供了多个在预选时间运行脚本的方法：at命令和cron表。每个方法都使用不同的技术来安排脚本的运行时间和频率。接下来会依次介绍这些方法。
+
+### 用at 命令来计划执行作业
+
+at命令允许指定Linux系统何时运行脚本。at命令会将作业提交到队列中，指定shell何时运行该作业。at的守护进程atd会以后台模式运行，检查作业队列来运行作业。大多数Linux发行版会在启动时运行此守护进程。
+
+atd守护进程会检查系统上的一个特殊目录（通常位于/var/spool/at）来获取用at命令提交的作业。默认情况下，atd守护进程会每60秒检查一下这个目录。有作业时，atd守护进程会检查作业设置运行的时间。如果时间跟当前时间匹配，atd守护进程就会运行此作业。
