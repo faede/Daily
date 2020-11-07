@@ -2290,3 +2290,257 @@ nice命令阻止普通系统用户来提高命令的优先级。注意，指定�
 at命令允许指定Linux系统何时运行脚本。at命令会将作业提交到队列中，指定shell何时运行该作业。at的守护进程atd会以后台模式运行，检查作业队列来运行作业。大多数Linux发行版会在启动时运行此守护进程。
 
 atd守护进程会检查系统上的一个特殊目录（通常位于/var/spool/at）来获取用at命令提交的作业。默认情况下，atd守护进程会每60秒检查一下这个目录。有作业时，atd守护进程会检查作业设置运行的时间。如果时间跟当前时间匹配，atd守护进程就会运行此作业。
+
+1. at命令的格式
+
+`at [-f filename] time`
+
+time参数指定了Linux系统何时运行该作业。如果你指定的时间已经错过，at命令会在第二天的那个时间运行指定的作业。
+
+```
+的那个时间运行指定的作业。
+在如何指定时间这个问题上，你可以非常灵活。at命令能识别多种不同的时间格式。
+  标准的小时和分钟格式，比如10:15。
+  AM/PM指示符，比如10:15 PM。
+  特定可命名时间，比如now、noon、midnight或者teatime（4 PM）。
+除了指定运行作业的时间，也可以通过不同的日期格式指定特定的日期。
+  标准日期格式，比如MMDDYY、MM/DD/YY或DD.MM.YY。
+  文本日期，比如Jul 4或Dec 25，加不加年份均可。
+  你也可以指定时间增量。
+  当前时间+25 min
+  明天10:15 PM
+  10:15+7天
+```
+
+在你使用at命令时，该作业会被提交到作业队列（job queue）。作业队列会保存通过at命令提交的待处理的作业。针对不同优先级，存在26种不同的作业队列。作业队列通常用小写字母a~z和大写字母A~Z来指代。
+
+作业队列的字母排序越高，作业运行的优先级就越低（更高的nice值）。默认情况下，at的作业会被提交到a作业队列。如果想以更高优先级运行作业，可以用-q参数指定不同的队列字母。
+
+2. 获取作业的输出
+
+当作业在Linux系统上运行时，显示器并不会关联到该作业。取而代之的是，Linux系统会将
+
+提交该作业的用户的电子邮件地址作为STDOUT和STDERR。任何发到STDOUT或STDERR的输出都
+
+会通过邮件系统发送给该用户。
+
+3. 列出等待的作业
+
+atq命令可以查看系统中有哪些作业在等待。
+
+4. 删除作业
+
+一旦知道了哪些作业在作业队列中等待，就能用atrm命令来删除等待中的作业。只要指定想要删除的作业号就行了。只能删除你提交的作业，不能删除其他人的。
+
+### 安排需要定期执行的脚本
+
+用at命令在预设时间安排脚本执行非常好用，但如果你需要脚本在每天的同一时间运行或是每周一次、每月一次呢？用不着再使用at不断提交作业了，你可以利用Linux系统的另一个功能。
+
+Linux系统使用cron程序来安排要定期执行的作业。cron程序会在后台运行并检查一个特殊的表（被称作cron时间表），以获知已安排执行的作业。
+
+1. cron时间表
+
+cron时间表采用一种特别的格式来指定作业何时运行。其格式如下：
+
+```shell
+min hour dayofmonth month dayofweek command
+```
+
+cron时间表允许你用特定值、取值范围（比如1~5）或者是通配符（星号）来指定条目。例
+
+如，如果想在每天的10:15运行一个命令，可以用cron时间表条目：
+
+`15 10 * * * command`
+
+2. 构建cron时间表
+
+每个系统用户（包括root用户）都可以用自己的cron时间表来运行安排好的任务。Linux提供了crontab命令来处理cron时间表。要列出已有的cron时间表，可以用-l选项。
+
+默认情况下，用户的cron时间表文件并不存在。要为cron时间表添加条目，可以用-e选项。在添加条目时，crontab命令会启用一个文本编辑器（参见第10章），使用已有的cron时间表作为文件内容（或者是一个空文件，如果时间表不存在的话）。
+
+3. 浏览cron目录
+
+如果你创建的脚本对精确的执行时间要求不高，用预配置的cron脚本目录会更方便。有4个基本目录：hourly、daily、monthly和weekly。
+
+`ls /etc/cron.*ly`
+
+因此，如果脚本需要每天运行一次，只要将脚本复制到daily目录，cron就会每天执行它。
+
+4. anacron程序
+
+cron程序的唯一问题是它假定Linux系统是7×24小时运行的。除非将Linux当成服务器环境来运行，否则此假设未必成立。
+
+如果某个作业在cron时间表中安排运行的时间已到，但这时候Linux系统处于关机状态，那么这个作业就不会被运行。当系统开机时，cron程序不会再去运行那些错过的作业。要解决这个问题，许多Linux发行版还包含了anacron程序。
+
+如果anacron知道某个作业错过了执行时间，它会尽快运行该作业。这意味着如果Linux系统关机了几天，当它再次开机时，原定在关机期间运行的作业会自动运行。这个功能常用于进行常规日志维护的脚本。如果系统在脚本应该运行的时间刚好关机，日志文件就不会被整理，可能会变很大。通过anacron，至少可以保证系统每次启动时整理日志文件。
+
+anacron程序只会处理位于cron目录的程序，比如/etc/cron.monthly。它用时间戳来决定作业是否在正确的计划间隔内运行了。每个cron目录都有个时间戳文件，该文件位于/var/spool/anacron。
+
+anacron时间表的基本格式和cron时间表略有不同：
+
+`period delay identifier command`
+
+period条目定义了作业多久运行一次，以天为单位。anacron程序用此条目来检查作业的时间戳文件。delay条目会指定系统启动后anacron程序需要等待多少分钟再开始运行错过的脚本。command条目包含了run-parts程序和一个cron脚本目录名。run-parts程序负责运行目录中传给它的任何脚本。
+
+注意，anacron不会运行位于/etc/cron.hourly的脚本。这是因为anacron程序不会处理执行时间需求小于一天的脚本。
+
+identifier条目是一种特别的非空字符串，如cron-weekly。它用于唯一标识日志消息和错误邮件中的作业。
+
+
+
+### 使用新shell 启动脚本
+
+回想一下当用户登入bash shell时需要运行的启动文件（参见第6章）。另外别忘了，不是所有的发行版中都包含这些启动文件。基本上，依照下列顺序所找到的第一个文件会被运行，其余的文件会被忽略：
+
+```
+  $HOME/.bash_profile
+  $HOME/.bash_login
+  $HOME/.profile
+```
+
+# 高级shell 脚本编程
+
+## 17创建函数
+
+### 创建函数
+
+有两种格式可以用来在bash shell脚本中创建函数。第一种格式采用关键字function，后跟分配给该代码块的函数名。
+
+函数名唯一、先定义后使用
+
+```shell
+function name {
+commands
+}
+```
+
+```shell
+name() {
+commands
+}
+```
+
+### 使用函数
+
+```shell
+#!/bin/bash
+# using a function in a script
+function func1 {
+echo "This is an example of a function"
+}
+count=1
+while [ $count -le 5 ]
+do
+func1
+count=$[ $count + 1 ]
+done
+echo "This is the end of the loop"
+func1
+echo "Now this is the end of the script"
+```
+
+### 返回值
+
+bash shell会把函数当作一个小型脚本，运行结束时会返回一个退出状态码。有3种不同的方法来为函数生成退出状态码。
+
+### 默认退出状态码
+
+默认情况下，函数的退出状态码是函数中最后一条命令返回的退出状态码。在函数执行结束后，可以用标准变量$?来确定函数的退出状态码。
+
+```shell
+#!/bin/bash
+# testing the exit status of a function
+func1() {
+echo "trying to display a non-existent file"
+ls -l badfile
+}
+echo "testing the function: "
+func1
+echo "The exit status is: $?"
+```
+
+### 使用return 命令
+
+bash shell使用return命令来退出函数并返回特定的退出状态码。return命令允许指定一个整数值来定义函数的退出状态码，从而提供了一种简单的途径来编程设定函数退出状态码。
+
+```shell
+#!/bin/bash
+# using the return command in a function
+function dbl {
+read -p "Enter a value: " value
+echo "doubling the value"
+return $[ $value * 2 ]
+}
+dbl
+echo "The new value is $?"
+```
+
+但当用这种方法从函数中返回值时，要小心了。记住下面两条技巧来避免问题：
+
+ 记住，函数一结束就取返回值；
+
+ 记住，退出状态码必须是0~255。
+
+### 使用函数输出
+
+正如可以将命令的输出保存到shell变量中一样，你也可以对函数的输出采用同样的处理办法。可以用这种技术来获得任何类型的函数输出，并将其保存到变量中：
+
+`result='dbl'`
+
+这个命令会将dbl函数的输出赋给$result变量。下面是在脚本中使用这种方法的例子。
+
+```shell
+#!/bin/bash
+# using the echo to return a value
+function dbl {
+read -p "Enter a value: " value
+echo $[ $value * 2 ]
+}
+result=$(dbl)
+echo "The new value is $result"
+```
+
+read命令输出了一条简短的消息来向用户询问输入值。bash shell脚本非常聪明，并不将其作为STDOUT输出的一部分，并且忽略掉它。如果你用echo语句生成这条消息来向用户查询，那么它会与输出值一起被读进shell变量中。
+
+通过这种技术，你还可以返回浮点值和字符串值。这使它成为一种获取函数返回值的强大方法。
+
+### 在函数中使用变量
+
+### 向函数传递参数
+
+函数可以使用标准的参数环境变量来表示命令行上传给函数的参数。例如，函数名会在\$0变量中定义，函数命令行上的任何参数都会通过\$1、\$2等定义。也可以用特殊变量\$#来判断传给函数的参数数目。
+
+```shell
+#!/bin/bash
+# passing parameters to a function
+function addem {
+if [ $# -eq 0 ] || [ $# -gt 2 ]
+then
+echo -1
+elif [ $# -eq 1 ]
+then
+echo $[ $1 + $1 ]
+else
+echo $[ $1 + $2 ]
+fi
+}
+echo -n "Adding 10 and 15: "
+value=$(addem 10 15)
+echo $value
+echo -n "Let's try adding just one number: "
+value=$(addem 10)
+echo $value
+echo -n "Now trying adding no numbers: "
+value=$(addem)
+echo $value
+echo -n "Finally, try adding three numbers: "
+value=$(addem 10 15 20)
+echo $value
+```
+
+由于函数使用特殊参数环境变量作为自己的参数值，因此它无法直接获取脚本在命令行中的参数值。
+
+尽管函数也使用了$1和$2变量，但它们和脚本主体中的$1和$2变量并不相同。要在函数中使用这些值，必须在调用函数时手动将它们传过去。
+
+### 在函数中处理变量
+
