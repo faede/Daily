@@ -2544,3 +2544,346 @@ echo $value
 
 ### 在函数中处理变量
 
+### 全局变量
+
+默认情况下，你在脚本中定义的任何变量都是全局变量。在函数外定义的变量可在函数内正常访问。
+
+### 局部变量
+
+无需在函数中使用全局变量，函数内部使用的任何变量都可以被声明成局部变量。要实现这一点，只要在变量声明的前面加上local关键字就可以了。
+
+`local temp`
+
+也可以在变量赋值语句中使用local关键字：
+
+`local temp=$[ $value + 5 ]`
+
+### 数组变量和函数
+
+如果你试图将该数组变量作为函数参数，函数只会取数组变量的第一个值。
+
+要解决这个问题，你必须将该数组变量的值分解成单个的值，然后将这些值作为函数参数使用。
+
+```shell
+#!/bin/bash
+# array variable to function test
+function testit {
+local newarray
+newarray=(;'echo "$@"')
+echo "The new array value is: ${newarray[*]}"
+}
+myarray=(1 2 3 4 5)
+echo "The original array is ${myarray[*]}"
+testit ${myarray[*]}
+```
+
+### 从函数返回数组
+
+从函数里向shell脚本传回数组变量也用类似的方法。函数用echo语句来按正确顺序输出单个数组值，然后脚本再将它们重新放进一个新的数组变量中。
+
+```shell
+#!/bin/bash
+# returning an array value
+function arraydblr {
+	local origarray
+	local newarray
+	local elements
+	local i
+	origarray=($(echo "$@"))
+	newarray=($(echo "$@"))
+	elements=$[ $# - 1 ]
+	for (( i = 0; i <= $elements; i++ ))
+	{
+		newarray[$i]=$[ ${origarray[$i]} * 2 ]
+	}
+	echo ${newarray[*]}
+}
+myarray=(1 2 3 4 5)
+echo "The original array is: ${myarray[*]}"
+arg1=$(echo ${myarray[*]})
+result=($(arraydblr $arg1))
+echo "The new array is: ${result[*]}"
+```
+
+该脚本用$arg1变量将数组值传给arraydblr函数。arraydblr函数将该数组重组到新的数组变量中，生成该输出数组变量的一个副本。然后对数据元素进行遍历，将每个元素值翻倍，并将结果存入函数中该数组变量的副本。
+
+arraydblr函数使用echo语句来输出每个数组元素的值。脚本用arraydblr函数的输出来重新生成一个新的数组变量。
+
+### 函数递归
+
+```shell
+#!/bin/bash
+# using recursion
+function factorial {
+if [ $1 -eq 1 ]
+then
+echo 1
+else
+local temp=$[ $1 - 1 ]
+local result=$(factorial $temp)
+echo $[ $result * $1 ]
+fi
+}
+read -p "Enter value: " value
+result=$(factorial $value)
+echo "The factorial of $value is: $result"
+```
+
+### 创建库
+
+```shell
+my script functions
+function addem {
+echo $[ $1 + $2 ]
+}
+function multem {
+echo $[ $1 * $2 ]
+}
+function divem {
+if [ $2 -ne 0 ]
+then
+echo $[ $1 / $2 ]
+else
+echo -1
+fi
+}
+```
+
+问题出在shell函数的作用域上。和环境变量一样，shell函数仅在定义它的shell会话内有效。如果你在shell命令行界面的提示符下运行myfuncs shell脚本，shell会创建一个新的shell并在其中运行这个脚本。它会为那个新shell定义这三个函数，但当你运行另外一个要用到这些函数的脚本时，它们是无法使用的。
+
+使用函数库的关键在于source命令。source命令会在当前shell上下文中执行命令，而不是创建一个新shell。可以用source命令来在shell脚本中运行库文件脚本。这样脚本就可以使用库中的函数了。
+
+source命令有个快捷的别名，称作点操作符（dot operator）。要在shell脚本中运行myfuncs库文件，只需添加下面这行：
+
+`. ./myfuncs`
+
+```shell
+#!/bin/bash
+# using functions defined in a library file
+. ./myfuncs
+value1=10
+value2=5
+result1=$(addem $value1 $value2)
+result2=$(multem $value1 $value2)
+result3=$(divem $value1 $value2)
+echo "The result of adding them is: $result1"
+echo "The result of multiplying them is: $result2"
+echo "The result of dividing them is: $result3"
+```
+
+### 在命令行上使用函数
+
+### 在命令行上创建函数
+
+因为shell会解释用户输入的命令，所以可以在命令行上直接定义一个函数。有两种方法。
+
+一种方法是采用单行方式定义函数。
+
+`function divem { echo $[ $1 / $2 ]; }`
+
+另一种方法是采用多行方式来定义函数。在定义时，bash shell会使用次提示符来提示输入更多命令。用这种方法，你不用在每条命令的末尾放一个分号，只要按下回车键就行。
+
+在命令行上创建函数时要特别小心。如果你给函数起了个跟内建命令或另一个命令相同的名字，函数将会覆盖原来的命令。
+
+### 在.bashrc 文件中定义函数
+
+1. 直接定义函数
+
+可以直接在主目录下的.bashrc文件中定义函数。许多Linux发行版已经在.bashrc文件中定义了一些东西，所以注意不要误删了。把你写的函数放在文件末尾就行了。这里有个例子。
+
+2. 读取函数文件
+
+只要是在shell脚本中，都可以用source命令（或者它的别名点操作符）将库文件中的函数添加到你的.bashrc脚本中。
+
+更好的是，shell还会将定义好的函数传给子shell进程，这样一来，这些函数就自动能够用于该shell会话中的任何shell脚本了。你可以写个脚本，试试在不定义或使用source的情况下，直接使用这些函数。
+
+## 18图形化桌面环境中的脚本编程
+
+### 创建文本菜单
+
+### 创建菜单布局
+
+## 19 初识sed和gawk
+
+到目前为止， shell脚本最常见的一个用途就是处理文本文件。检查日志文件、读取配置文件、处理数据元素，shell脚本可以帮助我们将文本文件中各种数据的日常处理任务自动化。但仅靠shell脚本命令来处理文本文件的内容有点勉为其难。如果想在shell脚本中处理任何类型的数据，你得熟悉Linux中的sed和gawk工具。这两个工具能够极大简化需要进行的数据处理任务。
+
+### 文本处理
+
+### sed 编辑器
+
+sed编辑器被称作流编辑器（stream editor），和普通的交互式文本编辑器恰好相反。在交互式文本编辑器中（比如vim），你可以用键盘命令来交互式地插入、删除或替换数据中的文本。流编辑器则会在编辑器处理数据之前基于预先提供的一组规则来编辑数据流。
+
+sed编辑器可以根据命令来处理数据流中的数据，这些命令要么从命令行中输入，要么存储在一个命令文本文件中。sed编辑器会执行下列操作。
+
+```
+(1) 一次从输入中读取一行数据。
+(2) 根据所提供的编辑器命令匹配数据。
+(3) 按照命令修改流中的数据。
+(4) 将新的数据输出到STDOUT。
+```
+
+在流编辑器将所有命令与一行数据匹配完毕后，它会读取下一行数据并重复这个过程。在流编辑器处理完流中的所有数据行后，它就会终止。
+
+`sed options script file`
+
+```shell
+选 项 描 述
+-e script 在处理输入时，将script中指定的命令添加到已有的命令中
+-f file 在处理输入时，将file中指定的命令添加到已有的命令中
+-n 不产生命令输出，使用print命令来完成输出
+```
+
+script参数指定了应用于流数据上的单个命令。如果需要用多个命令，要么使用-e选项在命令行中指定，要么使用-f选项在单独的文件中指定。
+
+1. 在命令行定义编辑器命令
+
+默认情况下，sed编辑器会将指定的命令应用到STDIN输入流上。这样你可以直接将数据通过管道输入sed编辑器处理。
+
+`echo "This is a test" | sed 's/test/big test/'`
+
+这个例子在sed编辑器中使用了s命令。s命令会用斜线间指定的第二个文本字符串来替换第一个文本字符串模式。在本例中是big test替换了test。
+
+`sed 's/dog/cat/' data1.txt`
+
+这时sed不会改变data1.txt`文件
+
+2. 在命令行使用多个编辑器命令
+
+要在sed命令行上执行多个命令时，只要用-e选项就可以了
+
+`sed -e 's/brown/green/; s/dog/cat/' data1.txt`
+
+两个命令都作用到文件中的每行数据上。命令之间必须用分号隔开，并且在命令末尾和分号之间不能有空格。
+
+如果不想用分号，也可以用bash shell中的次提示符来分隔命令。只要输入第一个单引号标示出sed程序脚本的起始（sed编辑器命令列表），bash会继续提示你输入更多命令，直到输入了标示结束的单引号。
+
+3. 从文件中读取编辑器命令
+
+如果有大量要处理的sed命令，那么将它们放进一个单独的文件中通常会更方便一些。可以在sed命令中用-f选项来指定文件。
+
+`sed -f script1.sed data1.txt`
+
+我们很容易就会把sed编辑器脚本文件与bash shell脚本文件搞混。为了避免这种情况，可以使用.sed作为sed脚本文件的扩展名。
+
+### gawk 程序
+
+虽然sed编辑器是非常方便自动修改文本文件的工具，但其也有自身的限制。通常你需要一个用来处理文件中的数据的更高级工具，它能提供一个类编程环境来修改和重新组织文件中的数据。这正是gawk能够做到的。
+
+gawk程序是Unix中的原始awk程序的GNU版本。gawk程序让流编辑迈上了一个新的台阶，它提供了一种编程语言而不只是编辑器命令。在gawk编程语言中，你可以做下面的事情：
+
+```
+  定义变量来保存数据；
+  使用算术和字符串操作符来处理数据；
+  使用结构化编程概念（比如if-then语句和循环）来为数据处理增加处理逻辑；
+  通过提取数据文件中的数据元素，将其重新排列或格式化，生成格式化报告。
+```
+
+gawk程序的报告生成能力通常用来从大文本文件中提取数据元素，并将它们格式化成可读的报告。其中最完美的例子是格式化日志文件。在日志文件中找出错误行会很难，gawk程序可以让你从日志文件中过滤出需要的数据元素，然后你可以将其格式化，使得重要的数据更易于阅读。
+
+1. gawk命令格式
+
+`gawk options program file`
+
+```shell
+选 项 描 述
+-F fs 指定行中划分数据字段的字段分隔符
+-f file 从指定的文件中读取程序
+-v var=value 定义gawk程序中的一个变量及其默认值
+-mf N 指定要处理的数据文件中的最大字段数
+-mr N 指定数据文件中的最大数据行数
+-W keyword 指定gawk的兼容模式或警告等级
+```
+
+gawk的强大之处在于程序脚本。可以写脚本来读取文本行的数据，然后处理并显示数据，创建任何类型的输出报告。
+
+2. 从命令行读取程序脚本
+
+awk程序脚本用一对花括号来定义。你必须将脚本命令放到两个花括号（{}）中。
+
+```shell
+gawk '{print "Hello World!"}'
+```
+
+在运行这个程序时，它会一直等待从STDIN输入的文本。
+
+要终止这个gawk程序，你必须表明数据流已经结束了。bash shell提供了一个组合键来生成EOF（End-of-File）字符。Ctrl+D组合键会在bash中产生一个EOF字符。这个组合键能够终止该gawk程序并返回到命令行界面提示符下。
+
+3. 使用数据字段变量
+
+gawk的主要特性之一是其处理文本文件中数据的能力。它会自动给一行中的每个数据元素分配一个变量。默认情况下，gawk会将如下变量分配给它在文本行中发现的数据字段：
+
+```
+  $0代表整个文本行；
+  $1代表文本行中的第1个数据字段；
+  $2代表文本行中的第2个数据字段；
+  $n代表文本行中的第n个数据字段。
+```
+
+```shell
+$ cat data2.txt
+One line of test text.
+Two lines of test text.
+Three lines of test text.
+$
+$ gawk '{print $1}' data2.txt
+One
+Two
+Three
+$
+```
+
+如果你要读取采用了其他字段分隔符的文件，可以用-F选项指定。
+
+`gawk -F: '{print $1}' /etc/passwd`
+
+4. 在程序脚本中使用多个命令
+
+`echo "My name is Rich" | gawk '{$4="Christine"; print $0}'`
+
+也可以用次提示符一次一行地输入程序脚本命令。
+
+5. 从文件中读取程序
+
+```shell
+$ cat script2.gawk
+{print $1 "'s home directory is " $6}
+$
+$ gawk -F: -f script2.gawk /etc/passwd
+```
+
+可以在程序文件中指定多条命令。要这么做的话，只要一条命令放一行即可，不需要用分号。
+
+```shell
+{
+text = "'s home directory is "
+print $1 text $6
+}
+```
+
+6.  在处理数据前运行脚本
+
+gawk还允许指定程序脚本何时运行。默认情况下，gawk会从输入中读取一行文本，然后针对该行的数据执行程序脚本。有时可能需要在处理数据前运行脚本，比如为报告创建标题。`BEGIN`关键字就是用来做这个的。它会强制gawk在读取数据前执行BEGIN关键字后指定的程序脚本。
+
+`gawk 'BEGIN {print "Hello World!"}'`
+
+这次print命令会在读取数据前显示文本。但在它显示了文本后，它会快速退出，不等待任何数据。如果想使用正常的程序脚本中处理数据，必须用另一个脚本区域来定义程序。
+
+7. 在处理数据后运行脚本
+
+与BEGIN关键字类似，END关键字允许你指定一个程序脚本，gawk会在读完数据后执行它。
+
+````shell
+BEGIN {
+print "The latest list of users and shells"
+print " UserID \t Shell"
+print "-------- \t -------"
+FS=":"
+}
+{
+print $1 " \t " $7
+}
+END {
+print "This concludes the listing"
+}
+````
+
