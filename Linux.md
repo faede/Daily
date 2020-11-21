@@ -2408,6 +2408,8 @@ identifier条目是一种特别的非空字符串，如cron-weekly。它用于�
 
 函数名唯一、先定义后使用
 
+`# after function add a " " or "()"`
+
 ```shell
 function name {
 commands
