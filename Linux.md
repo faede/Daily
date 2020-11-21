@@ -126,7 +126,7 @@ head -5 log_file
 
 ### 4.1监测程序
 
-ps
+### ps
 
 默认显示运行在当前控制台下的属于当前用户的进程
 
@@ -262,7 +262,11 @@ du -sh | sort -nr
 
 
 
-grep [options] pattern [file]
+### grep [options] pattern [file]
+
+`grep -rn str *`
+
+**递归**查找当前文件夹下所有文件带"str"并**显示行号**
 
 grep在输入或指定的文件中查找包含匹配指定模式的字符的行
 
@@ -298,7 +302,7 @@ gunzip	用来解压文件
 
 
 
-归档数据
+### 归档数据
 
 tar命令用来将文件写入到磁带设备上归档，也能把输出写出到文件里
 
