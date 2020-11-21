@@ -1,4 +1,4 @@
-ls 
+### ls 
 
 第一个字母 目录(d) 、文件(-)、字符型文件(c)、块设备(b)
 
@@ -10,7 +10,7 @@ touch test_one
 
 
 
-链接文件
+### 链接文件
 
 符号链接，是一个文件，指向存放在虚拟目录结构中某个地方的另一个文件。两个通过符号链接在一起的文件，彼此内容并不相同。
 
@@ -30,13 +30,13 @@ inode相同。
 
 
 
-mv
+### mv
 
 移动或重命名
 
 
 
-rm 
+### rm 
 
 建议加-i
 
@@ -48,7 +48,7 @@ rm -i fall
 
 mkdir
 
-创建目录
+### 创建目录
 
 mkdir -p new_dir/sub_dir/under_dir
 
@@ -64,7 +64,7 @@ rmdir
 
 
 
-tree
+### tree
 
 展示目录树
 
@@ -72,13 +72,13 @@ tree
 
 ### 3.8查看文件内容
 
-file My_file
+### file My_file
 
 查看文件类型，编码，符号链接，二进制文件需要何种库
 
 
 
-cat test1
+### cat test1
 
 显示
 
@@ -90,13 +90,13 @@ cat test1
 
 
 
-more
+### more
 
 显示一页之后就停下来
 
 
 
-less
+### less
 
 加强more （less is more）
 
@@ -104,7 +104,7 @@ less
 
 
 
-tail
+### tail
 
 展示尾部文件，默认10行
 
@@ -114,7 +114,7 @@ tail -n 2 log_file
 
 
 
-head
+### head
 
 前十行
 
