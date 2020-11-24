@@ -1,6 +1,5 @@
 #!/bin/bash
 cur_path="$1"
-cur_path=`realpath $cur_path`
 pwd_dir=`pwd`
 if [ ! -d "$cur_path" ]
 then
@@ -8,6 +7,7 @@ then
 	echo "You does'n input path so I set path to pwd :$pwd_dir"
 fi
 
+cur_path=`realpath $cur_path`
 for doc in `find ${cur_path} -type f ! -name "*.*" `
 do
 	tag=`echo $doc | grep ".git"`
@@ -16,4 +16,15 @@ do
 	then
 		`rm -i $doc`
 	fi
+done
+
+for doc in `find ${cur_path} -type f -name "*.exe"`
+do 
+	rm -i $doc
+done
+
+
+for doc in `find ${cur_path} -type f -name "*.out"`
+do 
+	rm -i $doc
 done
