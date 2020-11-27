@@ -2,3 +2,4 @@
 集训队论文 https://www.cnblogs.com/imzscilovecode/p/8884095.html
 跳跃表
 知乎关注的老哥
+单调队列优化多重背包 https://www.cnblogs.com/chinhhh/p/9011428.html

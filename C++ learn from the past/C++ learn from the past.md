@@ -250,3 +250,34 @@ text       data        bss        dec        hex    filename
 960        248         8          1216       4c0    memory-layout
 ```
 
+### 字符串转换
+
+c = > c++
+
+```cpp
+string s;
+char a[10];
+s = a;
+```
+
+
+
+c++ => c
+
+```cpp
+string str("test");
+const char *s = str.c_str(); // const不能省略
+// 进一步？
+string s2 = s;
+```
+
+
+
+输出到字符串
+
+```cpp
+char buf[10];
+sprintf(buf,"test");
+cout<<buf;
+```
+

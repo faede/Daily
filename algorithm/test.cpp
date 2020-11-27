@@ -1,79 +1,183 @@
-#include <iostream>
-#include <cstdio>
-#include <vector>
-#include <cstring>
+#include<algorithm>
+#include<iostream>
+#include<cstdlib>
+#include<cstring>
+#include<cstdio>
+#define Rint register int
+#define mem(a,b) memset(a,(b),sizeof(a))
+#define Temp template<typename T>
 using namespace std;
-const int maxn = 1e4 + 5;
-vector<int> p[maxn], val[maxn];
-int dp[3][maxn], id[maxn];
-void dfs1(int x, int f)  //第一个dfs更新子树的最大跟次大和
-{
-    for(int i = 0; i < p[x].size(); i++)
-    {
-        int to = p[x][i];
-        if(to == f) continue;
-        dfs1(to, x);
-        if(dp[0][x] < dp[0][to] + val[x][i]) //这里是更新最大和，记住经过哪个儿子最大
-        {
-            dp[0][x] = dp[0][to] + val[x][i];
-            id[x] = to;
-        }
+typedef long long LL;
+Temp inline void read(T &x){
+    x=0;T w=1,ch=getchar();
+    while(!isdigit(ch)&&ch!='-')ch=getchar();
+    if(ch=='-')w=-1,ch=getchar();
+    while(isdigit(ch))x=(x<<3)+(x<<1)+(ch^'0'),ch=getchar();
+    x=x*w;
+}
+
+#define mid ((l+r)>>1)
+#define lson rt<<1,l,mid
+#define rson rt<<1|1,mid+1,r
+#define len (r-l+1)
+
+const int maxn=200000+10;
+int n,m,r,mod;
+//见题意 
+int e,beg[maxn],nex[maxn],to[maxn],w[maxn],wt[maxn];
+//链式前向星数组，w[]、wt[]初始点权数组 
+int a[maxn<<2],laz[maxn<<2];
+//线段树数组、lazy操作 
+int son[maxn],id[maxn],fa[maxn],cnt,dep[maxn],siz[maxn],top[maxn]; 
+//son[]重儿子编号,id[]新编号,fa[]父亲节点,cnt dfs_clock/dfs序,dep[]深度,siz[]子树大小,top[]当前链顶端节点 
+int res=0;
+//查询答案 
+
+inline void add(int x,int y){//链式前向星加边 
+    to[++e]=y;
+    nex[e]=beg[x];
+    beg[x]=e;
+}
+//-------------------------------------- 以下为线段树 
+inline void pushdown(int rt,int lenn){
+    laz[rt<<1]+=laz[rt];
+    laz[rt<<1|1]+=laz[rt];
+    a[rt<<1]+=laz[rt]*(lenn-(lenn>>1));
+    a[rt<<1|1]+=laz[rt]*(lenn>>1);
+    a[rt<<1]%=mod;
+    a[rt<<1|1]%=mod;
+    laz[rt]=0;
+}
+
+inline void build(int rt,int l,int r){
+    if(l==r){
+        a[rt]=wt[l];
+        if(a[rt]>mod)a[rt]%=mod;
+        return;
     }
-    for(int i = 0; i < p[x].size(); i++)
-    {
-        int to = p[x][i];
-        if(to == f) continue;
-        if(id[x] == to) continue;  //跳过这个儿子，再剩下点里面找一个最大的，就是这个点次大的
-        dp[1][x] = max(dp[1][x], dp[0][to]+val[x][i]);
+    build(lson);
+    build(rson);
+    a[rt]=(a[rt<<1]+a[rt<<1|1])%mod;
+}
+
+inline void query(int rt,int l,int r,int L,int R){
+    if(L<=l&&r<=R){res+=a[rt];res%=mod;return;}
+    else{
+        if(laz[rt])pushdown(rt,len);
+        if(L<=mid)query(lson,L,R);
+        if(R>mid)query(rson,L,R);
     }
 }
-void dfs2(int x, int f)  //这个是更新先往父亲节点走一步的最大和
-{
-    for(int i = 0; i < p[x].size(); i++)
-    {
-        int to = p[x][i];
-        if(to == f) continue;
-        if(to == id[x])  
-        // 难点，每个父亲都有两种方式，一个是再往父亲走一步，一个是走父亲的子树，max(dp[2][x], dp[1][x])，
-        // 这个就体现出这两部了，注意经不经过这个点直接走子树最大和的那个点
-        {
-            dp[2][to] = max(dp[2][x], dp[1][x]) + val[x][i];  
-            // 这个是针对儿子，所以是dp[2][to] = ，
-            // 体现了先走一步父亲，经过就走次大的，再走最大的就重复了一段
-        }
-        else
-        {
-            dp[2][to] = max(dp[2][x], dp[0][x])+val[x][i];
-        }
-        dfs2(to, x);  
-        // 因为dfs1更新了所有子树的特点，子树的信息可以直接用了，父节点的信息从一步步dfs下去都已经更新好了，
-        // 上面的也是可以直接用，每一步都看看是不是走父亲的父亲更好，一直更新最优
+
+inline void update(int rt,int l,int r,int L,int R,int k){
+    if(L<=l&&r<=R){
+        laz[rt]+=k;
+        a[rt]+=k*len;
+    }
+    else{
+        if(laz[rt])pushdown(rt,len);
+        if(L<=mid)update(lson,L,R,k);
+        if(R>mid)update(rson,L,R,k);
+        a[rt]=(a[rt<<1]+a[rt<<1|1])%mod;
     }
 }
-int main()
-{
-    int n;
-    while(~scanf("%d", &n))
-    {
-        int a, b;
-        memset(dp, 0, sizeof(dp));
-        for(int i = 1; i <= n; i++)
-        {
-            p[i].clear();
-            val[i].clear();
-        }
-        for(int i = 2; i <= n; i++)
-        {
-            scanf("%d%d", &a, &b);
-            p[i].push_back(a);
-            val[i].push_back(b);
-            p[a].push_back(i);
-            val[a].push_back(b);
-        }
-        dfs1(1, -1);
-        dfs2(1, -1);
-        for(int i = 1; i <= n; i++)
-            printf("%d\n", max(dp[0][i], dp[2][i]));
+//---------------------------------以上为线段树 
+inline int qRange(int x,int y){
+    int ans=0;
+    while(top[x]!=top[y]){//当两个点不在同一条链上 
+        if(dep[top[x]]<dep[top[y]])swap(x,y);//把x点改为所在链顶端的深度更深的那个点
+        res=0;
+        query(1,1,n,id[top[x]],id[x]);//ans加上x点到x所在链顶端 这一段区间的点权和
+        ans+=res;
+        ans%=mod;//按题意取模 
+        x=fa[top[x]];//把x跳到x所在链顶端的那个点的上面一个点
     }
-    return 0;
+    //直到两个点处于一条链上
+    if(dep[x]>dep[y])swap(x,y);//把x点深度更深的那个点
+    res=0;
+    query(1,1,n,id[x],id[y]);//这时再加上此时两个点的区间和即可
+    ans+=res;
+    return ans%mod;
+}
+
+inline void updRange(int x,int y,int k){//同上 
+    k%=mod;
+    while(top[x]!=top[y]){
+        if(dep[top[x]]<dep[top[y]])swap(x,y);
+        update(1,1,n,id[top[x]],id[x],k);
+        x=fa[top[x]];
+    }
+    if(dep[x]>dep[y])swap(x,y);
+    update(1,1,n,id[x],id[y],k);
+}
+
+inline int qSon(int x){
+    res=0;
+    query(1,1,n,id[x],id[x]+siz[x]-1);//子树区间右端点为id[x]+siz[x]-1 
+    return res;
+}
+
+inline void updSon(int x,int k){//同上 
+    update(1,1,n,id[x],id[x]+siz[x]-1,k);
+}
+
+inline void dfs1(int x,int f,int deep){//x当前节点，f父亲，deep深度 
+    dep[x]=deep;//标记每个点的深度 
+    fa[x]=f;//标记每个点的父亲 
+    siz[x]=1;//标记每个非叶子节点的子树大小 
+    int maxson=-1;//记录重儿子的儿子数 
+    for(Rint i=beg[x];i;i=nex[i]){
+        int y=to[i];
+        if(y==f)continue;//若为父亲则continue 
+        dfs1(y,x,deep+1);//dfs其儿子 
+        siz[x]+=siz[y];//把它的儿子数加到它身上 
+        if(siz[y]>maxson)son[x]=y,maxson=siz[y];//标记每个非叶子节点的重儿子编号 
+    }
+}
+
+inline void dfs2(int x,int topf){//x当前节点，topf当前链的最顶端的节点 
+    id[x]=++cnt;//标记每个点的新编号 
+    wt[cnt]=w[x];//把每个点的初始值赋到新编号上来 
+    top[x]=topf;//这个点所在链的顶端 
+    if(!son[x])return;//如果没有儿子则返回 
+    dfs2(son[x],topf);//按先处理重儿子，再处理轻儿子的顺序递归处理 
+    for(Rint i=beg[x];i;i=nex[i]){
+        int y=to[i];
+        if(y==fa[x]||y==son[x])continue;
+        dfs2(y,y);//对于每一个轻儿子都有一条从它自己开始的链 
+    }
+}
+
+int main(){
+	//freopen("/Users/zyy/Documents/GitHub/Daily/algorithm/P3384_1.in","r",stdin);
+    read(n);read(m);read(r);read(mod);
+    for(Rint i=1;i<=n;i++)read(w[i]);
+    for(Rint i=1;i<n;i++){
+        int a,b;
+        read(a);read(b);
+        add(a,b);add(b,a);
+    }
+    dfs1(r,0,1);
+    dfs2(r,r);
+    build(1,1,n);
+    while(m--){
+        int k,x,y,z;
+        read(k);
+        if(k==1){
+            read(x);read(y);read(z);
+            updRange(x,y,z);
+        }
+        else if(k==2){
+            read(x);read(y);
+            printf("%d\n",qRange(x,y));
+        }
+        else if(k==3){
+            read(x);read(y);
+            updSon(x,y);
+        }
+        else{
+            read(x);
+            printf("%d\n",qSon(x));
+        }
+    }
 }
