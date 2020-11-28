@@ -68,6 +68,8 @@ double disX(const Point & p1, const Point &p2){
 	return ans;
 }
 
+
+// O(nlog^2n)
 double Solve(vector<Point> & points, int l, int r)
 {
 	if(l >= r)
@@ -107,7 +109,7 @@ double Solve(vector<Point> & points, int l, int r)
 
 
 
-
+// O(nlogn)
 double Solve2(vector<Point>& points, int l, int r)
 {
 	if(l >=r ) 
