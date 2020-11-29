@@ -9,7 +9,7 @@ int price[maxn];
 int height[maxn];
 int cot[maxn];
 //int dp[maxn][maxn];
-int dp[205][20005];
+int dp[20005];
 
 int main(){
 	//freopen("/Users/zyy/Documents/GitHub/Daily/algorithm/in.txt","r",stdin);
@@ -23,11 +23,11 @@ int main(){
 		}
 
 		for(int i = 1; i <= m; ++i){
-			for(int j = 0;  j <= n; j++){
-				dp[i][j] = dp[i-1][j];
+			for(int j = n; j >= 0; j--){
+				//dp[j] = dp[j];
 				for(int k = 1;k <= cot[i]; ++k){
 					if(j - k*price[i] >= 0){
-						dp[i][j] = max(dp[i][j],dp[i-1][j-k*price[i]] + k*height[i]);
+						dp[j] = max(dp[j],dp[j-k*price[i]] + k*height[i]);
 					}
 					
 				}
@@ -39,6 +39,6 @@ int main(){
 		//	}
 		//	cout<<endl;
 		//}
-		cout<<dp[m][n]<<endl;
+		cout<<dp[n]<<endl;
 	}
 }
