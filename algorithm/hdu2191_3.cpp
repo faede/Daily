@@ -13,6 +13,9 @@ int n,V;
 //int dp[maxn][maxn];
 int dp[maxn];
 int val[maxn];
+// 大概要先去学单调队列才好看懂(( 曲线救国 一通百通
+
+
 /*
   j mod a[i]的值不同则之间的不存在转移关系。
   并且经过下方的推导 我们可以发现，最终的值只会
@@ -51,6 +54,8 @@ For(i, 1, n)
 	For(q,0,a[i]-1)
 		For(p,0,m/a[i])
 */
+// 这里p是和i有关的 h是枚举的
+
 
 // 这里的h 是 下方代码中p的一个集合，将代码中p枚举可以形成h
 
@@ -59,6 +64,7 @@ For(i, 1, n)
 // https://www.cnblogs.com/chinhhh/p/9011428.html
 
 // 最终看懂是在这里：https://www.bilibili.com/video/BV1Bp411f7kZ?from=search&seid=3274599871300742144
+// 才学会单调队列 ((
 
 int main(){
 	//freopen("/Users/zyy/Documents/GitHub/Daily/algorithm/in.txt","r",stdin);
