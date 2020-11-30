@@ -312,3 +312,8 @@ int main()
 }
 ```
 
+
+
+### C语言中的强符号与弱符号
+
+https://blog.csdn.net/astrotycoon/article/details/8008629
