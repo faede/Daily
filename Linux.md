@@ -135,7 +135,11 @@ rmdir
 
 查看文件类型，编码，符号链接，二进制文件需要何种库
 
+### grep
 
+```shell
+grep -r update /etc/acpi 
+```
 
 ### find
 

@@ -358,7 +358,26 @@ struct task_struct {
 
 ### thread_info
 
+为了快速获得task_struct指针。
 
+由于x86寄存器比较珍贵
+
+x86的thread_info会在栈的尾端创建，这是为了通过计算偏移量间接的寻找task_struct结构。
+
+在x86上，current把栈指针的后13个有效位品笔调，用来计算thread_info的偏移量，该操作是由current_thred_info()函数来完成的，汇编代码如下：
+
+```asm
+movl $-8192, %eax
+andl %esp, %eax
+```
+
+这里假设栈的大小为8K，当4K栈启用时就要用4096，而不是8192
+
+最后，current在从thread_info的task域中提取并返回task_struct的地址：
+
+`current_thread_info()->task;`
+
+对比PowerPC，task_struct保存在一个寄存器中，也就是说在PPC上，current宏只需要把r2寄存器的值返回就行了。和x86不同，PPC有足够的寄存器，由于访问进程描述符是一个重要的频繁操作，所以PPC的内核开发者觉得完全有必要为此使用一个专门的寄存器。
 
 ```cpp
 struct thread_info {
@@ -1139,4 +1158,149 @@ TASK_UNINTERRUPTIBLE会忽略信号，而TASK_INTERRUPTIBLE状态的进程如果
 两种状态的进程位于同一个等待队列上，等待某些事件，不能够运行。
 
 #### 1.等待队列
+
+内核用wake_queue_head_t来代表等待队列。等待队列可以通过DECLARE_WAITQUEUE()静态创建，也可以用init_waitqueue_head()动态创建。
+
+对于休眠，为了防止接口带来的竞争条件：有可能导致在判定条件变为真之后，进程却开始了休眠，那么久会使得进程无期限地休眠下去。所以在内核进行休眠的推荐操作就相对复杂：
+
+```cpp
+/* q是我们希望休眠的等待队列*/
+DEFINE_WAIT(wait);
+
+add_wait_queue(q, &wait);
+while(!condition){/* ‘condition’是我们等待的事件 */
+  prepare_to_wait(&q, &wait, TASK_INTERRUPTIBLE);
+	if(signal_pending(current))
+    schedule();
+}
+finish_wait(&q, &wait);
+```
+
+进程通过执行以下几个步骤将自己加入等待队列中：
+
+1）调用宏DEFINE_WAIT()创建一个等待队列的项。
+
+2）调用add_wait_queue()方法将自己加到队列中。该队列会在进程等待的条件满足时唤醒它，当然我们必须在其他地方撰写代码，当事件发生时，对等待队列执行weak_up()操作。
+
+3）调用prepare_to_wait()方法将进程的状态变更为TASK_INTERRUPTIBLE或者TASK_UNINTERRUPTIBLE。而且该函数如果有必要的话会将进程加回到等待队列中，这是在接下来循环遍历中需要的。
+
+4）如果状态被设置为TASK_INTERRUPTIBLE，则信号唤起进程。这就是所谓的伪唤醒（唤醒并不是因为事件的发生），因此检查并处理信号。
+
+5）当进程被唤醒的时候，它会再次检查条件是否为真。如果是，就退出循环；如果不是，就会再次调用schedule()并一直重复。
+
+6）当条件满足后，进程将自己设置为TASK_RUNNING并调用finish_wait()方法把自己移出等待队列。
+
+如果在进程进入休眠之前条件就已经达成了，那么循环会推出，进程不会存在错误地进入休眠的倾向。需要注意的是，内核代码在循环体内常常需要完成一些其他的任务，比如调用schedule前要释放掉锁门之后再重新获取它们，或者响应其他事件。
+
+
+
+ fs/notify/inotify/inotify_user.c 负责从通知文件描述符中获取信息。
+
+prepare_to_wait里面完成了加入等待队列的动作。
+
+```cpp
+/*define on /include/linux/wait.h*/
+#define DEFINE_WAIT_FUNC(name, function)				\
+	wait_queue_t name = {						\
+		.private	= current,				\
+		.func		= function,				\
+		.task_list	= LIST_HEAD_INIT((name).task_list),	\
+	}
+
+#define DEFINE_WAIT(name) DEFINE_WAIT_FUNC(name, autoremove_wake_function)
+
+
+static ssize_t inotify_read(struct file *file, char __user *buf,
+			    size_t count, loff_t *pos)
+{
+	struct fsnotify_group *group;
+	struct fsnotify_event *kevent;
+	char __user *start;
+	int ret;
+	DEFINE_WAIT(wait);
+
+	start = buf;
+	group = file->private_data;
+
+	while (1) {
+		prepare_to_wait(&group->notification_waitq, &wait, TASK_INTERRUPTIBLE);
+
+		mutex_lock(&group->notification_mutex);
+		kevent = get_one_event(group, count);
+		mutex_unlock(&group->notification_mutex);
+
+		pr_debug("%s: group=%p kevent=%p\n", __func__, group, kevent);
+
+		if (kevent) {
+			ret = PTR_ERR(kevent);
+			if (IS_ERR(kevent))
+				break;
+			ret = copy_event_to_user(group, kevent, buf);
+			fsnotify_put_event(kevent);
+			if (ret < 0)
+				break;
+			buf += ret;
+			count -= ret;
+			continue;
+		}
+
+		ret = -EAGAIN;
+		if (file->f_flags & O_NONBLOCK)
+			break;
+		ret = -EINTR;
+		if (signal_pending(current))
+			break;
+
+		if (start != buf)
+			break;
+
+		schedule();
+	}
+
+	finish_wait(&group->notification_waitq, &wait);
+	if (start != buf && ret != -EFAULT)
+		ret = buf - start;
+	return ret;
+}
+```
+
+/kernel/wait.c
+
+注意为了保证互斥，代码中使用了自旋锁（目前还不太了解）
+
+每次检查list_empty为了只在第一次创建时插入队列，避免重复插入。
+
+在自旋锁里set_current_state，就可以防止进程错误的进行休眠。
+
+```cpp
+/*
+ * Note: we use "set_current_state()" _after_ the wait-queue add,
+ * because we need a memory barrier there on SMP, so that any
+ * wake-function that tests for the wait-queue being active
+ * will be guaranteed to see waitqueue addition _or_ subsequent
+ * tests in this thread will see the wakeup having taken place.
+ *
+ * The spin_unlock() itself is semi-permeable and only protects
+ * one way (it only protects stuff inside the critical region and
+ * stops them from bleeding out - it would still allow subsequent
+ * loads to move into the critical region).
+ */
+void
+prepare_to_wait(wait_queue_head_t *q, wait_queue_t *wait, int state)
+{
+	unsigned long flags;
+
+	wait->flags &= ~WQ_FLAG_EXCLUSIVE;
+	spin_lock_irqsave(&q->lock, flags);
+	if (list_empty(&wait->task_list))
+		__add_wait_queue(q, wait);
+	set_current_state(state);
+	spin_unlock_irqrestore(&q->lock, flags);
+}
+EXPORT_SYMBOL(prepare_to_wait);
+```
+
+#### 2.唤醒
+
+唤醒操作通过weak_up()进行，会唤醒指定的等待队列上的所有进程。它调用函数try_to_weak_up()，该函数负责将进程置为TASK_RUNNING状态，调用enqueue_task()将进程放入红黑树，如果被唤醒的进程优先级比当前进程高，还要设置need_resched标志。
 
