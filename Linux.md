@@ -51,7 +51,7 @@ sudo command
 列出 sudo 的版本资讯 ： # sudo -V
 ```
 
-### 追踪程序执行过程
+### strace
 
 linux: 
 
@@ -136,6 +136,12 @@ rmdir
 查看文件类型，编码，符号链接，二进制文件需要何种库
 
 
+
+### find
+
+```shell
+find . -name "*.c"
+```
 
 ### cat test1
 

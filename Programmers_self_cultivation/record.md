@@ -412,3 +412,5 @@ strip可以去掉elf文件中的调试信息。
 strip foo
 ```
 
+
+
