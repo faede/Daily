@@ -1304,3 +1304,179 @@ EXPORT_SYMBOL(prepare_to_wait);
 
 唤醒操作通过weak_up()进行，会唤醒指定的等待队列上的所有进程。它调用函数try_to_weak_up()，该函数负责将进程置为TASK_RUNNING状态，调用enqueue_task()将进程放入红黑树，如果被唤醒的进程优先级比当前进程高，还要设置need_resched标志。
 
+### 抢占和上下文切换
+
+由kernel/sched.c context_switch函数完成，每当新的进程别选出来准备投入运行的时候，schedule函数就会调用此函数。它完成了两件基本的工作：
+
+调用声明在 asm/mmu_context.h中 switch_mm()，该函数负责把虚拟内存从上一个进程映射到新的进程。
+
+调用声明在 asm/system 中的switch_to,该函数负责从上一个进程的处理器状态更新到新的进程的处理器状态.这包括保存、恢复栈信息和寄存器信息,还有其他任何与体系结构相关的信息,都必须以每个进程为对象进行管理和保护.
+
+```cpp
+/*
+ * context_switch - switch to the new MM and the new
+ * thread's register state.
+ */
+static inline void
+context_switch(struct rq *rq, struct task_struct *prev,
+	       struct task_struct *next)
+{
+	struct mm_struct *mm, *oldmm;
+
+	prepare_task_switch(rq, prev, next);
+
+	mm = next->mm;
+	oldmm = prev->active_mm;
+	/*
+	 * For paravirt, this is coupled with an exit in switch_to to
+	 * combine the page table reload and the switch backend into
+	 * one hypercall.
+	 */
+	arch_start_context_switch(prev);
+
+	if (!mm) {
+		next->active_mm = oldmm;
+		atomic_inc(&oldmm->mm_count);
+		enter_lazy_tlb(oldmm, next);
+	} else
+		switch_mm(oldmm, mm, next);
+
+	if (!prev->mm) {
+		prev->active_mm = NULL;
+		rq->prev_mm = oldmm;
+	}
+	/*
+	 * Since the runqueue lock will be released by the next
+	 * task (which is an invalid locking op but in the case
+	 * of the scheduler it's an obvious special-case), so we
+	 * do an early lockdep release here:
+	 */
+#ifndef __ARCH_WANT_UNLOCKED_CTXSW
+	spin_release(&rq->lock.dep_map, 1, _THIS_IP_);
+#endif
+
+	/* Here we just switch the register state and the stack. */
+	switch_to(prev, next, prev);
+
+	barrier();
+	/*
+	 * this_rq must be evaluated again because prev may have moved
+	 * CPUs since it called schedule(), thus the 'rq' on its stack
+	 * frame will be invalid.
+	 */
+	finish_task_switch(this_rq(), prev);
+}
+```
+
+```cpp
+extern void switch_mm(struct mm_struct *prev, struct mm_struct *next,
+		      struct task_struct *tsk);
+```
+
+```cpp
+#define switch_to(P,N,L)						 \
+  do {									 \
+    (L) = alpha_switch_to(virt_to_phys(&task_thread_info(N)->pcb), (P)); \
+    check_mmu_context();						 \
+  } while (0)
+```
+
+内核必须要知道什么时候调用schedule(). 内核提供了一个need_resched标志来表示是哦副需要重新执行一次调度.
+
+1) 当某个进程应该被抢占时,scheduler_tick()就会设置这个标志
+
+2) 当一个优先级高的进程进入可执行状态时,try_to_wake_up()也会设置这个标志.
+
+内核检查该标志确认其被设置,调用schedule()来切换到一个新的进程. 该标志对于内核来讲是一个信息,它提示有其他进程应当被运行,要尽快进行调度.
+再返回用户空间以及从中断中返回的时候,内核也会检查need_resched标志.如果已被设置,内核会在继续执行之前调用调度程序.
+
+每个进程都包含一个nned_resched标志,这是因为访问进程描述符内的数值要比访问一个全局变量快(因为current宏速度很快,并且描述符通常都在高速缓存中).
+
+#### 用户抢占
+
+内核无论是在中断处理程序还是在系统调用后返回,都会检查need_resched标志.如果它被设置了,那么,内核会选择一个更合适的进程投入运行
+
+用户抢占在以下情况发生:
+
+* 从系统调用返回用户空间时.
+* 从中断处理程序返回用户空间时.
+
+#### 内核抢占
+
+Linux完整的支持内核抢占,只要没有锁,内核就可以进行抢占.
+
+为了支持内核抢占所做的第一出变动就是为每个进程的thread_info引入preempt_count计数器.该计数器初始化为0,每当使用锁的时候加1,释放锁的时候减1.当数值为0的时候内核就可以执行抢占.
+
+从中断中返回内核空间时,如果need_resched被设置,并且preempt_count为0的话,说明有一个更为重要的任务需要执行,并且可以安全地抢占,程序就会被调用.
+
+内核抢占发生在:
+
+* 中断处理程序正在执行,且返回内核之前
+* 内核代码再一次具有可抢占性的时候
+* 如果内核中的任务显示地睇啊用schedule()
+* 如果内核中的任务阻塞
+
+### 实时调度策略
+
+Linux下两种实时调度策略SCHED_FIFO 和 SCHED_RR, 而普通的、非实时的调度策略时SCHED_NORMAL.
+
+## 系统调用
+
+getpid()系统调用,在内核中的实现:
+
+```cpp
+SYSCALL_DEFINE0(getpid)
+{
+  return task_tgid_vnr(current);
+}
+```
+
+SYSCALL_DEFINE0是一个宏,展开后
+
+```cpp
+asmlinkage long sys_getpid(void)
+```
+
+
+
+asmlinkage, 编译指令,通知编译器仅从栈中提取该函数的参数,返回long 为了 32 位、64位兼容
+
+用户空间返回int,内核空间返回long.
+
+用户空间的getpid , 内核空间定义为sys_getpid ,加了一个sys_,这是一般规则.
+
+#### 系统调用处理程序
+
+通知内核的机制靠软中断实现:通过引发一个异常来促使系统切换到内核态执行异常处理程序.
+
+x86上预定义的软中断号128,通过int $0x80 指令出发中断,该指令会触发异常导致系统切换到内核态并执行第128号异常处理程序,而该程序正是系统调用处理程序.这个处理程序名字起的很怯贴叫做sys_call(),x86-64的entry_64.S文件中用汇编编写. x86 也新增了一条指令叫做sysenter的指令,与int中断指令相比,这条指令提供了更快更专业的陷入内核执行系统调用的方式.
+
+#### 指定恰当的系统调用
+
+中断号通过eax传给内核,system_call会将中断好与NR_syscalls做比较检查有效性.如果大于等于NR_syscalls就返回-ENOSYS,否则就执行相应的系统调用
+
+`call * sys_call_table(,%rax,8)`
+
+由于系统调用的表项是以64位存储的,所以内核需要将给定的系统调用号乘4,然后用结果在表中查询其位置,在x86-64上代码很类似,只是用4代替8.
+
+#### 参数检验
+
+参数合法、有合法权限
+
+#### 绑定一个系统调用的最后步骤
+
+1) 首先,在系统调用表的最后加入一个表项.
+
+2) 对于所有支持的各种体系结构,系统调用号都必须定义于<asm/unistd.h>中
+
+3) 系统调用必须被编译进内核映像(不能被编译成模块).这只要把它放进kernel/下的一个相关文件夹中就可以了,比如sys.c,它包含了各种各样的系统调用.
+
+## 内核数据结构
+
+
+
+
+
+## 中断和中断处理
+
+中断值

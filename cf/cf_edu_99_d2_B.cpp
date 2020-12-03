@@ -11,7 +11,7 @@
 using namespace std;
 
 int main(){
-	freopen("/Users/zyy/Documents/GitHub/Daily/algorithm/in.txt","r",stdin);
+	//freopen("/Users/zyy/Documents/GitHub/Daily/algorithm/in.txt","r",stdin);
 	ios::sync_with_stdio(0);
 	cin.tie(0);
 	cout.tie(0);
@@ -27,18 +27,13 @@ int main(){
 				break;
 			}
 		}
-		if(i*(i+1)/2 == x){
-			cout<< i <<endl;
+
+
+		if(i*(i+1)/2 -1 == x){
+			cout<< i + 1<<endl;
 			//continue;
-		}
-		else{
-			ll j = i;
-			for(; 1; j--){
-				if((i-j+1)*(j+i)/2 >= i*(i+1)/2 - x)
-					break;
-			}
-			cout<< i - (i - j + 1) <<endl;
-		}
+		}else
+			cout << i <<endl;
 		
 		//cout << ans << endl;
 	}

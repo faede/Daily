@@ -22,7 +22,7 @@ int main(){
 		if(x == y){
 			cout <<x-1<<" "<<y<<endl;
 		}else if(x > y){
-			cout<< x - y - 1 + x - 1 << " "<<y<<endl; 
+			cout<< x - 1 << " "<<y<<endl; 
 		}else{
 			cout<< x - 1 <<" "<< y<<endl;
 		}
