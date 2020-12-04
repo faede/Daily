@@ -1,104 +1,101 @@
-//  code for P5490
-//  代码没有挖坑
-#include <stdio.h>
 #include <iostream>
 #include <algorithm>
-#define lson (x << 1)
-#define rson (x << 1 | 1)
+#include <cstdio>
+#include <cmath>
+#include <cstring>
+#include <vector>
 using namespace std;
-const int MAXN = 1e6 + 10;
-typedef long long ll;
-
-int n, cnt = 0;
-ll x1, y11, x2, y2, X[MAXN << 1];
-
-struct ScanLine {
-	ll l, r, h;
-	int mark;
-//  mark用于保存权值 (1 / -1)
-	bool operator < (const ScanLine &rhs) const {
-		return h < rhs.h;
-	}
-} line[MAXN << 1];
-
-struct SegTree {
-	int l, r, sum;
-	ll len;
-//  sum: 被完全覆盖的次数；
-//  len: 区间内被截的长度。
-} tree[MAXN << 2];
-
-void build_tree(int x, int l, int r) {
-//  我觉得最不容易写错的一种建树方法
-	tree[x].l = l, tree[x].r = r;
-	tree[x].len = 0;
-	tree[x].sum = 0;
-	if(l == r)
-		return;
-	int mid = (l + r) >> 1;
-	build_tree(lson, l, mid);
-	build_tree(rson, mid + 1, r);
-	return;
+int  read(){
+    int r;
+    char c;int f=1;
+    while(!isdigit(c=getchar()))
+        if(c=='-') f=-1;
+    r=c^'0';
+    while(isdigit(c=getchar())) r=r*10+(c^'0');
+    return r*=f;
 }
-
-void pushup(int x) {
-	int l = tree[x].l, r = tree[x].r;
-	if(tree[x].sum /* 也就是说被覆盖过 */ )
-		tree[x].len = X[r + 1] - X[l];
-//      更新长度        
-	else
-		tree[x].len = tree[lson].len + tree[rson].len;
-//      合并儿子信息
+const int MAXN = 1000005, SQ = 1005;
+int st[SQ], ed[SQ], size[SQ], bel[MAXN];
+void init_block(int n) // 初始化
+{
+    int sq = sqrt(n);
+    for (int i = 1; i <= sq + 1; ++i)
+    {
+        st[i] = n / sq * (i - 1) + 1;
+        ed[i] = n / sq * i;
+    }
+    ed[sq] = n;
+    for (int i = 1; i <= sq; ++i)
+        for (int j = st[i]; j <= ed[i]; ++j)
+            bel[j] = i;
+    for (int i = 1; i <= sq; ++i)
+        size[i] = ed[i] - st[i] + 1;
 }
-
-void edit_tree(int x, ll L, ll R, int c) {
-	int l = tree[x].l, r = tree[x].r;
-//  注意，l、r和L、R的意义完全不同
-//  l、r表示这个节点管辖的下标范围
-//  而L、R则表示需要修改的真实区间
-	if(X[r + 1] <= L || R <= X[l])
-		return;
-//  这里加等号的原因：
-//  假设现在考虑 [2,5], [5,8] 两条线段，要修改 [1,5] 区间的sum
-//  很明显，虽然5在这个区间内，[5,8] 却并不是我们希望修改的线段
-//  所以总结一下，就加上了等号
-	if(L <= X[l] && X[r + 1] <= R) {
-		tree[x].sum += c;
-		pushup(x);
-		return;
-	}
-	edit_tree(lson, L, R, c);
-	edit_tree(rson, L, R, c);
-	pushup(x);
+int A[MAXN], mark[SQ];
+vector<int> v[SQ]; // 这里用vector存排序后的数组
+void update(int b) // 更新排序后的数组
+{
+    for (int i = 0; i <= size[b]; ++i)
+        v[b][i] = A[st[b] + i];
+    sort(v[b].begin(), v[b].end());
 }
-
-int main() {
-	freopen("/Users/zyy/Documents/GitHub/Daily/algorithm/in.txt","r",stdin);
-	scanf("%d", &n);
-	for(int i = 1; i <= n; i++) {
-		scanf("%lli %lli %lli %lli", &x1, &y11, &x2, &y2);
-		X[2 * i - 1] = x1, X[2 * i] = x2;
-		line[2 * i - 1] = (ScanLine) {x1, x2, y11, 1};
-		line[2 * i] = (ScanLine) {x1, x2, y2, -1};
-//      一条线段含两个端点，一个矩形的上下边都需要扫描线扫过
-	}
-	n <<= 1;
-//  直接把 n <<= 1 方便操作
-	sort(line + 1, line + n + 1);
-	sort(X + 1, X + n + 1);
-	int tot = unique(X + 1, X + n + 1) - X - 1;
-//  去重最简单的方法：使用unique！（在<algorithm>库中）
-	build_tree(1, 1, tot - 1);
-//  为什么是 tot - 1 ：
-//  因为右端点的对应关系已经被篡改了嘛…
-//  [1, tot - 1]描述的就是[X[1], X[tot]]
-	ll ans = 0;
-	for(int i = 1; i < n /* 最后一条边是不用管的 */ ; i++) {
-		edit_tree(1, line[i].l, line[i].r, line[i].mark);
-//      先把扫描线信息导入线段树
-		ans += tree[1].len * (line[i + 1].h - line[i].h);
-//      然后统计面积
-	}
-	printf("%lli", ans);
-	return 0;
+int main()
+{
+    int n = read(), m = read();
+    int sq = sqrt(n);
+    init_block(n);
+    for (int i = 1; i <= n; ++i)
+        A[i] = read();
+    for (int i = 1; i <= sq; ++i)
+        for (int j = st[i]; j <= ed[i]; ++j)
+            v[i].push_back(A[j]);
+    for (int i = 1; i <= sq; ++i)
+        sort(v[i].begin(), v[i].end());
+    while (m--)
+    {
+        char o;
+        scanf(" %c", &o);
+        int l = read(), r = read(), k = read();
+        if (o == 'M')
+        {
+            if (bel[l] == bel[r]) // 如果同属一块直接暴力
+            {
+                for (int i = l; i <= r; ++i)
+                    A[i] += k;
+                update(bel[l]);
+                continue;
+            }
+            for (int i = l; i <= ed[bel[l]]; ++i) // 对零散块暴力处理
+                A[i] += k;
+            for (int i = st[bel[r]]; i <= r; ++i)
+                A[i] += k;
+            update(bel[l]);
+            update(bel[r]);
+            for (int i = bel[l] + 1; i < bel[r]; ++i) // 打上标记
+                mark[i] += k;
+        }
+        else
+        {
+            int tot = 0;
+            if (bel[l] == bel[r])
+            {
+                for (int i = l; i <= r; ++i)
+                    if (A[i] + mark[bel[l]] >= k)
+                        tot++;
+                printf("%d\n", tot);
+                continue;
+            }
+            for (int i = l; i <= ed[bel[l]]; ++i)
+                if (A[i] + mark[bel[l]] >= k)
+                    tot++;
+            for (int i = st[bel[r]]; i <= r; ++i)
+                if (A[i] + mark[bel[r]] >= k)
+                    tot++;
+            // 二分查找k-mark[i]的位置，因为整块都加上了mark[i]其实就相当于k减去mark[i]
+            for (int i = bel[l] + 1; i < bel[r]; ++i) 
+                tot += v[i].end() - lower_bound(v[i].begin(), v[i].end(), k - mark[i]);
+            printf("%d\n", tot);
+        }
+    }
+    return 0;
 }
