@@ -1,32 +1,53 @@
-#include<cstdio>
-#include<cstring>
-#include<algorithm>
+#include <iostream>
+#include <cstdio>
+#include <algorithm>
+#include <vector>
+#include <cmath>
+#include <set>
+#include <cstring>
 using namespace std;
-int W,n;
-int w[105],v[105],g[105];
-int dp[205][20005];
-int main()
-{
-    int T;
-    scanf("%d",&T);
-    while(T--)
-    {
-        memset(dp,0,sizeof(dp));
-        scanf("%d%d",&W,&n);
-        
-        for(int i=0;i<n;i++)
-        {
-            scanf("%d%d%d",&w[i],&v[i],&g[i]);
+int a[200000+10];
+int main(){
+    freopen("/Users/zyy/Documents/GitHub/Daily/algorithm/in.txt","r",stdin);
+    int t;
+    ios::sync_with_stdio(0);
+    cin.tie(0);
+    cout.tie(0);
+    cin >> t;
+    int n,x;
+
+    while(t--){
+        long long tot = 0;
+        cin >> n;
+        int change = 0;
+        int to = 0;
+        int cha = -1;
+        int pos = 1;
+        long long res = 1e9;
+        for(int i = 0; i < n; ++i){
+            cin >> a[i];
         }
-        
-        for(int i=0;i<n;i++)
-            for(int j=0;j<=W;j++)
-            {
-                dp[i+1][j]=dp[i][j];
-                for(int k=1;k<=g[i];k++)
-                    if(j>=k*w[i])    dp[i+1][j]=max(dp[i+1][j],dp[i][j-w[i]*k]+v[i]*k);
+        for(int j = 0; j < n; j++){
+            if(j == 0){
+                to = a[1];
+                a[0] = a[1];
+                change = a[1] - a[0];
             }
-        printf("%d\n",dp[n][W]);
+            else{
+                to = a[0];
+                a[j] = a[j-1];
+                change = 0;
+            }
+
+            tot = abs(a[0] - to);
+            for(int i = 1 ; i < n; ++i){ 
+                tot += abs(a[i] + change - to); 
+                change += a[i-1] - a[i] ;
+            
+            }  
+            res = min(res,tot); 
+        }
+        cout << res<<endl;;
+        
     }
-    return 0;
 }
