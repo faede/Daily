@@ -328,7 +328,7 @@ scanf读入数字 将0开头解析为8进制,0x开头16进制
 
 并且似乎将指针索引隐式转换成正数并不能带来什么好处, 访问一个很大的索引未必比访问一个绝对值小的负数来的更加安全(虽然可能都是危险行为)
 
-### 探索C++析构函数(部分存疑)
+### 探索C++析构函数
 
 深度探索c++对象模型:
 
@@ -361,15 +361,185 @@ class A{
 
 在函数体中我们可以显示的调用析构函数,但是显示调用析构函数并不会释放对象的空间,(其实我们不应该显示调用析构函数). (当然vs下可能不同 合情(一贯风格)推理vs做了骚操作)
 
-并且虽然我们可以通过添加`{}`来改变对象的作用域,但是离开`{}`的作用域的时候不会调用析构函数,当然这也很好理解,不然假设我们在析构函数中要处理一些东西,那结果应该非常反人类.
+并且我们可以通过添加`{}`来改变对象的作用域,并且离开`{}`的作用域的时候会调用析构函数,并且如果离开的是我们定义的函数那么对象会被销毁.其他对象main函数前
 
 
 
-对于析构函数来说真正的对象销毁工作应该在对象离开对象的作用域之后,但是最终调用的对象析构函数应该是发生在main函数返回(return )前的,所以我推测编译器在最后为代码添加了析构函数的调用,
+总的来说编译器会在对象离开作用域前添加对析构函数的调用.
+
+进一步举证如下:
+
+
+
+曾经想法:
+
+```
+对于析构函数来说真正的对象销毁工作应该在对象离开对象的作用域时,但是最终调用的对象析构函数应该是发生在main函数返回(return )前的,所以我推测编译器在最后为代码添加了析构函数的调用,
 
 当然也有可能最终函数的执行会交由外部函数处理,但我觉得并不合理,内外部函数存放的位置不同,如果没有其它未知操作的话,外部执行最后的析构函数会导致相同的代码在不同的段存放两次,这感觉并不是很合理,除非两段会共用,不过具体情况也就不得而知了.
 
 综上所述,就目前来讲,对象的析构函数还是不要显示调用来的好(当然除了数组需要delete的情况).
+```
+
+实践:
+
+确实是编译器添加了析构函数的调用
+
+我用了在线汇编
+
+```cpp
+#include<iostream>
+using namespace std;
+class A{
+int a;
+int b;
+public:
+	~A(){
+	}
+};
+int main(){
+	A a;
+}
+
+```
 
 
+
+```
+A::~A() [base object destructor]:
+        push    rbp
+        mov     rbp, rsp
+        mov     QWORD PTR [rbp-8], rdi
+        nop
+        pop     
+        ret
+main:
+        push    rbp
+        mov     rbp, rsp
+        sub     rsp, 16
+        lea     rax, [rbp-8]
+        mov     rdi, rax
+        call    A::~A() [complete object destructor]
+        mov     eax, 0
+        leave
+        ret
+__static_initialization_and_destruction_0(int, int):
+        push    rbp
+        mov     rbp, rsp
+        sub     rsp, 16
+        mov     DWORD PTR [rbp-4], edi
+        mov     DWORD PTR [rbp-8], esi
+        cmp     DWORD PTR [rbp-4], 1
+        jne     .L6
+        cmp     DWORD PTR [rbp-8], 65535
+        jne     .L6
+        mov     edi, OFFSET FLAT:_ZStL8__ioinit
+        call    std::ios_base::Init::Init() [complete object constructor]
+        mov     edx, OFFSET FLAT:__dso_handle
+        mov     esi, OFFSET FLAT:_ZStL8__ioinit
+        mov     edi, OFFSET FLAT:_ZNSt8ios_base4InitD1Ev
+        call    __cxa_atexit
+.L6:
+        nop
+        leave
+        ret
+_GLOBAL__sub_I_main:
+        push    rbp
+        mov     rbp, rsp
+        mov     esi, 65535
+        mov     edi, 1
+        call    __static_initialization_and_destruction_0(int, int)
+        pop     rbp
+        ret
+```
+
+clang(只截取一部分):
+
+```assembly
+_main:                                  ## @main
+	.cfi_startproc
+## %bb.0:
+	pushq	%rbp
+	.cfi_def_cfa_offset 16
+	.cfi_offset %rbp, -16
+	movq	%rsp, %rbp
+	.cfi_def_cfa_register %rbp
+	subq	$16, %rsp
+	leaq	-8(%rbp), %rdi
+	callq	__ZN1AD1Ev
+	xorl	%eax, %eax
+	addq	$16, %rsp
+	popq	%rbp
+	retq
+	.cfi_endproc
+                                        ## -- End function
+	.globl	__ZN1AD1Ev              ## -- Begin function _ZN1AD1Ev
+	.weak_def_can_be_hidden	__ZN1AD1Ev
+	.p2align	4, 0x90
+__ZN1AD1Ev:                             ## @_ZN1AD1Ev
+	.cfi_startproc
+## %bb.0:
+	pushq	%rbp
+	.cfi_def_cfa_offset 16
+	.cfi_offset %rbp, -16
+	movq	%rsp, %rbp
+	.cfi_def_cfa_register %rbp
+	subq	$16, %rsp
+	movq	%rdi, -8(%rbp)
+	movq	-8(%rbp), %rdi
+	callq	__ZN1AD2Ev
+	addq	$16, %rsp
+	popq	%rbp
+	retq
+	.cfi_endproc
+                                        ## -- End function
+	.globl	__ZN1AD2Ev              ## -- Begin function _ZN1AD2Ev
+	.weak_def_can_be_hidden	__ZN1AD2Ev
+	.p2align	4, 0x90
+```
+
+
+
+```cpp
+#include<iostream>
+using namespace std;
+class A{
+int a;
+int b;
+public:
+	~A(){
+	}
+};
+int main(){
+	A a;
+    A a2;
+    {
+        A b;
+    }
+    int c = 1;
+    c += 2;
+}
+
+```
+
+```assembly
+main:
+        push    rbp
+        mov     rbp, rsp
+        sub     rsp, 32
+        lea     rax, [rbp-28]
+        mov     rdi, rax
+        call    A::~A() [complete object destructor]
+        mov     DWORD PTR [rbp-4], 1
+        add     DWORD PTR [rbp-4], 2
+        lea     rax, [rbp-20]
+        mov     rdi, rax
+        call    A::~A() [complete object destructor]
+        lea     rax, [rbp-12]
+        mov     rdi, rax
+        call    A::~A() [complete object destructor]
+        mov     eax, 0
+        leave
+        ret
+```
 
