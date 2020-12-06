@@ -1479,4 +1479,268 @@ x86上预定义的软中断号128,通过int $0x80 指令出发中断,该指令�
 
 ## 中断和中断处理
 
-中断值
+中断值通常被称为中断请求(IRQ)线.
+
+异常:
+
+与中断不同,它产生时必须考虑与处理器时钟同步.实际上,异常也常常称为同步中断.
+
+### 中断处理程序
+
+响应一个特定中断的时候,内核会执行一个函数,该函数叫做中断处理程序(interrupt handler)或者中断服务例程(interrupt service routine, ISR)
+
+中断处理程序与其他的内核函数区别在于,中断处理程序是被内核调用来响应中断的,而它们运行于我们称之为中断上下文的特殊上下文中.
+
+### 上半部和下半部
+
+中断处理程序是上半部,接到一个中断,它就立即开始执行,但只做有严格时限的工作.(例如 对接收中断进行应答或复位硬件)
+
+能够被允许稍后完成的任务会推迟到下半部分.
+
+#### 注册中断处理程序
+
+```cpp
+static inline int __must_check
+request_irq(unsigned int irq, irq_handler_t handler, unsigned long flags,
+	    const char *name, void *dev)
+{
+	return request_threaded_irq(irq, handler, NULL, flags, name, dev);
+}
+```
+
+irq:要分配的中断号.
+
+handler:指针,指向实际中断处理程序,只要操作系统接到中断,该函数就会被调用.
+
+```cpp
+typedef irqreturn_t (*irq_handler_t) (int,void *);
+```
+
+#### 中断处理程序标志
+
+flags 为0或者:
+
+* IRQF_DISABLED 内核处理中断处理程序期间禁止所有其他中断
+* IRQF_SAMPLE_RANDOM 此标志表明这个设备产生的中断对内核熵池有贡献.内核熵池负责提供从各种随机事件导出真正的随机数.
+
+* IRQF_TIMER  特别为系统定时器的中断处理准备
+* IRQF_SHARED 表明多个中断处理程序之间共享中断线.在同一个给定线上注册的每个处理程序必须指定这个标志,否则,在每条线上只能有一个处理程序,
+
+name: 中断相关的设备的ASCII文本表示
+
+dev:用于共享中断线.当一个中断处理程序需要被释放时,dev将提供唯一的标示信息(cookie),以便从共享中断线的诸多中断处理程序中删除指定的一个.
+
+#### 释放中断处理程序
+
+卸载驱动程序时要注销相应的中断处理程序,并释放中断线(可能需要dev).
+
+#### 共享的中断处理程序
+
+* request_flags() :flags 设置IRQF_SHARED
+* dev唯一
+* 中断处理程序必须能够区分它的设备是否真的产生了中断.要硬件支持也要中断处理程序中有相关的处理逻辑
+
+内核接到一个中断后,将依次调用在该中断线上注册的每一个处理程序,如果与它相关的设备没有产生中断,那么中断处理程序应该立即退出.
+
+### 中断上下文
+
+开始时和被中断程序的内核栈,内核栈的大小时两页,具体的说32位8KB,64位16KB
+
+2.6早期增加了选项把栈的大小从两页缩减到一页,中断处理程序拥有自己的栈,每个处理器一个,大小为一页.
+
+### 中断处理机制的实现
+
+依赖体系结构.
+
+
+
+设备产生中断,通过总线把电信号发送给中断控制器.如果中断线是激活的(它们是允许被屏蔽的),那么中断控制器就会把中断发往处理器.在大多数体系结构中,这个工作就是通过电信号给处理器的特定管脚发送一个信号,除非在处理器上禁止该中断,否则,处理器会立即停止它正在做的事,关闭中断系统,然后跳到内存中与定义的位置开始执行那里的代码.这个预定义的位置是由内核设置的,是中断处理程序的入口点,
+
+硬件 ===产生一个中断 ==>中断控制器  ===>处理器   ===> do_IRQ()
+
+​				
+
+​	      ======》是 ====> handle_IRQ_event() ==>  在该线上运行所有中断处理程序 ==> ret_from_intr()
+
+===>该线上是否有中断处理程序                                  										  ( ==> ret_from_intr()) ==>  返回内核中运行中断的代码
+
+​	      ======》否  ==> ret_from_intr() 
+
+/kernel/irq/handle.c
+
+```cpp
+irqreturn_t
+handle_irq_event_percpu(struct irq_desc *desc, struct irqaction *action)
+{
+	irqreturn_t retval = IRQ_NONE;
+	unsigned int random = 0, irq = desc->irq_data.irq;
+
+	do {
+		irqreturn_t res;
+
+		trace_irq_handler_entry(irq, action);
+		res = action->handler(irq, action->dev_id);
+		trace_irq_handler_exit(irq, action, res);
+
+		if (WARN_ONCE(!irqs_disabled(),"irq %u handler %pF enabled interrupts\n",
+			      irq, action->handler))
+			local_irq_disable();
+
+		switch (res) {
+		case IRQ_WAKE_THREAD:
+			/*
+			 * Set result to handled so the spurious check
+			 * does not trigger.
+			 */
+			res = IRQ_HANDLED;
+
+			/*
+			 * Catch drivers which return WAKE_THREAD but
+			 * did not set up a thread function
+			 */
+			if (unlikely(!action->thread_fn)) {
+				warn_no_thread(irq, action);
+				break;
+			}
+
+			irq_wake_thread(desc, action);
+
+			/* Fall through to add to randomness */
+		case IRQ_HANDLED:
+			random |= action->flags;
+			break;
+
+		default:
+			break;
+		}
+
+		retval |= res;
+		action = action->next;
+	} while (action);
+
+	if (random & IRQF_SAMPLE_RANDOM)
+		add_interrupt_randomness(irq);
+
+	if (!noirqdebug)
+		note_interrupt(irq, desc, retval);
+	return retval;
+}
+```
+
+arch/x86/kernel/entry_64.S
+
+arch/x86/kernel/irq.c
+
+### /proc/interrupts
+
+procfs只存在于内核的虚拟文件系统
+
+### 中断控制
+
+#### 禁用和激活中断
+
+用于禁止当前处理器上的本地中断,之后又激活它们的语句
+
+```cpp
+local_irq_disable();
+/* 禁止中断 */
+local_irq_denable();
+```
+
+X86: local_irq_disable() => cli              local_irq_denable() => still
+
+上述方法在嵌套时可能不安全,因此最好在禁用中断前保存中断系统的状态
+
+```cpp
+unsigned long flags;
+
+local_irq_save(flags);
+/*  ...  */
+local_irq_restore(flags);
+```
+
+ 
+
+不再使用全局的cli()
+
+
+
+## 下半部和推后执行的工作
+
+#### 起源
+
+BH,2.5已经被放弃
+
+#### 任务队列
+
+2.5已经被工作队列替代,2.5引入工作队列
+
+#### 软中断和tasklet
+
+2.3开始引入
+
+软中断:是一组静态定义的下半部接口,有32个,可以在所有处理器上同时执行,即使类型相同也可以.
+
+tasklet:基于软中断实现的灵活性强、动态创建的下半部实现机制,同类型的不能同时执行.
+
+
+
+内核定时器:
+
+推后特定事件执行.
+
+### 软中断
+
+软中断使用较少,tasklet使用更多,但是是由软中断实现的.
+
+#### 软中断的实现
+
+/include/linux/interrupt.h
+
+```cpp
+struct softirq_action
+{
+	void	(*action)(struct softirq_action *);
+};
+```
+
+32个该结构体的数组
+
+/kernel/softirq.c
+
+```cpp
+static struct softirq_action softirq_vec[NR_SOFTIRQS] __cacheline_aligned_in_smp;
+```
+
+* 1. 软中断处理程序
+
+```cpp
+void softirq_handler (struct softirq_action *)
+  
+my_softirq->action(my_softirq);
+```
+
+将整个结构体都传过去,可以保证将来在结构体中加入新的域时,无须对所有的软中断处理程序都进行变动.
+
+* 2.执行软中断
+
+一个注册的软中断必须在被标记后才会执行,这被称作触发软中断.
+
+下列时候,待处理的软中断会被检查和执行
+
+1.从一个硬件中断代码处返回时
+
+2.在ksoftirqd内核线程中
+
+3.在哪些显示检查和执行待处理的软中断的代码中,如网络子系统
+
+#### 使用软中断
+
+1.分配索引
+
+2.注册你的处理程序
+
+3.触发软中断
+
+### tasklet
+
