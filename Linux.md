@@ -165,6 +165,14 @@ find . -name "*.c"
 
 
 
+### 忘记加sudo
+
+```shell
+:w !sudo tee %
+```
+
+
+
 ### more
 
 显示一页之后就停下来
