@@ -543,3 +543,30 @@ main:
         ret
 ```
 
+### 函数指针
+
+```cpp
+#include <iostream>
+using namespace std;
+void foo(){
+    std::cout << 2 << endl;
+}
+int add(int a,int b){
+    return a+b;
+};
+int main(){
+    int c;
+    void (* p1) () = foo;
+    typedef void (*fp)();
+    fp p2 = foo;
+    p1();
+    int (*a1)(int,int) = add;
+    c = a1(1,3);
+    std::cout << c <<endl;
+    typedef int(*af) (int,int) ;
+    af a2 = add;
+    c = a2(5,6);
+    std::cout << c <<endl;
+}
+```
+
