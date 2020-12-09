@@ -1744,13 +1744,221 @@ my_softirq->action(my_softirq);
 
 ### tasklet
 
+#### tasklet的实现
+
+1.tasklet结构体
+
+```cpp
+struct tasklet_struct
+{
+	struct tasklet_struct *next;
+	unsigned long state;
+	atomic_t count;
+	void (*func)(unsigned long);
+	unsigned long data;
+};
+```
+
+state: 0 、 TASK_STATE_SCHED 、 TASKLET_STATE_RUN
+
+TASK_STATE_SCHED : 表明已被调度,正在准备投入运行
+
+TASKLET_STATE_RUN: 表明正在运行(给多处理器用的)
+
+2.调度tasklet
+
+已调度的tasklet(等同于被触发的软中断)存放在两个单处理器结构:tasklet_vec、task_hi_vec (高优先级的tasklet_vec) ,两个链表
+
+#### 使用tasklet
+
+1.声明
+
+2.编写处理程序
+
+3.调度
+
+可以用tasklet_disable() 来禁止某个指定的tasklet,如果该tasklet正在执行,它会等到它执行结束再返回,也可以调用tasklet_disable_nosync() 但是不太安全,因为你没法正确的判断tasklet是否执行完了.
+
+4.ksoftirqd
+
+为了防止频繁中断导致用户进程饥饿,
+
+方案一: 只要还有被触发并等待处理的软中断,本次执行就要负责处理,重新触发的软中断也在本次执行前返回处理,这种方案只有在系统永远处于低负载的情况下效果才比较好
+
+方案二: 选择不处理重新触发的软中断,无法好好利用闲置的系统资源
+
+在设计软中断是,开发者就意识到需要一些折中.最终在内核中实现的方案是不会立即处理重新触发的软中断. 作为改进,当大量软中断出现的时候,内核会唤醒一组内核线程来处理这些负载,这些线程在低优先级上运行(nice 值是19),这能避免它们跟其他重要的任务抢夺资源.
+
+每个处理器上都有一个则这样的线程:  ksoftirqd/n。n是处理器编号
+
+一旦线程被初始化,它就会执行类似下面的死循环
+
+```cpp
+for(;;){
+  if(!softirq_pending(cpu))
+  	schedule();
+  set_current_sate(TASK_RUNNING);
+  
+  while(softirq_pending(cpu)){
+    do_softirq(cpu);
+    if(need_resched())
+      schedule();
+  }
+  set_current_sate(TASK_INTERRUPTIBLE);
+}
+```
+
+### 工作队列
+
+工作队列是另一种将工作推后执行的形式,它和我们前面讨论的所有其他形式都不同. 工作队列可以把工作推后,交由一个内核线程去执行——这个县半部分总是会在进程上下文中执行.
+
+ 如果你需要一个可以重新调度的实体来执行你的下半部处理,你应该使用工作队列,它是唯一能在进程上下文中运行的下半部实现机制,也只有它可以睡眠.
+
+#### 实现
+
+ecents/n
+
+1,表示线程的数据结构
+
+/kernel/workqueue.c
+
+```cpp
+/*
+ * The externally visible workqueue abstraction is an array of
+ * per-CPU workqueues:
+ */
+struct workqueue_struct {
+	unsigned int		flags;		/* I: WQ_* flags */
+	union {
+		struct cpu_workqueue_struct __percpu	*pcpu;
+		struct cpu_workqueue_struct		*single;
+		unsigned long				v;
+	} cpu_wq;				/* I: cwq's */
+	struct list_head	list;		/* W: list of all workqueues */
+
+	struct mutex		flush_mutex;	/* protects wq flushing */
+	int			work_color;	/* F: current work color */
+	int			flush_color;	/* F: current flush color */
+	atomic_t		nr_cwqs_to_flush; /* flush in progress */
+	struct wq_flusher	*first_flusher;	/* F: first flusher */
+	struct list_head	flusher_queue;	/* F: flush waiters */
+	struct list_head	flusher_overflow; /* F: flush overflow list */
+
+	mayday_mask_t		mayday_mask;	/* cpus requesting rescue */
+	struct worker		*rescuer;	/* I: rescue worker */
+
+	int			saved_max_active; /* W: saved cwq max_active */
+	const char		*name;		/* I: workqueue name */
+#ifdef CONFIG_LOCKDEP
+	struct lockdep_map	lockdep_map;
+#endif
+};
+```
 
 
 
+```cpp
+/*
+ * The per-CPU workqueue.  The lower WORK_STRUCT_FLAG_BITS of
+ * work_struct->data are used for flags and thus cwqs need to be
+ * aligned at two's power of the number of flag bits.
+ */
+struct cpu_workqueue_struct {
+	struct global_cwq	*gcwq;		/* I: the associated gcwq */
+	struct workqueue_struct *wq;		/* I: the owning workqueue */
+	int			work_color;	/* L: current color */
+	int			flush_color;	/* L: flushing color */
+	int			nr_in_flight[WORK_NR_COLORS];
+						/* L: nr of in_flight works */
+	int			nr_active;	/* L: nr of active works */
+	int			max_active;	/* L: max active works */
+	struct list_head	delayed_works;	/* L: delayed works */
+};
+```
+
+### 在下半部之间加锁
+
+SMP
+
+### 禁止下半部
 
 
 
+## 内核同步介绍
 
+### 临界区和竞争条件
+
+所谓临界区就是访问和操作共享数据的代码段.
+
+如果两个执行线程有可能处于同一个临界区中同时执行,那么这就是程序包含的一个bug.如果这种情况发生了,我们就称它是竞争条件.
+
+避免并发和防止竞争条件称为同步.
+
+### 加锁
+
+
+
+### 造成并发的原因
+
+1. 中断
+2. 软中断和tasklet
+3. 内核抢占
+4. 睡眠及用户空间的同步
+5. 对称多处理器
+
+在中断处理程序中能避免并发访问安全代码称作中断安全代码,在对称多处理器的机器中能避免并发访问的安全代码称为SMP安全代码,在内核抢占时能避免并发访问的安全代码称为抢占安全代码.
+
+
+
+### 了解要保护什么
+
+要给数据而不是代码加锁
+
+### 死锁
+
+所有线程都在互相等待,但它们永远不会释放已经占有的资源.于是任何线程都无法继续,这便以为是这死锁的发生
+
+四路公交车堵塞问题.
+
+自死锁:如果一个执行线程试图去获得一个自己已经持有的锁,它将不得不等待锁被释放,但因为它正忙着等待这个锁,所以自己永远也不会有机会释放锁,最终就是死锁.
+
+ABBA锁:
+
+线程1:                         线程2:
+
+获得锁A						获得锁B
+
+试图获得锁B 			试图获得锁A
+
+等待锁B					等待锁A
+
+推荐:
+
+按顺序加锁
+
+防止发生饥饿
+
+不要重复请求同一个锁
+
+设计应力求简单
+
+### 争用和扩展性
+
+锁的争用,或简称争用. 是指当锁正在被占用时,有其他线程试图获得锁.说一个锁处于高度争用状态,就是指有多个其他线程在等待获得该锁.
+
+扩展性是对系统可扩展程度的一个量度.
+
+
+
+## 内核同步方法
+
+### 原子操作
+
+
+
+### 自旋锁
+
+自旋锁最多能被一个可执行线程持有. 如果一个执行线程试图获得一个已经被持有的自旋锁,那么该线程会一致进行忙循环——旋转——等待锁重新可用.要是锁未被争用,请求锁的执行线程便能立即得到它,继续执行. 在任意时间,自旋锁都可以防止多于一个的执行线程同时进入临界区.同一个锁可以用在多个位置.
 
 
 
