@@ -103,9 +103,29 @@ rm -i fall
 
 -f强制删除
 
+### bash快速移动到行首/行尾
 
+ctrl+a:光标移到行首。 ctrl+c:杀死当前进程。 ctrl+d:退出当前Shell。 ctrl+e:光标移到行尾。
 
 mkdir
+
+
+
+### 清空屏幕快捷键
+
+```
+ctrl + l
+```
+
+ 
+
+### 清空当前输入快捷键
+
+```
+ctrl + u
+```
+
+
 
 ### 创建目录
 
@@ -3014,6 +3034,214 @@ w替换标记会产生同样的输出，不过会将输出保存到指定文件�
 在这个例子中，感叹号被用作字符串分隔符，这样路径名就更容易阅读和理解了。
 
 ### 使用地址
+
+默认情况下，在sed编辑器中使用的命令会作用于文本数据的所有行。如果只想将命令作用
+
+于特定行或某些行，则必须用行寻址（line addressing）。
+
+在sed编辑器中有两种形式的行寻址：
+
+以数字形式表示行区间
+
+用文本模式来过滤出行
+
+`[address]command`
+
+```shell
+address {
+command1
+command2
+command3
+}
+```
+
+1. 数字方式的行寻址
+
+```shell
+sed '2s/dog/cat/' data1.txt
+```
+
+区间:
+
+```shell
+sed '1,4s/dog/cat/' data1.txt
+```
+
+如果想将命令作用到文本中从某行开始的所有行，可以用特殊地址——美元符。
+
+```shell
+sed '2,$s/dog/cat/' data1.txt
+```
+
+2. 使用文本模式过滤器
+
+`/pattern/command`
+
+```shell
+sed '/Samantha/s/bash/csh/' /etc/passwd
+```
+
+3. 命令组合
+
+```shell
+$ sed '2{
+> s/fox/elephant/
+> s/dog/cat/
+> }' data1.txt
+The quick brown fox jumps over the lazy dog.
+The quick brown elephant jumps over the lazy cat.
+The quick brown fox jumps over the lazy dog.
+The quick brown fox jumps over the lazy dog.
+```
+
+
+
+### 删除行
+
+`sed '3,$d' data6.txt`
+
+`sed '/number 1/d' data6.txt`
+
+```
+记住，sed编辑器不会修改原始文件。你删除的行只是从sed编辑器的输出中消失了。原始
+文件仍然包含那些“删掉的”行。
+```
+
+也可以使用两个**文本模式**来删除某个区间内的行，但这么做时要小心。你指定的第一个模式会“打开”行删除功能，第二个模式会“关闭”行删除功能。sed编辑器会删除两个指定行之间的所有行（包括指定的行）。
+
+```shell
+sed '/1/,/3/d' data6.txt
+```
+
+
+
+```shell
+zyydeMacBook-Pro :: ~/Documents/workspace » cat data7.txt           
+This is line number 1.
+This is line number 2.
+This is line number 3.
+This is line number 4.
+This is line number 1 again.
+This is text you want to keep.
+This is the last line in the file.
+zyydeMacBook-Pro :: ~/Documents/workspace » sed '/1/,/3/d' data7.txt
+This is line number 4.
+```
+
+如果删除功能在匹配到第一个模式的时候打开了，但一直没匹配到结束模式，所以整个数据流都被删掉了。
+
+```shell
+sed '/1/,/5/d' data7.txt
+```
+
+### 插入和附加文本
+
+  插入（insert）命令（i）会在指定行前增加一个新行；
+
+ 附加（append）命令（a）会在指定行后增加一个新行
+
+这两条命令的费解之处在于它们的格式。它们不能在单个命令行上使用。你必须指定是要将行插入还是附加到另一行。格式如下：
+
+```shell
+sed '[address]command\
+new line'
+```
+
+```shell
+echo "Test Line 2" | sed 'i\Test Line 1'
+```
+
+附加“
+
+```shell
+echo "Test Line 2" | sed 'a\Test Line 1'
+```
+
+```shell
+sed '3a\
+> This is an appended line.' data6.txt
+```
+
+
+
+### 修改行
+
+修改（change）命令允许修改数据流中整行文本的内容。它跟插入和附加命令的工作机制一样，你必须在sed命令中单独指定新行。
+
+```shell
+sed '3c\
+> This is a changed line of text.' data6.txt
+```
+
+### 转换命令
+
+转换（transform）命令（y）是唯一可以处理单个字符的sed编辑器命令。转换命令格式如下。
+
+```shell
+[address]y/inchars/outchars/
+```
+
+转换命令会对inchars和outchars值进行一对一的映射。inchars中的第一个字符会被转换为outchars中的第一个字符，第二个字符会被转换成outchars中的第二个字符。这个映射过程会一直持续到处理完指定字符。如果inchars和outchars的长度不同，则sed编辑器会产生一条错误消息。
+
+```shell
+sed 'y/123/789/' data8.txt
+```
+
+```shell
+echo "This 1 is a test of 1 try." | sed 'y/123/456/'
+```
+
+
+
+## 正则表达式
+
+
+
+### 定义
+
+正则表达式是你所定义的模式模板（pattern template），Linux工具可以用它来过滤文本。Linux工具（比如sed编辑器或gawk程序）能够在处理数据时使用正则表达式对数据进行模式匹配。如果数据匹配模式，它就会被接受并进一步处理；如果数据不匹配模式，它就会被滤掉。图20-1描述了这个过程。
+
+正则表达式模式利用通配符来描述数据流中的一个或多个字符。Linux中有很多场景都可以使用通配符来描述不确定的数据
+
+通配符:
+
+```shell
+ls -al da*
+```
+
+
+
+### 正则表达式的类型
+
+正则表达式是通过正则表达式引擎（regular expression engine）实现的。正则表达式引擎是一套底层软件，负责解释正则表达式模式并使用这些模式进行文本匹配。
+
+在Linux中，有两种流行的正则表达式引擎：
+
+  POSIX基础正则表达式（basic regular expression，BRE）引擎
+
+  POSIX扩展正则表达式（extended regular expression，ERE）引擎
+
+大多数Linux工具都至少符合POSIX BRE引擎规范，能够识别该规范定义的所有模式符号。遗憾的是，有些工具（比如sed编辑器）只符合了BRE引擎规范的子集。这是出于速度方面的考虑导致的，因为sed编辑器希望能尽可能快地处理数据流中的文本。
+
+### 定义BRE 模式
+
+### 纯文本
+
+```shell
+echo "This is a test" | gawk '/test/{print $0}'
+```
+
+### 特殊字符
+
+在正则表达式模式中使用文本字符时，有些事情值得注意。在正则表达式中定义文本字符时有一些特例。有些字符在正则表达式中有特别的含义。如果要在文本模式中使用这些字符，结果会超出你的意料。
+
+正则表达式识别的特殊字符包括：
+
+```
+.*[]^${}\+?|()
+```
+
+
 
 
 
