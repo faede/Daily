@@ -1,9 +1,6 @@
-2
-3
-Computer 3 3
-English 20 1
-Math 3 2
-3
-Computer 3 3
-English 6 3
-Math 6 3
+5 3
+2 10
+3 20
+5 20
+6 30
+8 10
