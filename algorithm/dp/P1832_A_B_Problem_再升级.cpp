@@ -20,14 +20,20 @@ void init(int n){
 		}
 	}
 }
-int dp[maxn][maxn];
+long long dp[maxn];
 int main(){
 	int n;
 	cin >> n;
 	init(n);
-	for(int i = 1; i <= n; ++i){
-		for(int j = 1; j <= primes.size(); ++j){
-			dp[i]
+	int m = primes.size();
+	//for(int i : primes){
+	//	cout << i <<" ";
+	//}
+	dp[0] = 1; // 注意边界
+	for(int i = 0; i < m; ++i){
+		for(int j = primes[i]; j <= n; ++j){
+			dp[j] += dp[j - primes[i]];
 		}
 	}
+	cout << dp[n];
 }
