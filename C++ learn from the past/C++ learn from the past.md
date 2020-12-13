@@ -721,3 +721,40 @@ int *temp = new int[arrlen];
 
 这自然是因为两个数组中变量存储的位置不同
 
+### void main 与 main(void)
+
+第二个答案:
+
+`https://www.zhihu.com/question/358133724`
+
+![voidmain](./voidmain.jpg)
+
+```
+Returns:  a pointer to void if successful, or NULL if not.
+```
+
+
+
+void main似乎是一个遗留问题,
+
+在之后void main应该是个ub ,编译器不会执行类型检查,汇编正常执行
+
+有的编译器或许会添加上return 0;
+
+而对于main(void):
+
+取自:https://www.zhihu.com/question/358133724
+
+C语言是调用者清栈，所以main函数不写参数也可以，比如 main(void)，不会运行出错，只是函数里拿不到命令行参数，但是压栈的参数还是会被正确处理
+
+
+
+但如今实现:
+
+```cpp
+result = main (argc, argv, __environ MAIN_AUXVEC_PARAM); 
+exit(result);
+```
+
+ 如今应该都会补上return 0 或者直接报错了.
+

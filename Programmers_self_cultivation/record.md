@@ -588,3 +588,361 @@ int write(int filedsec,char *buffer,int size);
 * size 表示要写入的字节数,使用edx寄存器传递,字符串“Hello world!\n”,长度为13字节,所以edx=13
 
 同理,EXIT系统调用中,ebx表示退出码,EXIT系统调用号为1,即eax=1
+
+#### 使用ld链接程序
+
+  ```cpp
+ENTRY(nomain)
+  
+SECTIONS
+{
+  . = 0x08048000 + SIZEOF_HEADERS;
+  tinytext : { *(.text)   *(.data) *(.rodata) }
+  /DISCARD/ : { *(.comment) }
+}
+  ```
+
+
+
+#### ld链接脚本语法简介
+
+* 语句之间使用分号“;”作为分割符
+* 表达式与运算符
+* 注释和字符引用
+
+ENTRY(symbol) : 指定符号symbol的值为入口地址(Entry Point).
+
+ld设置入口地址优先级:
+
+1. ld命令行的-e选项
+2. ENTRY(symbol) 
+3. 如果定义了符号_start 符号,使用_start符号值
+4. 如果存在.text段,使用.text段的第一字节的地址
+5. 使用值0
+
+STARTUP(filename) : 将文件filename作为链接过程中的第一个输入文件.
+
+SEARCH_DIR(path) : 将path加入到ld链接器的库查找目录.
+
+INPUT(file, file,....)
+
+INPUT(file  file ....) 将指定文件作为链接过程中的输入文件
+
+INCLUDE filename 将指定文件包含进链接脚本
+
+PROVIDE(symbol) 在链接脚本中定义某个符号.
+
+SETIONS
+
+{
+
+​	...
+
+​	secname :   { contents }
+
+​	...
+
+}
+
+secname后面必须有一个空格 ,防止歧义
+
+contents: filename(sections)
+
+### BFD库
+
+希望通过一种统一的接口来处理不同的目标文件格式.
+
+## Windows PE/COFF
+
+### Windows的二进制文件格式PE/COFF
+
+PE(Protable Executable)
+
+COFF(Common Object File Format)
+
+### 可执行文件的装载与进程
+
+### 进程虚拟地址空间
+
+
+
+### 装载的方式
+
+因为无法将所有需要的东西都装入内存:
+
+#### 覆盖装入
+
+把发掘内存潜力的任务交给了程序员,程序员在编写程序时必须手工将程序分成若干块,然后编写一个小的辅助代码来管理这些模块合适应该驻留内存而何时应该被替换掉,这个的辅助代码就是所谓的覆盖管理器.
+
+程序员需要手工将模块按照它们之间的调用依赖关系组织成树状结构.
+
+需要保证:
+
+* 树状结构中从任何一个模块到树的根模块都叫调用路径,当模块被调用时,整个调用路径上的模块必须都在内存中.
+* 禁止跨树间调用.
+
+#### 页映射
+
+将代码按页存起来,需要时掉入,不足空间时掉出
+
+### 从操作系统角度看可执行文件的装载
+
+#### 进程的建立
+
+首先创建虚拟地址空间
+
+读取可执行文件头,并且建立虚拟空间与可执行文件的映射关系
+
+将CPU指令寄存器设置成可执行文件入口,启动运行
+
+#### 页错误
+
+
+
+### 进程虚拟空间分布
+
+#### ELF文件链接视图和执行视图
+
+由于需要按页存储,又想要节省空间
+
+ELF,文件中断的权限只有为数不多的几种组合,基本是:
+
+* 以代码段为代表的权限为可读可执行的段
+* 以数据段和BSS段为代表的权限为可读可写的段
+* 以只读数据段为代表的权限为只读的段
+
+对于相同权限的段,把他们合并到一起当作一个段进行映射.
+
+ELF可执行文件中引入了一个概念叫做”Segment“,一个”Segment“包含一个或多个属性类似的”Section“.
+
+”Segment“和”Section“是从不同角度来划分同一个ELF文件,这个在ELF中被称为不同视图,从”Section“的角度来看ELF文件就是链接视图,从”Segment‘角度来看就是执行视图.
+
+对于“LOAD”类型的“Segment”来说,当分配的空间大于实际空间时,那些额外的部分就是BSS,因为BSS段和数据段唯一的区别就是:数据段从文件中初始化内容,而BSS段的内容全部初始化为0.
+
+
+
+#### 堆和栈
+
+文件所做设备号和次设备号饥文件节点号都是0,则表示它们没有映射到文件中,这种VMA叫做匿名虚拟存储区域,堆和栈就是.
+
+还有一个匿名虚拟存储区域,vdso内核模块,用来和内核进行一些通信.
+
+VMA:
+
+* 代码VMA,权限只读、可执行;有映像文件
+* 数据VMA,权限可读写、可执行;有映像文件
+* 堆VMA, 权限可读写、可执行; 无映像文件,匿名,可向上拓展
+* 栈VMA, 权限可读写、不可执行; 无映像文件,匿名,可向下拓展
+
+“HACK” : VMA与“Segment”并非完全对应,Linux规定一个VMA可以映射到某个文件的一个区域或者是没有映射到任何文件;而“Segment”要求是,前面的部分映射到文件中,而后面一部分不映射到任何文件,直接为0.
+
+#### 堆的最大申请数量
+
+
+
+#### 段地址对齐
+
+
+
+### Linux内核装载ELF过程简介
+
+在用户层面,bash进程会调用fork()系统调用创建一个新的进程,然后新的今晨调用execve() ->sys_execve() -> do_execve() -> seach_binary_handle ,
+
+如果是elf文件 -> load_elf_binary()  / a.out可执行文件: ->load_aout_binary
+
+### Windows PE的装载
+
+RVA:相对虚地址.
+
+
+
+
+
+## 运行库
+
+### 入口函数和程序初始化
+
+#### 程序从main开始吗
+
+在main函数前准备环境
+
+* 操作系统在创建进程后,把控制权交到了程序的入口,这个入口往往是运行库中的某个入口函数
+* 入口函数对运行库和程序运行环境进行初始化,包括堆、I/O、线程、全局变量构造等等
+* 入口函数在完成初始化之后,调用main函数,正式开始执行程序主体部分.
+* main函数执行完成初始化之后,调用main函数,正式开始执行程序主体部分
+* main函数执行完毕后.返回到入口函数,入口函数进行清理工作,包括全局变量析构、堆销毁、关闭I/O等,然后进行系统调用结束进程.
+
+#### 入口函数如何实现
+
+##### GLIBC入口函数
+
+静态glibc:
+
+I386 精简后:
+
+```assembly
+libc\sysdeps\i386\elf\Start.S
+_start:
+	xorl %ebp, %ebp
+	popl %esi
+	movl %esp, %ecx
+	
+	pushl %esp
+	pushl %edx
+	pushl $__libc_csu_fini
+	pushl $__libc_csu_init
+	pushl %ecx
+	pushl %esi
+	pushl main
+	call __libc_start_main
+	
+	hlt
+```
+
+popl %esi将argc存入了%esi , 而movl %esp, %ecx 将栈顶地址(此时就是argv 和 环境变量(env)数组的起始地址)传给%ecx. 
+
+综上_start可以被改写成:
+
+```cpp
+void _start()
+{
+  %ebp = 0;
+  int argc = pop from stack
+  char ** argv = top from stack
+  __libc_start_main(main,argc,argv,__libc_csu_init,__libc_csu_fini,edx,top of stack);
+}
+```
+
+其中argv除了指向参数表外,还隐含着接着环境变量表,这个环境变量表要在__libc_start_main里从argv中提取出来.
+
+
+
+实际执行代码的函数是__libc_start_main由于代码很长,我们一段段看:
+
+_start - >__libc_start_main:
+
+```cpp
+int __libc_start_main(
+	int (*main)(int argc, char **, char **),
+  int argc,
+  char * __unbounded * __unbounded ubp_av,
+  __typeof (main) init,
+  void (*fini) (void),
+  void (*rtld_fini) (void),
+  void * __unbounded stack_end )
+{
+#if __BOUNDED_POINTERS
+  char ** argv;
+#else
+# define argv ubo_av
+#endif
+  int result;
+
+```
+
+ubp_av 是argc和argv并且包含环境变量表
+
+* init : main调用前的初始化工作
+
+* fini: main结束后的收尾工作
+
+* rtld_fini: 和动态加载有关的收尾工作,rtld是runtime loader的缩写.
+
+  最后的stack_end标明了栈底的地址,即最高的栈地址.
+
+gcc 支持 bounded类型的指针,普通指针 unbounded , 这种指针占用3个指针空间,在第一个可空间里存储原指针的值, 第二个空间里存储下限值,第三个空间里存储上限值. `__ptrvalue , __ptrlow,__ptrhigh`分别返回这3个值,有这3个值,内存越界便很容易查出来了,但是在2003年被关闭了.
+
+
+
+接下里:
+
+```cpp
+char ** ubp_ev = &ubp_av[argc + 1];
+INIT_ARGV_and_ENVIRON;
+__libc_stack_end = stack_end;
+```
+
+INIT_ARGV_and_ENVIRON展开后:
+
+```cpp
+char ** ubp_ev = &ubp_av[argc + 1];
+__environ = ubp_ev;
+__libc_stack_end = stack_end;
+```
+
+分两步赋值给__environ的原因是为了兼容bounded
+
+
+
+接下来有另一个宏:
+
+```asm
+DL_SYSDEP_OSCHECK (__libc_fatal);
+```
+
+这是用来检查操作系统的版本.
+
+
+
+接下来的代码比较复杂,过滤掉大量信息后,一些关键函数调用:
+
+```cpp
+__pthread_initialize_minimal();
+__cxa_atexit(rtld_fini, NULL, NULL);
+__libc_init_first (argc, argv, __environ);
+__cxa_atexit(fini, NULL, __environ);
+(*init)(argc,argv,__environ);
+```
+
+__cxa_atexit是glic的内部函数,等同于atexit,用于将参数指定的函数在main结束之后调用. 所以参数传入的fini
+
+和rtld_fini均是main结束之后调用. 在__libc_start_main的末尾,关键的是这两行代码:
+
+```cpp
+result = main(argc, argv, __environ);
+exit(result);
+}
+```
+
+咋最后,main函数终于被调用,并推出.我们来看看exit的实现:
+
+_start -> __libc_start_main - > exit:
+
+ ```cpp
+void exit (int status)
+{
+  while(__exit_funcs != NULL)
+  {
+    ...
+      __exit_funcs = __exit_funcs->next;
+  }
+  ...
+    _exit(status);
+}
+ ```
+
+其中__exit_funcs是存储由 `__cxa_atexit`和atexit注册的函数链表,这里的这个whiel循环则便利该链表并逐个调用这些注册的函数,由于其中琐碎的代码过多,这里就不具体列出了.
+
+最后的_exit由汇编函数实现,且与平台有关,下面列出i386的实现
+
+_start -> __libc_start_main -> exit -> _exit:
+
+```asm
+_exit:
+	movl 4(%esp), %eax
+	movl $__NR_exit, %eax
+	int $0x80
+	
+	hlt
+```
+
+可见`_exit`的作用仅仅是调用了exit这个系统调用. 也就是说,`_exit` 之后, 程序就会直接结束.程序正常退出有两种情况,一种是main函数的正常返回,一种是程序中用exit退出. 在libc_start_main中我们可以看到,即使main返回了,exit也会被调用, exit是进程正常退出的必经之路,因此把调用用atexit注册的函数的任务交给exit来完成可以说万无一失.
+
+(在程序中执行exit(0)就不会执行exit(reslut)了, 但是程序最后都是执行exit函数)
+
+
+
+我们看到`_exit` 和`_start`的末尾都有一个hlt指令,这是用做什么? 在Linux里,进程必须使用eixt系统调用结束. 一旦exit被调用,程序的运行就会终止,因此实际上`_exit` 末尾的hlt不会执行,从而 `__libc_start_main`永远不会返回, 以至 `_start` 末尾的hlt指令也不会执行.`_exit` 里的hlt指令是为了检测exit系统调用是否成功.如果失败,程序就不会终止,hlt指令就可以发挥作用强行把程序给停下来, 而`_start` 里的hlt的用处也是如此, 此处是为里预防某种没有调用exit,就会到_start 的情况.
+
+
+
