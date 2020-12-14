@@ -7,7 +7,6 @@ using namespace std;
 const int maxn = 100 + 10;
 int a[maxn];
 int n;
-int dp[maxn]; // dp 以i 为中心
 int dp1[maxn]; 
 int dp2[maxn];
 // 这题要是用nlogn的LIS 会多个log
