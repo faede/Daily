@@ -1,6 +1,6 @@
 #include <cstring>
 #include <iostream>
-#include<cstdio>
+#include <cstdio>
 #include <algorithm>
 #include <stack>
 using namespace std;
@@ -64,8 +64,7 @@ P>=K，所以K=P。
             dp[++len1] = a[i];
         }
         else{
-            int h = upper_bound(dp+1,dp+1+len1,a[i],cmp) - dp;
-            dp[h]=a[i];
+            *upper_bound(dp+1,dp+1+len1,a[i],cmp) = a[i];
         }
     }
 
@@ -76,8 +75,7 @@ P>=K，所以K=P。
             dp[++len2] = a[i];
         }
         else{
-            int h = lower_bound(dp+1,dp+1+len2,a[i]) - dp;
-            dp[h]=a[i];
+            *lower_bound(dp+1,dp+1+len2,a[i]) = a[i];
         }
     }
     cout<<len1<<endl;
