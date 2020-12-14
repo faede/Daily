@@ -18,6 +18,7 @@ int main(int argc, char const *argv[])
     for(int i = 1; i <= n; ++i){
         scanf("%d", & a[i].l);
     }
+    // 这里可以不用存两个端点的 只存左端点也可以 就是要处理一下边界
     for(int i = 1; i <= n; ++i){
         a[i].r = a[i+1].l;
     }
