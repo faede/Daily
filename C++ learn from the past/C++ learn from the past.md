@@ -758,3 +758,128 @@ exit(result);
 
  如今应该都会补上return 0 或者直接报错了.
 
+### NULL and nullptr
+
+```cpp
+#if defined(__need_NULL)
+#undef NULL
+#ifdef __cplusplus
+#  if !defined(__MINGW32__) && !defined(_MSC_VER)
+#    define NULL __null
+#  else
+#    define NULL 0
+#  endif
+#else
+#  define NULL ((void*)0)
+#endif
+#ifdef __cplusplus
+#if defined(_MSC_EXTENSIONS) && defined(_NATIVE_NULLPTR_SUPPORTED)
+namespace std { typedef decltype(nullptr) nullptr_t; }
+using ::std::nullptr_t;
+#endif
+#endif
+#undef __need_NULL
+#endif /* defined(__need_NULL) */
+```
+
+Test code:
+
+clang :
+
+注意下面的 NULL 其实被上方define成了 __null，在MINGW和MSC中其实被定义成了0，在后两者中是不会造成歧义的，但是前面不行。
+
+```cpp
+#include<iostream>
+#include<set>
+#include <cstring>
+using namespace std;
+void func(int * a){
+    cout << "test 1 :" << endl;
+}
+void func(int a){
+    cout << "test 2 : " << endl;
+}
+int main(){
+    func(nullptr); // "test 1 :"
+    func(0);    // "test 2 : "
+    //func(NULL); error: ambiguous
+}
+```
+
+剩下部分基本可以看：`https://blog.csdn.net/qq_18108083/article/details/84346655?utm_source=app` 了。
+
+以下部分源自博客：
+
+**一、C程序中的NULL**
+
+在C语言中，NULL通常被定义为：**#define NULL ((void \*)0)**
+
+所以说NULL实际上是一个空指针，如果在C语言中写入以下代码，编译是没有问题的，因为在C语言中把空指针赋给int和char指针的时候，发生了隐式类型转换，把void指针转换成了相应类型的指针。
+
+```c
+int  *pi = NULL;
+char *pc = NULL;
+```
+
+**二、C++程序中的NUL**
+
+但是问题来了，以上代码如果使用C++编译器来编译则是会出错的，因为C++是强类型语言，void*是不能隐式转换成其他类型的指针的，所以实际上编译器提供的头文件做了相应的处理：
+
+```c
+#ifdef __cplusplus
+#define NULL 0
+#else
+#define NULL ((void *)0)
+#endif
+```
+
+可见，在C++中，NULL实际上是0.因为C++中不能把void*类型的指针隐式转换成其他类型的指针，所以为了结果空指针的表示问题，C++引入了0来表示空指针，这样就有了上述代码中的NULL宏定义。
+
+**其他：在没有C++ 11的nullptr的时候，我们怎么解决避免这个问题呢？**
+
+```cpp
+const class nullptr_t
+{
+public:
+    template<class T>
+    inline operator T*() const
+        { return 0; }
+ 
+    template<class C, class T>
+    inline operator T C::*() const
+        { return 0; }
+ 
+private:
+void operator&() const;
+} nullptr = {};
+```
+
+//系统把NULL定位为int，把nullptr定位为void*
+
+
+
+### 缓冲区溢出
+
+`https://docs.microsoft.com/zh-cn/windows/win32/SecBP/avoiding-buffer-overruns`
+
+Buffer overruns can occur in a variety of ways. The following list provides a brief introduction to a few types of buffer overrun situations and offers some ideas and resources to help you avoid creating new risks and mitigate existing ones:
+
+- Static buffer overruns
+
+  A static buffer overrun occurs when a buffer, which has been declared on the stack, is written to with more data than it was allocated to hold. The less apparent versions of this error occur when unverified user input data is copied directly to a static variable, causing potential stack corruption.
+
+- Heap overruns
+
+  Heap overruns, like static buffer overruns, can lead to memory and stack corruption. Because heap overruns occur in heap memory rather than on the stack, some people consider them to be less able to cause serious problems; nevertheless, heap overruns require real programming care and are just as able to allow system risks as static buffer overruns.
+
+- Array indexing errors
+
+  Array indexing errors also are a source of memory overruns. Careful bounds checking and index management will help prevent this type of memory overrun.
+
+Preventing buffer overruns is primarily about writing good code. Always validate all your inputs and fail gracefully when necessary. For more information about writing secure code, see the following resources:
+
+- Maguire, Steve [1993], *Writing Solid Code*, ISBN 1-55615-551-4, Microsoft Press, Redmond, Washington.
+- Howard, Michael and LeBlanc, David [2003], *Writing Secure Code*, 2d ed., ISBN 0-7356-1722-8, Microsoft Press, Redmond, Washington.
+
+
+
