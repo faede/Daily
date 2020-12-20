@@ -11,15 +11,12 @@ int main(){
 	//freopen("/Users/zyy/Documents/GitHub/Daily/algorithm/in.txt","r",stdin);
 	int n ;
 	cin >> n;
-	long long ans = 4;
-	if( n == 1 || n == 2){
-	}
-	else{
-		if(n %2 == 0){
-			ans = 13;
-		}else{
-			ans = 12;
-		}
+	long long ans ;
+	if(n % 2 == 0){
+		ans = (n/2 + 1)*(n/2 + 1);
+	}else{
+		long long k = n/2;
+		ans = 2*(k + 1)*(k + 2);
 	}
 	cout << ans;
 	
