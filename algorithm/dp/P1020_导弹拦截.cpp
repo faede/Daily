@@ -28,7 +28,8 @@ int main()
 
 P>=K，所以K=P。
     */
-    while(cin>>a[++n]);n--;
+    while(cin>>a[++n]);
+    n--;
     /*int x;
     while(scanf("%d",&x) ){
         if(x==-1)
