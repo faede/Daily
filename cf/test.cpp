@@ -4,59 +4,69 @@
 #include <cstring>
 #include <cmath>
 #include <string>
+#include <unordered_map>
 #include <algorithm>
+#include <set>
+
 using namespace std;
-const int maxn = 50 +5;
-int n ;
-int a[1000][1000];
-void dfs(int dep,int last, int x,int y){
+using ll = long long;
 
-	if(dep == n +1){
-		return ;
-	}
-	if(dep == n ){
-		a[x][y]=1;
-	}
-	
-	if(last == 1){
-		if(y+1 <=500 + n)
-			dfs(dep+1,-1,x,y+1);
-		if(y-1>=500-n)
-			dfs(dep+1,-1,x,y-1);
-	}else{
-		if(x+1<=500 + n)
-			dfs(dep+1,1,x+1,y);
-		if(x-1>=500-n)
-			dfs(dep+1,1,x-1,y);
-	}
-	
-	
-}
-int check(){
-	int tot = 0;
-	for(int i = 0 ; i < 1000; i++){
-		for(int j = 0; j < 1000; j++){
-			if(a[i][j] == 1){
-				tot++;
-			}
-		}
-	}
-	return tot;
-}
-int main(){
-	//freopen("/Users/zyy/Documents/GitHub/Daily/algorithm/in.txt","r",stdin);
+const int N = 300500;
+const int mod = 1000000007;
+ll fact[N];
+ll invFact[N];
 
-	//cin >> n;]
-	cin >> n;
-	
-	for(int i = 1; i <= 50 ; i++){
-		memset(a,0,sizeof(a));
-		n = i;
-		dfs(1,-1,500,501);
-		dfs(1,-1,500,499);
-		dfs(1,1,501,500);
-		dfs(1,1,499,500);
-		cout << " n:" << n << "  zhongshu:" << check() << endl;
-	}
-	cout << check();
+ll fast_pow(ll a, ll p) {
+    ll res = 1;
+    while (p) {
+        if (p % 2 == 0) {
+            a = (a * a) % mod;
+            p /= 2;
+        } else {
+            res = (res * a) % mod;
+            p--;
+        }
+    }
+    return res;
+}
+
+ll C(int n, int k) {
+    if (k > n) {
+        return 0;
+    }
+    return fact[n] * invFact[k] % mod * invFact[n - k] % mod;
+}
+
+void solve() {
+    int n, m, k;
+    cin >> n >> m >> k;
+    vector<ll> v(n);
+    for (ll &e : v) {
+        cin >> e;
+    }
+    sort(v.begin(), v.end());
+    ll ans = 0;
+    for (int i = 0; i < n; i++) {
+        int l = i + 1;
+        int r = upper_bound(v.begin(), v.end(), v[i] + k) - v.begin();
+        ans = (ans + C(r - l, m - 1)) % mod;
+    }
+    cout << ans << "\n";
+}
+
+int main() {
+#ifndef ONLINE_JUDGE
+    freopen("/Users/zyy/Documents/GitHub/Daily/algorithm/in.txt", "r", stdin);
+#endif
+    ios::sync_with_stdio(false);   cin.tie(NULL);   cout.tie(NULL);
+    fact[0] = invFact[0] = 1;
+    for (int i = 1; i < N; i++) {
+        fact[i] = (fact[i - 1] * i) % mod;
+        invFact[i] = fast_pow(fact[i], mod - 2);
+    }
+    int t;
+    cin >> t;
+    while (t--) {
+        solve();
+    }
 }
