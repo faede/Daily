@@ -9,34 +9,38 @@
 #include <set>
 using namespace std;
 const int maxn = 100000 +5;
-
+int fa[maxn];
+int find(int x){
+	if(fa[x] != x){
+		fa[x] = find(fa[x]);
+	}
+	return fa[x];
+}
 int main(){
-	//freopen("/Users/zyy/Documents/GitHub/Daily/algorithm/in.txt","r",stdin);
+#ifndef ONLINE_JUDGE
+	freopen("/Users/zyy/Documents/GitHub/Daily/algorithm/in.txt", "r", stdin);
+#endif
+	ios::sync_with_stdio(false);   cin.tie(NULL);   cout.tie(NULL);
 	int t;
 	cin >> t;
 	while(t--){
 		int n,m;
 		cin >> n >> m;
-		set<int > s;
-        //set<int > s2;
+		for(int i = 1; i < maxn; i++){
+			fa[i] = i;
+		}
 		int x,y;
         long long res = 0;
 		for (int i = 0; i < m; ++i)
 		{
 			cin >> x >> y;
-			//if(y > x){
-			//	swap(x,y);
-			//}
-			if( ( s.count(y))){
-			    //cout <<  "+2 x :" << x << " y :" << y << endl;
-			    if(x != y)
-					res += 2;
+			if(x == y)
+				continue;
+			if(find(x) == find(y)){
+				res += 2;
 			}else{
-			    if(x != y){
-                   //cout << "1  x :" << x << " y :" << y << endl;
-			        res += 1;
-			    }
-                s.insert(x);
+				res += 1;
+				fa[x] = y;
 			}
 
 		}
