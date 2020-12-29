@@ -43,7 +43,7 @@ ll C(int n, int k){
 
 int main(){
 #ifndef ONLINE_JUDGE
-	freopen("/Users/zyy/Documents/GitHub/Daily/algorithm/in.txt", "r", stdin);
+	freopen("/Users/zyy/Documents/GitHub/Daily/cf/in.txt", "r", stdin);
 #endif
 	ios::sync_with_stdio(false);   cin.tie(NULL);   cout.tie(NULL);
 	
