@@ -7,13 +7,11 @@
 #include <unordered_map>
 #include <algorithm>
 #include <set>
-using namespace std;
-typedef pair<int, int > pt;
 typedef long long ll;
-const int maxn = 200000 +5;
+using namespace std;
+const int maxn = 100 +5;
 const int mod = 1e9 + 7;
-
-
+//int a[maxn];
 int main(){
 #ifndef ONLINE_JUDGE
 	freopen("/Users/zyy/Documents/GitHub/Daily/cf/in.txt", "r", stdin);
@@ -21,8 +19,14 @@ int main(){
 	ios::sync_with_stdio(false);   cin.tie(NULL);   cout.tie(NULL);
 	int t;
 	cin >> t;
+	// 8 + 5
 	while(t--){
-		
+		int x,y;
+		cin >> x >> y;
+		int t = (max(x,y) - min(x,y) - 1) > 0 ?   (max(x,y) - min(x,y) - 1) : 0;
+		cout << x + y + t<< endl;
 	}
+	
+	
 
 }
