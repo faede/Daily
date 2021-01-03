@@ -34,10 +34,6 @@ int main(){
     freopen("/Users/zyy/Documents/GitHub/Daily/cf/in.txt", "r", stdin);
 #endif
     ios::sync_with_stdio(false);   cin.tie(NULL);   cout.tie(NULL);
-    int t;
-    cin >> t;
-    while(t--){
-        
-    }
+    cout << (1 + 2) % 3;
 
 }
