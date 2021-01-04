@@ -37,7 +37,11 @@ int main(){
 	int t;
 	cin >> t;
 	while(t--){
-		
+		int a,b,c,d;
+		cin >> a>> b>> c >>d;
+		int t = max(a+b, c+d);
+		//int t2 = max(a+d,c +b);
+		cout <<t << endl;
 	}
 
 }
