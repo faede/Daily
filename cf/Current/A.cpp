@@ -39,7 +39,21 @@ int main(){
 	int t;
 	cin >> t;
 	while(t--){
-		
-	}
+		ll n, t;
+		cin >> n;
+		cin >> t;
+		ll ans = 0;
+		ll x;
+		ll sum = 0;
+		ll mn = 0;
+		ll mx = 0;
+		for(int i = 1; i <= n; i++){
+			cin >> x;
+			sum += x;
+			mx += (x + t - 1) / t;
+		}
+		mn = (sum + t - 1) / t;
+		cout << mn << " " << mx << endl;
+ 	}
 
 }
