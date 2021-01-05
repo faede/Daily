@@ -26,7 +26,8 @@ ll fast_pow(ll x, ll p){
     return ans;
 }
 
-
+ 
+_Codeforces_Round_680_Div_2_based_on_Moscow_Team_Olympiad
 
 
 int main(){

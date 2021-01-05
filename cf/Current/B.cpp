@@ -2,6 +2,7 @@
 #include <cstdio>
 #include <vector>
 #include <cstring>
+#include <map>
 #include <cmath>
 #include <string>
 #include <unordered_map>
@@ -10,8 +11,9 @@
 using namespace std;
 typedef pair<int, int > pt;
 typedef long long ll;
-const int maxn = 200000 +5;
+const int maxn = 50 +5;
 const int mod = 1e9 + 7;
+
 ll fast_pow(ll x, ll p){
 	ll ans = 1;
 	while(p){
@@ -37,11 +39,7 @@ int main(){
 	int t;
 	cin >> t;
 	while(t--){
-		int a,b,c,d;
-		cin >> a>> b>> c >>d;
-		int t = max(a+b, c+d);
-		//int t2 = max(a+d,c +b);
-		cout <<t << endl;
+		
 	}
 
 }
