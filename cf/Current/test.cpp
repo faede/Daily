@@ -26,8 +26,6 @@ ll fast_pow(ll x, ll p){
     return ans;
 }
 
- 
-
 
 int main(){
 #ifndef ONLINE_JUDGE

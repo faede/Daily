@@ -47,5 +47,5 @@ bool is_prime(ll x)
     return true;
 }
 int main(){
-    cout <<  is_prime((ll)123231231231231231);
+    cout <<  is_prime((ll)48770428433377171);
 }
