@@ -39,8 +39,19 @@ int main(){
     int t;
     cin >> t;
     while(t--){
-        
-
+        int n;
+        cin >> n;
+        for(int i = 0; i < n; i++){
+            if(i == 0){
+                cout <<"9";
+            }else if(i == 1){
+                cout <<"8";
+            }else{
+                cout << ( (i + 7) % 10) % 10 ;
+            }
+            
+        }
+        cout << endl;
     }
 
 }
