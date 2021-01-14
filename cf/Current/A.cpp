@@ -11,9 +11,9 @@
 using namespace std;
 typedef pair<int, int > pii;
 typedef long long ll;
-const int maxn = 300000 +5;
+const int maxn = 100 +5;
 const int mod = 1e9 + 7;
-
+int a[maxn];
 ll fast_pow(ll x, ll p){
     ll ans = 1;
     while(p){
@@ -39,7 +39,33 @@ int main(){
     int t;
     cin >> t;
     while(t--){
-        
+        int n , d;
+        cin >> n >> d;
+        bool hasg = false;
+        for(int i = 1; i <= n; i++){
+            cin >> a[i];
+            if(a[i] > d){
+                hasg = true;
+            }
+        }
+        bool hasl = false;
+        for(int i = 1; i <= n; i++){
+            for(int j = i + 1; j <= n; j++){
+                if(a[i] + a[j] <= d){
+                    hasl = true;
+                }
+            }
+        }
+        if(hasg){
+            if(hasl){
+                cout << "YES" << endl;
+            }else{
+                cout << "NO" << endl;
+            }
+        }else{
+            cout << "YES" << endl;
+        }
+
 
     }
 
