@@ -11,9 +11,10 @@
 using namespace std;
 typedef pair<int, int > pii;
 typedef long long ll;
-const int maxn = 200000 +5;
+const int maxn = 100000 +5;
 const int mod = 1e9 + 7;
-const int INF = 1e9;
+int a[maxn];
+
 ll fast_pow(ll x, ll p){
     ll ans = 1;
     while(p){
@@ -30,6 +31,7 @@ ll fast_pow(ll x, ll p){
 
 
 
+
 int main(){
 #ifndef ONLINE_JUDGE
     freopen("/Users/zyy/Documents/GitHub/Daily/cf/in.txt", "r", stdin);
@@ -38,7 +40,21 @@ int main(){
     int t;
     cin >> t;
     while(t--){
-        
+        int n , k;
+        cin >> n >> k;
+        int m = n - k;
+        int temp = k;
+        for(int i = k - m ; i <= k; i++){
+            a[i] = temp--;
+        }
+        temp = 1;
+        for(int i = 1; i <= k - m - 1; i++){
+            a[i] = temp++;
+        }
+        for(int i = 1; i <= k; i++){
+            cout << a[i] << " ";
+        }
+        cout << endl;
     }
 
 }
