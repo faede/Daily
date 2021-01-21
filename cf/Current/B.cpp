@@ -27,8 +27,30 @@ ll fast_pow(ll x, ll p){
     }
     return ans;
 }
-
-
+int d;
+bool check(ll x){
+    ll last = 1;
+    ll has = 1;
+    for(ll i = 2; i <=  x; i++){
+        if(x % i == 0){
+            if(i - last < d){
+                return false;
+            }
+            has++;
+            last = i;
+        }
+        if(has > 4){
+            return true;
+        }
+    }
+    if(has >= 4)
+    {
+        return true;
+    }else{
+        return false;
+    }
+    
+}
 
 int main(){
 #ifndef ONLINE_JUDGE
@@ -38,7 +60,14 @@ int main(){
     int t;
     cin >> t;
     while(t--){
-        
+        //cout <<"1111:" << endl;
+        //int d;
+        cin >> d;
+        ll x = 3 * d;
+        while(!check(x)){
+            x++;
+        }
+        cout << x << endl;
     }
 
 }

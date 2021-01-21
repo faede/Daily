@@ -29,7 +29,8 @@ ll fast_pow(ll x, ll p){
 }
 
 
-
+char a[100000 + 10];
+char sum[100000 + 10];
 int main(){
 #ifndef ONLINE_JUDGE
     freopen("/Users/zyy/Documents/GitHub/Daily/cf/in.txt", "r", stdin);
@@ -38,7 +39,39 @@ int main(){
     int t;
     cin >> t;
     while(t--){
+        int n;
+        cin >> n;
+        string s;
+        cin >> s;
+        //string a ;
+        for(int i = 0; i < n; i++){
+
+            if( i > 0 &&s[i] + 1!= sum[i-1]){
+            	//cout << "sum [i-1] :" <<  sum[i-1]  <<endl;
+                a[i] = '1';
+            }else if(i == 0){
+                a[i] = '1';
+            }else{
+                a[i] = '0';
+            }
+            sum[i] = a[i] - '0' + s[i];
+        }
+        for(int i = 0; i < n; i++){
+        	cout << a[i];
+        }
         
+        cout << endl;
+        //cout << a << endl;
     }
 
 }
+
+
+
+
+
+
+
+
+
+

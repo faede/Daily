@@ -2,6 +2,13 @@
 
 第一个字母 目录(d) 、文件(-)、字符型文件(c)、块设备(b)
 
+### mysql
+
+```shell
+shell> cd /Library/LaunchDaemons
+shell> sudo launchctl load -F com.oracle.oss.mysql.mysqld.plist
+```
+
 
 
 touch test_one
