@@ -24,6 +24,17 @@ int * PERMUTE_BY_CYCLIC(int A[],int len){
     }
     return B;
 }
+
+// 比较简单的随机排：
+void  RANDOMIZE_PLACE(int A[], int len){
+    // seed from the system clock
+    int n = len;
+    for(int i = 0; i < n; i++){
+        int rd = rand()%(n - i) + i;
+        swap(A[i],A[rd]);
+    }
+
+}
 void print(int *a ,int len){
     for(int i = 0 ; i < len; i++){
         cout << a[i] << " " ;
@@ -37,4 +48,7 @@ int main(){
     print(a,n);
     int * b = PERMUTE_BY_CYCLIC(a,n);
     print(b, n);
+    cout <<"shuffle : " << endl;
+    RANDOMIZE_PLACE(a,n);
+    print(a, n);
 }
