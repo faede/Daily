@@ -2,6 +2,7 @@
 #include<random>
 #include<chrono>
 
+// a[i] 放在位置j的概率是1/n,就是均匀随机排列是错误的， 如下反例：
 using namespace std;
 int * PERMUTE_BY_CYCLIC(int A[],int len){
     int n = len;
