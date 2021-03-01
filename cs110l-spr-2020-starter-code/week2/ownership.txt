@@ -8,7 +8,25 @@ fn main() {
     s = String::from("goodbye");
     println!("{}", ref3.to_uppercase());
 }
+``` 
+ It can't compile because till line 5 ,s is live beacuse macro println use ref3 so it can't
+be reassign.
+below code will work and ouput "GOODBYE".
+
 ```
+fn main() {
+    let mut s = String::from("hello");
+    let ref1 = &s;
+    let ref2 = &ref1;
+    let ref3 = &ref2;
+    s = String::from("goodbye");
+    println!("{}", s.to_uppercase());
+}
+```
+
+
+
+
 
 
 
@@ -17,6 +35,17 @@ Example 2:
 fn drip_drop() -> &String {
     let s = String::from("hello world!");
     return &s;
+}
+```
+
+s is a local variable in drip_drop, it will be dropped after function end,
+so it can't be borrow as function return value.
+we can transfer ownship as follow:
+
+```
+fn drip_drop() -> String {
+    let s = String::from("hello world!");
+    return s;
 }
 ```
 
@@ -29,6 +58,31 @@ fn main() {
     let mut v = Vec::new();
     v.push(s1);
     let s2: String = v[0];
+    println!("{}", s2);
+}
+```
+
+line 5 use operator " = ", use copy function, but String can't be copy (it can't imp copy function),
+we can using borrow :
+
+```
+fn main() {
+    let s1 = String::from("hello");
+    let mut v = Vec::new();
+    v.push(s1);
+    let s2: &String = &v[0];
+    println!("{}", s2);
+}
+```
+
+or using clone achieve.
+
+```
+fn main() {
+    let s1 = String::from("hello");
+    let mut v = Vec::new();
+    v.push(s1);
+    let s2: String = v[0].clone();
     println!("{}", s2);
 }
 ```
