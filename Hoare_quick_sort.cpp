@@ -22,13 +22,16 @@ int PARTITION(int *A, int p, int r){
 }
 int HOARE_PARTITION(int *A,int p,int r){
     int x = A[p];
-    int i = p;
-    int j = r;
+    int i = p - 1;
+    int j = r + 1;
     while(true){
-        while(A[j] > x)
+        do{
             j--;
-        while(A[i] < x)
+        }while(A[j] <= x);
+
+        do{
             i++;
+        }while(A[i] >= x)
         if(i < j){
             swap(A[i], A[j]);
         }
