@@ -124,7 +124,7 @@ class Tree():
     
     
     def Search(self, e :list):
-        minpos = self.__SearchAux(self.root,e,1e10,None)
+        minpos = self.__SearchAux(self.root, e, 1e10, None)
         mindis = dis(minpos,e)
         if dis(self.root.val, e) < mindis:
                 mindis = dis(self.root.val, e)
@@ -143,7 +143,7 @@ class Tree():
 
       
 if __name__ == "__main__":
-    l = [[5,2,3], [2, 3,2], [1, 1, 7] ,[4 ,2 ,2],[2 , 1, 5], [7, 2 ,1]]
+    l = [[5,2,3], [2, 3,2], [1, 1, 7], [4 ,2 ,2], [2 , 1, 5], [7, 2 ,1]]
     t = Tree()
     t.BuildTree(l)
     print(t.root.val)
@@ -158,5 +158,3 @@ if __name__ == "__main__":
         print(t.Search(i))
         print("distance:")
         print(dis(t.Search(i),i))
-        
-        
