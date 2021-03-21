@@ -1,0 +1,8 @@
+[Desktop Entry]
+Name=Anaconda
+Version=1.0
+Type=Application
+Exec=/home/zyy/anaconda3/bin/anaconda-navigator
+Icon=/home/zyy/anaconda3/pkgs/anaconda-navigator-1.10.0-py38_0/lib/python3.8/site-packages/anaconda_navigator/static/images/anaconda-icon-256x256.png
+Terminal=false
+StartupNotify=true
