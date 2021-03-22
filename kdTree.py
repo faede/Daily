@@ -9,6 +9,8 @@ Created on Sun Mar 21 19:27:20 2021
 
 import copy
 import math
+# constant, great than  MAX_DISTANCE will be ignored
+MAX_DISTANCE = 1e10
 
 class Node():
     def __init__(self):
@@ -124,7 +126,7 @@ class Tree():
     
     
     def Search(self, e :list):
-        minpos = self.__SearchAux(self.root, e, 1e10, None)
+        minpos = self.__SearchAux(self.root, e, MAX_DISTANCE, None)
         mindis = dis(minpos,e)
         if dis(self.root.val, e) < mindis:
                 mindis = dis(self.root.val, e)
