@@ -10,9 +10,8 @@ Created on Mon Mar 22 07:48:45 2021
 import os
 import cv2
 import numpy as np
-#from sklearn.cross_validation import train_test_split
 from sklearn.model_selection import train_test_split
-from sklearn.metrics import confusion_matrix, classification_report
+# from sklearn.metrics import confusion_matrix, classification_report
 
 #----------------------------------------------------------------------------------
 # 第一步 切分训练集和测试集
