@@ -9,6 +9,14 @@ Created on Sun Mar 21 19:27:20 2021
 
 import copy
 import math
+import queue
+import cv2
+import sys
+import os
+import subprocess
+from PIL import Image
+
+
 # constant, great than  MAX_DISTANCE will be ignored
 MAX_DISTANCE = 1e10
 
@@ -141,7 +149,43 @@ class Tree():
                      minpos = self.__SearchAux(self.root.left, e, mindis, minpos)
                      mindis = dis(minpos,e)
         return minpos
-
+    
+    
+    def Graphviz(self):
+        with open('kdtree.dot','a') as f:
+            print("digraph G {", file = f)
+        q = queue.Queue()
+        q.put(self.root.left)
+        q.put(self.root.right)
+        while  not q.empty():
+            top = q.get()
+            with open('kdtree.dot','a') as f:
+                print('"',top.fa.val,'" -> "',top.val,'"',  file = f)
+            if top.left != None:
+                q.put(top.left)
+            if top.right != None:
+                q.put(top.right)
+                
+        with open('kdtree.dot','a') as f:
+            print("}", file = f)
+        
+        # need Graphviz and set PATH right
+        # subprocess.Popen('dot -Tpng -o kdtree.png kdtree.dot',shell=True)
+        subprocess.Popen('/usr/local/bin/dot -Tpng -o kdtree.png kdtree.dot', shell = True)
+        
+        img=Image.open('kdtree.png')
+        img.show()
+        
+        #image = cv2.imread('kdtree.png')
+        #cv2.imshow("kd-Tree", image)
+        # cv2.waitKey(0)        
+        # cv2.destroyAllWindows()
+            
+        
+        # import matplotlib.pyplot as plt
+        # import matplotlib.image as mpimg
+        # I = mpimg.imread('kdtree.png')
+        # plt.imshow(I)
 
       
 if __name__ == "__main__":
@@ -160,3 +204,4 @@ if __name__ == "__main__":
         print(t.Search(i))
         print("distance:")
         print(dis(t.Search(i),i))
+    t.Graphviz()
