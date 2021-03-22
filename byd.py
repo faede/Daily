@@ -24,9 +24,9 @@ Z = [] #定义图像像素
 
 for i in range(0, 10):
     #遍历文件夹，读取图片
-    for f in os.listdir("photo/%s" % i):
+    for f in os.listdir("photo2/%s" % i):
         #获取图像名称
-        X.append("photo//" +str(i) + "//" + str(f))
+        X.append("photo2//" +str(i) + "//" + str(f))
         #获取图像类标即为文件夹名称
         Y.append(i)
 
@@ -35,7 +35,8 @@ Y = np.array(Y)
 
 #随机率为100% 选取其中的30%作为测试集
 X_train, X_test, y_train, y_test = train_test_split(X, Y,                                                   
-test_size=0.3, random_state=1)
+test_size=0.2,train_size=0.5
+, random_state=1)
 
 print( len(X_train), len(X_test), len(y_train), len(y_test))
 
@@ -85,6 +86,8 @@ from sklearn.naive_bayes import BernoulliNB
 clf = BernoulliNB().fit(XX_train, y_train)
 predictions_labels = clf.predict(XX_test)
 
+
+
 print(u'预测结果:')
 print(predictions_labels)
 
@@ -92,14 +95,14 @@ print(u'算法评价:')
 print(classification_report(y_test, predictions_labels))
 
 #输出前10张图片及预测结果
-k = 0
-while k<10:
-    #读取图像
-    print(X_test[k])
-    image = cv2.imread(X_test[k])
-    print(predictions_labels[k])
-    #显示图像
-    cv2.imshow("img", image)
-    cv2.waitKey(0)
-    cv2.destroyAllWindows()
-    k = k + 1
+# k = 0
+# while k<10:
+#     #读取图像
+#     print(X_test[k])
+#     image = cv2.imread(X_test[k])
+#     print(predictions_labels[k])
+#     #显示图像
+#     cv2.imshow("img", image)
+#     cv2.waitKey(0)
+#     cv2.destroyAllWindows()
+#     k = k + 1

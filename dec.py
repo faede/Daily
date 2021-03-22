@@ -18,14 +18,14 @@ clf = MLPClassifier(solver='lbfgs', alpha=1e-5,
 
 clf.fit(X, y)
 def plot_decision_boundary(pred_func):  
-
+    
     # 设定最大最小值，附加一点点边缘填充  
     x_min, x_max = X[:, 0].min() - .5, X[:, 0].max() + .5  
     y_min, y_max = X[:, 1].min() - .5, X[:, 1].max() + .5  
     h = 0.01  
 
     xx, yy = np.meshgrid(np.arange(x_min, x_max, h), np.arange(y_min, y_max, h))  
-
+    print("xx : ", xx)
     # 用预测函数预测一下  
     Z = pred_func(np.c_[xx.ravel(), yy.ravel()])  
     Z = Z.reshape(xx.shape)  

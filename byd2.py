@@ -35,7 +35,8 @@ Y = np.array(Y)
 
 #随机率为100% 选取其中的30%作为测试集
 X_train, X_test, y_train, y_test = train_test_split(X, Y,                                                   
-test_size=0.01, train_size = 0.2,random_state=2)
+test_size=0.2,train_size=0.5
+, random_state=1)
 
 print( len(X_train), len(X_test), len(y_train), len(y_test))
 
@@ -55,11 +56,20 @@ for i in X_train:
                      interpolation=cv2.INTER_CUBIC)
 
     #计算图像直方图并存储至X数组
-    hist = cv2.calcHist([img], [0,1,2], None,
-                            [256,256,256], [0, 256, 0, 256, 0, 256])
-    hist = hist / np.sum(hist)
-    # XX_train.append(((hist/255).flatten()))
-    XX_train.append(hist.flatten())
+    t = []
+    hist = cv2.calcHist([img], [0], None, [256], [0, 256])
+
+    t.extend(((hist/255).flatten()))
+    
+    hist = cv2.calcHist([img], [1], None, [256], [0, 256])
+
+    t.extend(((hist/255).flatten()))
+    
+    hist = cv2.calcHist([img], [2], None, [256], [0, 256])
+
+    t.extend(((hist/255).flatten()))
+    
+    XX_train.append(t)
 
 #测试集
 XX_test = []
@@ -73,11 +83,20 @@ for i in X_test:
                      interpolation=cv2.INTER_CUBIC)
 
     #计算图像直方图并存储至X数组
-    hist = cv2.calcHist([img], [0,1,2], None,
-                            [256,256,256], [0, 256, 0, 256, 0, 256])
+    t = []
+    hist = cv2.calcHist([img], [0], None, [256], [0, 256])
 
-    XX_test.append(hist.flatten())
+    t.extend(((hist/255).flatten()))
+    
+    hist = cv2.calcHist([img], [1], None, [256], [0, 256])
 
+    t.extend(((hist/255).flatten()))
+    
+    hist = cv2.calcHist([img], [2], None, [256], [0, 256])
+
+    t.extend(((hist/255).flatten()))
+    
+    XX_test.append(t)
 #----------------------------------------------------------------------------------
 # 第三步 基于朴素贝叶斯的图像分类处理
 #----------------------------------------------------------------------------------
@@ -85,6 +104,8 @@ for i in X_test:
 from sklearn.naive_bayes import BernoulliNB
 clf = BernoulliNB().fit(XX_train, y_train)
 predictions_labels = clf.predict(XX_test)
+
+
 
 print(u'预测结果:')
 print(predictions_labels)
