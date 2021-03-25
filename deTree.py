@@ -194,7 +194,12 @@ class Tree():
         
         return root
     
+    
     #re-define leaf as, which all son node is 'real leaf'
+    def GetLeaf() -> list:
+        pass
+    def Pruing():
+        pass
     
     
     def Graphviz(self):
