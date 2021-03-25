@@ -152,28 +152,28 @@ class Tree():
     
     
     def Graphviz(self):
-        with open('kdtree.dot','a') as f:
+        with open('kdtree.dot', 'a') as f:
             print("digraph G {", file = f)
         q = queue.Queue()
         q.put(self.root.left)
         q.put(self.root.right)
         while  not q.empty():
             top = q.get()
-            with open('kdtree.dot','a') as f:
-                print('"',top.fa.val,'" -> "',top.val,'"',  file = f)
+            with open('kdtree.dot', 'a') as f:
+                print('"', top.fa.val, '" -> "', top.val, '"', file = f)
             if top.left != None:
                 q.put(top.left)
             if top.right != None:
                 q.put(top.right)
                 
-        with open('kdtree.dot','a') as f:
+        with open('kdtree.dot', 'a') as f:
             print("}", file = f)
         
         # need Graphviz and set PATH right
         # subprocess.Popen('dot -Tpng -o kdtree.png kdtree.dot',shell=True)
         subprocess.Popen('/usr/local/bin/dot -Tpng -o kdtree.png kdtree.dot', shell = True)
         
-        img=Image.open('kdtree.png')
+        img = Image.open('kdtree.png')
         img.show()
         
         #image = cv2.imread('kdtree.png')
