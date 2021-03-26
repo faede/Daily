@@ -232,21 +232,21 @@ class Tree():
                     if nd == nd.fa.left:
                         if nd.val.loc[ (nd.val[att[chara]] == 0) & (nd.val['Result'] == 'yes')].shape[0] \
                                     > nd.val.loc[(nd.val[att[chara]] == 0) & (nd.val['Result'] == 'no')].shape[0]:
-                            nd.chara = 'yes'
+                            nd.chara = '0: yes'
                         else:
-                            nd.chara = 'no'
+                            nd.chara = '0: no'
                     elif nd == nd.fa.right:
                         if nd.val.loc[ (nd.val[att[chara]] == 1) & (nd.val['Result'] == 'yes')].shape[0] \
                                     > nd.val.loc[(nd.val[att[chara]] == 1) & (nd.val['Result'] == 'no')].shape[0]:
-                            nd.chara = 'yes'
+                            nd.chara = '1: yes'
                         else:
-                            nd.chara = 'no'
+                            nd.chara = '1: no'
                     else:
                         if nd.val.loc[ (nd.val[att[chara]] == 2) & (nd.val['Result'] == 'yes')].shape[0] \
                                     > nd.val.loc[(nd.val[att[chara]] == 2) & (nd.val['Result'] == 'no')].shape[0]:
-                            nd.chara = 'yes'
+                            nd.chara = '2: yes'
                         else:
-                            nd.chara = 'no'
+                            nd.chara = '2: no'
                     self.__SetSize(self.root)
         pass
         
