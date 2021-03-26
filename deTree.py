@@ -74,6 +74,7 @@ def CacCheckNeedPruning(chara: int , df: list, sz: int):
     sz = sz - 1
     # Before Pruing 
     C_Before = 0
+    chara = att.index(chara[3:])
     for i in pval[chara]:
         pos_num = df.loc[(df[att[chara]] == i)&(df['Result'] == 'yes')].shape[0]
         neg_num = df.loc[(df[att[chara]] == i)&(df['Result'] == 'no')].shape[0]
@@ -145,7 +146,7 @@ class Tree():
             elif judg == 1:
                 root.chara = '1: ' + root.chara
             else:
-                root.chara = '2:' + root.chara
+                root.chara = '2: ' + root.chara
             return root
         root = Node()
         root.val = col.copy()
@@ -179,7 +180,7 @@ class Tree():
             elif judg == 1:
                 root.chara = '1: ' + root.chara
             else:
-                root.chara = '2:' + root.chara
+                root.chara = '2: ' + root.chara
                 
             if root.left != None:
                 root.left.fa = root
@@ -195,15 +196,64 @@ class Tree():
         return root
     
     
-    #re-define leaf as, which all son node is 'real leaf'
-    def GetLeaf() -> list:
+    # re-define leaf as, which all son node is 'real leaf'
+    # leaf size equal 3 or 4 ? yes
+    def GetLeaf(self) -> list:
+        leaf = []
+        self.Travel(self.root,leaf)
+        
+        return leaf
+    
+    def Travel(self, root: Node, leaf: list):
+        if root == None:
+            return 
+        if root.size == 3 or root.size == 4:
+            if root.fa != None:
+                leaf.append(root)
+        self.Travel(root.left, leaf)
+        self.Travel(root.right, leaf)
+        self.Travel(root.three, leaf)
+        
+    def Pruing(self):
+        need_next = True
+        i = 0
+        while need_next:
+            i += 1
+            need_next = False
+            leaf = self.GetLeaf()
+            for nd in leaf:
+                if CacCheckNeedPruning(nd.chara, nd.val , nd.size):
+                    need_next = True                    
+                    # pruing
+                    nd.left = None
+                    nd.right = None
+                    nd.three = None
+                    chara = att.index(nd.chara[3:])
+                    if nd == nd.fa.left:
+                        if nd.val.loc[ (nd.val[att[chara]] == 0) & (nd.val['Result'] == 'yes')].shape[0] \
+                                    > nd.val.loc[(nd.val[att[chara]] == 0) & (nd.val['Result'] == 'no')].shape[0]:
+                            nd.chara = 'yes'
+                        else:
+                            nd.chara = 'no'
+                    elif nd == nd.fa.right:
+                        if nd.val.loc[ (nd.val[att[chara]] == 1) & (nd.val['Result'] == 'yes')].shape[0] \
+                                    > nd.val.loc[(nd.val[att[chara]] == 1) & (nd.val['Result'] == 'no')].shape[0]:
+                            nd.chara = 'yes'
+                        else:
+                            nd.chara = 'no'
+                    else:
+                        if nd.val.loc[ (nd.val[att[chara]] == 2) & (nd.val['Result'] == 'yes')].shape[0] \
+                                    > nd.val.loc[(nd.val[att[chara]] == 2) & (nd.val['Result'] == 'no')].shape[0]:
+                            nd.chara = 'yes'
+                        else:
+                            nd.chara = 'no'
+                    self.__SetSize(self.root)
         pass
-    def Pruing():
-        pass
+        
     
     
     def Graphviz(self):
-        with open('detree.dot', 'a') as f:
+        with open('detree.dot', 'w') as f:
             print("digraph G {", file = f)
         q = queue.Queue()
         q.put(self.root.left)
@@ -226,8 +276,9 @@ class Tree():
         
         # need Graphviz and set PATH right
         # subprocess.Popen('dot -Tpng -o kdtree.png kdtree.dot',shell=True)
-        subprocess.Popen('/usr/local/bin/dot -Tpng -o detree.png detree.dot', shell = True)
-        
+        f.close()
+        #subprocess.run('/usr/local/bin/dot -Tpng -o detree.png detree.dot', shell = True)
+        subprocess.run('/usr/local/bin/dot -Tpng -o detree.png detree.dot', shell = True)
         img = Image.open('detree.png')
         img.show()
         
@@ -241,6 +292,7 @@ class Tree():
         # import matplotlib.image as mpimg
         # I = mpimg.imread('kdtree.png')
         # plt.imshow(I)
+        pass
         
         
 if __name__ == "__main__":
@@ -250,9 +302,6 @@ if __name__ == "__main__":
     t = Tree()
     t.BuildTree(df)
     t.Graphviz()
-    # used = [0,0,0,0,0]
-    #print(GetMaxEntGain(df))
-    #print(df[550:560])
     print(t.root.chara)
     print(t.root.left.left.chara)
     print(t.root.left.chara)
@@ -261,14 +310,6 @@ if __name__ == "__main__":
     print(t.root.right.chara)
     print(t.root.size)
     print(t.root.left.size)
-    #print(t.root.val)
-    #print(t.root.left.left.val)
     
-    print(CacCheckNeedPruning(0, t.root.left.val, t.root.left.size))
-    
-    
-    
-    
-    
-    
-    
+    t.Pruing()
+    t.Graphviz()

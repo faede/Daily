@@ -170,8 +170,8 @@ class Tree():
             print("}", file = f)
         
         # need Graphviz and set PATH right
-        # subprocess.Popen('dot -Tpng -o kdtree.png kdtree.dot',shell=True)
-        subprocess.Popen('/usr/local/bin/dot -Tpng -o kdtree.png kdtree.dot', shell = True)
+        # subprocess.run('dot -Tpng -o kdtree.png kdtree.dot',shell=True)
+        subprocess.run('/usr/local/bin/dot -Tpng -o kdtree.png kdtree.dot', shell = True)
         
         img = Image.open('kdtree.png')
         img.show()
@@ -186,6 +186,7 @@ class Tree():
         # import matplotlib.image as mpimg
         # I = mpimg.imread('kdtree.png')
         # plt.imshow(I)
+        pass
 
       
 if __name__ == "__main__":
