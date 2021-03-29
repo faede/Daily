@@ -11,7 +11,6 @@ import os
 import cv2
 import numpy as np
 import math
-from numpy import linalg as LA
 
 X_train = [] 
 Y_train = [] 
@@ -41,12 +40,14 @@ for i in range(0,9):
 # print(PrioriProb)
 mean_vec = []
 cov_matrix = []
-k = 27
+
+# 3 * 3 * 3
+k = 27 
 
 
-
-
+# calculate hist for decsion
 def CacHist(pic):
+    #read image
     image = cv2.imread(pic)
     gauss = np.random.normal(0,1,image.size)
     gauss = gauss.reshape(image.shape[0],image.shape[1],image.shape[2]).astype('uint8')
@@ -54,15 +55,19 @@ def CacHist(pic):
     img_gauss = cv2.add(image,gauss)
     new_pic = pic[:-4] + 't.jpg'
     cv2.imwrite(new_pic, img_gauss)
+    
+    # read new image
     image = cv2.imread(new_pic)
     img = cv2.resize(image, (256,256), interpolation = cv2.INTER_CUBIC)
-    # b, g, r => r, g, b
+    # 0, 1, 2 is b, g, r => r, g, b [2, 1, 0]
     hist = cv2.calcHist([img], [2 , 1 ,0], None, [3, 3, 3], [0, 256, 0, 256, 0, 256])
     hist = hist + 10
+    # flatten high dim matrix to one dim vector
     hist = hist.flatten()
     hist = np.log(hist)
     return hist
 
+# calculate mean and cov 
 for i in range(0,9):
     data = []
     for pic in X_train[i]:
@@ -73,7 +78,7 @@ for i in range(0,9):
     cov_matrix.append(np.cov(data, rowvar = False))
     
     
-    
+# Bayesian decision
 def Classify(elems):
     cla = 0
     prob = -1
