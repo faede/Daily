@@ -43,3 +43,10 @@ m1_m2 = np.matrix(m1 - m2)
 w = -np.dot(np.linalg.inv(Sw), m1_m2.T) 
 w = w / LA.norm(w,2)
 print(w)
+sample = np.array([9,10])
+if abs(np.dot(w.T, sample.T) - np.dot(w.T, m1.T)) < abs(np.dot(w.T, sample.T) - np.dot(w.T, m2.T)):
+    print('1')
+else:
+    print('2')
+    
+##  两两比较 投票
