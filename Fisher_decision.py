@@ -77,13 +77,10 @@ def Classify(sample):
     for i in range(0,8):
         for j in range(i+1, 9):
             m1 = mean_vec[i]
-
             m2 = mean_vec[j]
-
             S1 = cov_matrix[i]
             S2 = cov_matrix[j]
             Sw = (S1 + S2).T
-
             m1_m2 = np.matrix(m1 - m2)
             w = -np.dot(np.linalg.inv(Sw), m1_m2.T) 
             w = w / LA.norm(w,2)
