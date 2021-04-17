@@ -18,9 +18,17 @@ import numpy as np
 fname = 'processed.cleveland.data' 
 with open(fname, 'r+', encoding='utf-8') as f:
     s = [i[:-1].split(',') for i in f.readlines()]
-s = np.array(s)
-X = s[:,0:13]
-y = s[:,13]
+t = 0
+X = []
+y = []
+for i in s:
+    #t = t + 1
+    #if t > 1:
+    #    break
+    X.append(i[0:13])
+    y.append(i[13])
+X = np.array(X)
+y = np.array(y)
 
 X_train, X_test, y_train, y_test = train_test_split(X, y, train_size=0.8, random_state = 0)
 

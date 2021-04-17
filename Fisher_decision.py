@@ -71,7 +71,7 @@ for i in range(0,9):
     cov_matrix.append(np.cov(data, rowvar = False))
     
     
-# Bayesian decision
+# Fisher decision
 def Classify(sample):
     cla = np.zeros(9)
     for i in range(0,8):
