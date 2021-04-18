@@ -70,9 +70,7 @@ for i in X_train:
     train_pic = CacHist(i)
     X_train_data.append(train_pic)
     
-k_near = 3
-near = np.ones(k_near) * MAX_DISTANES
-clas = np.zeros(k_near)
+
 
 def cac_dis(i: list, j: list) -> float:
     sq_sum = 0
@@ -82,7 +80,7 @@ def cac_dis(i: list, j: list) -> float:
     return math.sqrt(sq_sum)
 
 # KNN decision
-def Classify(sample):
+def Classify(sample, k_near):
     near = np.ones(k_near) * MAX_DISTANES
     clas = np.zeros(k_near)
     l_cla = len(X_train_data)
@@ -112,17 +110,26 @@ for i in range(1, 10):
     Y_test.append(t2)
     
 X_test = np.array(X_test)
+X_test_data = []
 
-classify_right = 0
-confusion_matrix = np.zeros((9,9))
 for j in range(0,9):
+    t = []
     for i in X_test[j]:
-        c = int(Classify(CacHist(i)))
-        confusion_matrix[j][c] = confusion_matrix[j][c] + 1
-        if c == j:
-            classify_right = classify_right + 1
-            
-            
-print('混淆矩阵:')
-print(confusion_matrix)
-print('正确率:','%.2f'% (classify_right / total_test * 100), '%')
+        t.append(CacHist(i))
+    X_test_data.append(t)
+   
+    
+   
+for k_near in range(3,11):
+    classify_right = 0
+    confusion_matrix = np.zeros((9,9))
+    for j in range(0,9):
+        for i in X_test_data[j]:
+            c = int(Classify(i, k_near))
+            confusion_matrix[j][c] = confusion_matrix[j][c] + 1
+            if c == j:
+                classify_right = classify_right + 1
+    print('k = :', k_near)
+    print('混淆矩阵:')
+    print(confusion_matrix)
+    print('正确率:','%.2f'% (classify_right / total_test * 100), '%')
