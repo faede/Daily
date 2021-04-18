@@ -180,20 +180,65 @@ X = np.array(X)
 y = np.array(y)
 X_train, X_test, y_train, y_test = train_test_split(X, y, train_size=0.8, random_state = 0)
 
+# y : 0 - 4
+X_train_new = []
+y_train_new = []
+for i in range(0,5):
+    t = []
+    for j in range(0,len(y_train)):
+        if y_train[j] == i:
+            t.append(X_train[j])
+    t = np.array(t)
+    X_train_new.append(t)
+    y_train_new.append(np.ones(len(t)) * i)
+X_train_new = np.array(X_train_new)
+y_train_new = np.array(y_train_new)
+
+# DGA
+error = 0.01
+def jud(sample):
+    res = [1,1,1,1,1]
+    judge_one = 0
+    judge_two = 1
+    while res.count(1) > 1:
+        clf = SVC(kernel="linear", C = 1)
+        xx = []
+        for i in X_train_new[judge_one]:
+            xx.append(i)
+        for i in X_train_new[judge_two]:
+            xx.append(i)
+        xx = np.array(xx)
+        
+        yy = []
+        for i in y_train_new[judge_one]:
+            yy.append(i)
+        for i in y_train_new[judge_two]:
+            yy.append(i)
+        yy = np.array(yy)
+        
+        
+        clf.fit(xx, yy)
+        if abs(clf.predict(sample) - judge_one) < error:
+            res[judge_two] = 0
+            for i in range(0,5):
+                if res[i] == 1 and i != judge_one:
+                    judge_two = i
+        elif abs(clf.predict(sample) - judge_two) < error:
+            res[judge_one] = 0
+            for i in range(0,5):
+                if res[i] == 1 and i != judge_two:
+                    judge_two = i     
+        else:
+            print('判断错误')
+    return np.argmax(res)
 
 
 
-clf = SVC(kernel="linear", C = 0.05)
-clf.fit(X_train, y_train)
-pred = clf.score(X_test, y_test)
-print(pred)
-
-
-
-clf2 = SVC(kernel="gaussian", C = 0.05)
-clf2.fit(X_train, y_train)
-pred = clf.score(X_test, y_test)
-print(pred)
-
-
-
+total = len(X_test)
+correct = 0
+for i in range(0, total):
+    predict_y =  jud(X_test[i])
+    if predict_y == y_test[i]:
+        correct = correct + 1
+acu = correct / total
+print(acu)
