@@ -12,7 +12,8 @@ import numpy as np
 import cvxopt
 import cvxopt.solvers
 
-# @https://github.com/SeanLee97/simple_svm/blob/master/svm/svm.py
+# @ https://seanlee97.github.io/2018/06/01/SVM%E4%BB%8E%E5%85%A5%E9%97%A8%E5%88%B0%E4%BB%A3%E7%A0%81%E5%AE%9E%E7%8E%B0/
+# @ https://github.com/SeanLee97/simple_svm/blob/master/svm/svm.py
 class SVC(object):
     def __init__(self, kernel='linear', C=1.0, sigma=1.0, **kwargs):
         if kernel not in ['linear', 'gaussian']:
@@ -37,8 +38,6 @@ class SVC(object):
     def score(self, X, Y):
         total = len(X)
         correct = 0
-        if total != len(Y):
-            print("测试数据维度不一致！")
         for i in range(0, total):
             predict_y =  self.predict(X[i])
             if predict_y == Y[i]:

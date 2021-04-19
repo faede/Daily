@@ -14,6 +14,8 @@ import numpy as np
 import math
 from numpy import linalg as LA
 from scipy import stats
+import matplotlib.pyplot as plt
+
 
 X_train = [] 
 Y_train = [] 
@@ -119,8 +121,11 @@ for j in range(0,9):
     X_test_data.append(t)
    
     
-   
-for k_near in range(3,11):
+x = list(range(17))
+
+
+y = []
+for k_near in range(3,20):
     classify_right = 0
     confusion_matrix = np.zeros((9,9))
     for j in range(0,9):
@@ -133,3 +138,6 @@ for k_near in range(3,11):
     print('混淆矩阵:')
     print(confusion_matrix)
     print('正确率:','%.2f'% (classify_right / total_test * 100), '%')
+    y.append(classify_right / total_test)
+plt.plot(x,y)
+    
