@@ -12,6 +12,7 @@ import numpy as np
 import cvxopt
 import cvxopt.solvers
 
+# reference
 # @ https://seanlee97.github.io/2018/06/01/SVM%E4%BB%8E%E5%85%A5%E9%97%A8%E5%88%B0%E4%BB%A3%E7%A0%81%E5%AE%9E%E7%8E%B0/
 class SVC(object):
     def __init__(self, kernel='linear', C=1.0, sigma=1.0, **kwargs):
