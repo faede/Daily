@@ -13,7 +13,6 @@ import cvxopt
 import cvxopt.solvers
 
 # @ https://seanlee97.github.io/2018/06/01/SVM%E4%BB%8E%E5%85%A5%E9%97%A8%E5%88%B0%E4%BB%A3%E7%A0%81%E5%AE%9E%E7%8E%B0/
-# @ https://github.com/SeanLee97/simple_svm/blob/master/svm/svm.py
 class SVC(object):
     def __init__(self, kernel='linear', C=1.0, sigma=1.0, **kwargs):
         if kernel not in ['linear', 'gaussian']:
@@ -159,7 +158,7 @@ from sklearn.model_selection import train_test_split
 
 
 #Store variables as target y and the first two features as X (sepal length and sepal width of the iris flowers)
-fname = 'processed.cleveland.data' 
+fname = 'complete.csv'
 with open(fname, 'r+', encoding='utf-8') as f:
     s = [i[:-1].split(',') for i in f.readlines()]
 

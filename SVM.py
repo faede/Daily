@@ -14,9 +14,14 @@ import numpy as np
 
 
 #Store variables as target y and the first two features as X (sepal length and sepal width of the iris flowers)
-fname = 'processed.cleveland.data' 
+fname = 'complete.csv'
 with open(fname, 'r+', encoding='utf-8') as f:
     s = [i[:-1].split(',') for i in f.readlines()]
+
+num = len(s)
+for i in range(0, num):
+    s[i] = list(map(float, s[i]))
+
 s = np.array(s)
 X = s[:,0:13]
 Y = s[:,13]
