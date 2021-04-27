@@ -158,7 +158,6 @@ from sklearn.model_selection import train_test_split
 
 
 
-#Store variables as target y and the first two features as X (sepal length and sepal width of the iris flowers)
 fname = 'complete.csv'
 with open(fname, 'r+', encoding='utf-8') as f:
     s = [i[:-1].split(',') for i in f.readlines()]
