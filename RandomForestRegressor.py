@@ -27,7 +27,7 @@ s = np.array(s)
 s = pd.DataFrame(s)
 
 new_fname = 'new.csv'
-s.to_csv(new_fname, index = False)
+s.to_csv(new_fname, index = False, header = False)
 
 data = pd.read_csv(new_fname)
 
