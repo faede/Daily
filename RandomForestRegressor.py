@@ -5,7 +5,7 @@ Created on Sat Apr 17 15:36:50 2021
 
 @author: zyy
 """
-#Importing the necessary packages and libaries
+
 from sklearn.metrics import confusion_matrix
 from sklearn.model_selection import train_test_split
 from sklearn import svm, datasets
@@ -27,7 +27,6 @@ s = np.array(s)
 s = pd.DataFrame(s)
 
 new_fname = 'new.csv'
-#np.savetxt(new_fname, s, delimiter = ',', fmt='%s')
 s.to_csv(new_fname, index = False)
 
 data = pd.read_csv(new_fname)
@@ -37,7 +36,6 @@ X_Train = pd.DataFrame(data2.iloc[:,0:10])
 
 for index_y in range(11,14):
     Y_Train = pd.DataFrame(data2.iloc[:,index_y]) 
-    #Y_Train = Y_Trairavel()
     from sklearn.ensemble import RandomForestRegressor as rfr
     rfr = rfr(n_estimators = 100)
     rfr = rfr.fit(X_Train, Y_Train)
