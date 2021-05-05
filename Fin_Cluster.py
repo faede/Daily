@@ -52,18 +52,18 @@ yhat1 = model1.fit_predict(data3)
   
     
 from sklearn.cluster import DBSCAN
-model2 = DBSCAN(eps=0.30, min_samples = 5)
+model2 = DBSCAN(eps = 0.30, min_samples = 5)
 #yhat2 = model2.fit_predict(data3)
     
   
 # may most
 from sklearn.mixture import GaussianMixture
-model3 = GaussianMixture(n_components=3)
+model3 = GaussianMixture(n_components = 3)
 model3.fit(data3)
 yhat3 = model3.predict(data3)
 
 from sklearn.cluster import MiniBatchKMeans
-model4 = MiniBatchKMeans(n_clusters=3)
+model4 = MiniBatchKMeans(n_clusters = 3)
 model4.fit(data3)
 #yhat4 = model4.predict(data3)
 
