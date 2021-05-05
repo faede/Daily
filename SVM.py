@@ -28,6 +28,7 @@ Y = s[:,13]
 
 X_train, X_test, y_train, y_test = train_test_split(X, Y, train_size = 0.8, random_state = 0)
 
+
 linear = svm.SVC(kernel='linear', C=1, decision_function_shape='ovo').fit(X_train, y_train)
 rbf = svm.SVC(kernel='rbf', gamma=1, C=1, decision_function_shape='ovo').fit(X_train, y_train)
 poly = svm.SVC(kernel='poly', degree=3, C=1, decision_function_shape='ovo').fit(X_train, y_train)

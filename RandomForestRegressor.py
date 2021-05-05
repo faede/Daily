@@ -15,6 +15,7 @@ import pandas as pd
 
 
 fname = 'un_complete_processed.cleveland.data' 
+t = pd.read_csv(fname)
 with open(fname, 'r+', encoding='utf-8') as f:
     s = [i[:-1].split(',') for i in f.readlines()]
 
