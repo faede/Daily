@@ -11,7 +11,6 @@ from sklearn.model_selection import train_test_split
 from sklearn import datasets
 from pandas import DataFrame
 from sklearn.preprocessing import StandardScaler
-from sklearn.model_selection import train_test_split
 from sklearn.svm import SVC
 import matplotlib.pyplot as plt
 import numpy as np
