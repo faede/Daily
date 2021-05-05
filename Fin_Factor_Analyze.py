@@ -22,23 +22,29 @@ from factor_analyzer import FactorAnalyzer
 
 fname = 'fin_new.csv'
 data = pd.read_csv(fname, encoding = 'utf-8')
+X = data.iloc[:,4:23]
 
-X = data.iloc[:,4:24]
+
+
+# Bartlett's test of sphericity 
 from factor_analyzer.factor_analyzer import calculate_bartlett_sphericity
 chi_square_value, p_value = calculate_bartlett_sphericity(X)
 print(chi_square_value, p_value)
 
 """
-(111171.68210512122, 0.0)
+106084.50882499242 0.0
 """
 
 
+
+
+# Kaiser-Meyer-Olkin (KMO) Test 
 from factor_analyzer.factor_analyzer import calculate_kmo
 kmo_all, kmo_model = calculate_kmo(X)
 print(kmo_model)
 
 """
-0.5331430399768187
+0.5029169271912565
 """
 
 
@@ -49,12 +55,17 @@ print(kmo_model)
 
 
 
+
+
+
+
+"""
+
 # Create factor analysis object and perform factor analysis
 fa = FactorAnalyzer(25, rotation=None)
 fa.fit(X)
 # Check Eigenvalues
 ev, v = fa.get_eigenvalues()
-
 
 
 # Create scree plot using matplotlib
@@ -82,3 +93,5 @@ plt.title('Factor Analysis', fontsize='xx-large')
 plt.ylabel('Sepal Width', fontsize='xx-large')
 plt.savefig('factorAnalysis.png', dpi=500)
 fa.transform(X)
+
+"""
