@@ -18,7 +18,7 @@ un_cop_file_name = 'fin_data.csv'
 data = pd.read_csv(un_cop_file_name, encoding='utf-8')
 data2 = data.dropna()
 
-b = 2
+
 
 for index_y in range(4,23):
     col = data2.columns.values.tolist()
@@ -33,7 +33,7 @@ for index_y in range(4,23):
     X_Train = data2[col]
     Y_Train = data2[col2[index_y]]
     
-    a = 1
+
     from sklearn.ensemble import RandomForestRegressor as rfr
     rfr = rfr(n_estimators = 100)
     rfr = rfr.fit(X_Train, Y_Train)
