@@ -46,6 +46,7 @@ using namespace std;
 #define KEYWORD 	37
 #define ASSIGN 		38		// :=
 
+#define CANT_TOKEN 39
 /*
 #define WHILE 		0
 #define CONST 		1
@@ -170,7 +171,7 @@ PL0_Token_OneChar(char c)
         case '^':	return CIRCUMFLEX;
         case '~':	return TILDE;
         case '#':   return NOTEQUAL;
-        default:	return OP;
+        default:	return CANT_TOKEN;
     }
 }
 int
@@ -217,7 +218,7 @@ PL0_TwoChars(char c1, char c2)
             }
             break;
     }
-    return OP;
+    return CANT_TOKEN;
 }
 
 int token(FILE * fstream, char & ch){
@@ -259,8 +260,9 @@ int token(FILE * fstream, char & ch){
         ch = getc(fstream);
     }
     //cout <<"1111" << endl;
-    cout << "get buff:  " << buf << " 			";
+
     if(exist_digit && all_is_digit){
+        //cout << "get buff:  " << buf << " 			";
         return NUMBER;
     }else if(exist_alp){
         // if first letter is digit , error
@@ -272,11 +274,12 @@ int token(FILE * fstream, char & ch){
 
         // over  length
         if(buf.length() > MAX_LENGTH_NAME){
-        	exit(NAME_OVER_LIMIT_ERROR);
+            exit(NAME_OVER_LIMIT_ERROR);
         }
 
-
+        //cout << "get buff:  " << buf << " 			";
         if(find_key(buf)){
+
             return KEYWORD;
         }else{
             return NAME;
@@ -284,12 +287,26 @@ int token(FILE * fstream, char & ch){
     }else{
         // TODO: test error
         //cout <<" to op" << endl;
+        int check;
         if(buf.length() == 1){
-            return PL0_Token_OneChar(buf[0]);
+            check =  PL0_Token_OneChar(buf[0]);
         }else if(buf.length() == 2){
-        	return PL0_TwoChars(buf[0], buf[1]);
+            //cout << "get two !!!  :    " << buf[0] <<"  " << buf[1]<<"    ";
+            check =  PL0_TwoChars(buf[0], buf[1]);
         }
-        return OP;
+        if(check == CANT_TOKEN){
+            //cout << "get buff:  " << buf[0]<< " 			";
+            fseek(fstream,-1, SEEK_CUR);
+            ch = buf[1];
+            return  PL0_Token_OneChar(buf[0]);
+        }else{
+            //cout << "get buff:  " << buf<< " 			";
+            //cout << "get buff:  " << buf << "size : " <<buf.length()<<" 			";
+            return  check;
+        }
+
+
+
     }
     return -1;
 }
@@ -299,6 +316,8 @@ int main(){
     FILE * fstream ;
     fstream =  fopen("/Users/zyy/Documents/GitHub/Daily/test.txt","r");
     // = fopen(file,"a+");
+    //将标准输出重定向到 out.txt文件
+    freopen("/Users/zyy/Documents/GitHub/Daily/out.txt", "w", stdout);
     char ch;
     if(fstream == NULL)
     {
@@ -311,7 +330,7 @@ int main(){
             ch = getc(fstream);
             continue;
         }
-        cout << Tokens[token(fstream, ch) ]<<"  " << endl;
+        cout << Tokens[token(fstream, ch) ]<<"  " ;
         //if(ISALPHABET(ch) || ISALPHABET(ch)){
         //    ch = getc(fstream);
         //}
