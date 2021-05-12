@@ -117,7 +117,6 @@ int PL0_TwoChars(char c1, char c2)
 }
 
 int token(FILE * fstream, char & ch){
-    //char ch;
     bool last_is_alp = false;
     string buf = "";
     bool all_is_digit = true;
@@ -125,8 +124,6 @@ int token(FILE * fstream, char & ch){
     bool exist_alp = false;
     bool exist_op = false;
     while( ch != ' ' && ch != '\t' && ch != '\n' && ch != EOF){
-        //printf("%c",ch);
-        //cout <<"22222" << endl;
         if(ISDIGITAL(ch)){
             // must fitst check
             if(exist_op)
@@ -142,22 +139,14 @@ int token(FILE * fstream, char & ch){
                 break;
             exist_op = true;
             all_is_digit = false;
-            //switch (ch){
-            //	case ',': 1;
-
-            //	break;
-
-            //};
         }
         buf += ch;
 
         // get next
         ch = getc_and_record(fstream);
     }
-    //cout <<"1111" << endl;
 
     if(exist_digit && all_is_digit){
-        //cout << "get buff:  " << buf << " 			";
         return NUMBER;
     }else if(exist_alp){
         // if first letter is digit , error
@@ -173,7 +162,6 @@ int token(FILE * fstream, char & ch){
             exit(NAME_OVER_LIMIT_ERROR);
         }
 
-        //cout << "get buff:  " << buf << " 			";
         int index;
         if(find_key(buf, index)){
 
@@ -182,13 +170,10 @@ int token(FILE * fstream, char & ch){
             return NAME;
         }
     }else{
-        // TODO: test error
-        //cout <<" to op" << endl;
         int check;
         if(buf.length() == 1){
             check =  PL0_Token_OneChar(buf[0]);
         }else if(buf.length() == 2){
-            //cout << "get two !!!  :    " << buf[0] <<"  " << buf[1]<<"    ";
             check =  PL0_TwoChars(buf[0], buf[1]);
         }else{
         	// buf.length() >= 3
@@ -206,13 +191,10 @@ int token(FILE * fstream, char & ch){
         	exit(UNDEFINE_CHAR_ERROR);
         }
         else if(check == CANT_TOKEN){
-            //cout << "get buff:  " << buf[0]<< " 			";
             fseek(fstream, -1, SEEK_CUR);
             ch = buf[1];
             return  PL0_Token_OneChar(buf[0]);
         }else{
-            //cout << "get buff:  " << buf<< " 			";
-            //cout << "get buff:  " << buf << "size : " <<buf.length()<<" 			";
             return  check;
         }
 
@@ -239,11 +221,7 @@ int main(){
             continue;
         }
         cout << Tokens[token(fstream, ch) ]<<endl;
-        //if(ISALPHABET(ch) || ISALPHABET(ch)){
-        //    ch = getc_and_record(fstream);
-        //}
-        //cout <<"333333" << endl;
     }
-    //token( file)
+    return 0;
 
 }
