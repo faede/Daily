@@ -38,23 +38,26 @@
 #define KEYWORD 	37
 #define ASSIGN 		38		// :=
 
-#define CANT_TOKEN 39
-/*
-#define WHILE 		0
-#define CONST 		1
-#define VAR	   		2
-#define PROCEDURE 	3
-#define BEGIN		4
-#define END			5
-#define ODD			6
-#define IF			7
-#define THEN 		8
-#define CALL 		9
-#define WHILE 		10
-#define DO			11
-#define READ		12
-#define WRITE		13
-*/
+#define CANT_TOKEN 		39
+#define UNDEFINE_CHAR 	40
+
+#define KEY_SHIFT 41
+
+
+#define BEGIN		41
+#define CALL		42
+#define CONST		43
+#define DO			44
+#define END			45
+#define IF			46
+#define ODD			47
+#define PROCEDURE	48
+#define READ		49
+#define THEN		50
+#define VAR			51
+#define WHILE		52
+#define WRITE		53
+
 
 
 
@@ -66,3 +69,82 @@
 #define READ_FILE_ERROR 		1
 #define NAME_DEFINE_ERROR 		2
 #define NAME_OVER_LIMIT_ERROR	3
+#define UNDEFINE_CHAR_ERROR		4
+
+#define INPUT_FILE "/Users/zyy/Documents/GitHub/Daily/test.txt"
+#define OUTPUT_FILE "/Users/zyy/Documents/GitHub/Daily/out.txt"
+
+
+#include <string>
+using namespace std;
+string Tokens[80];
+long long LINE_NUMBER = 0;
+
+void init(){
+    //Tokens[]
+    Tokens[0] = "PLUS";
+    Tokens[1] = "MINUS";
+    Tokens[2] = "STAR";
+    Tokens[3] = "SLASH";
+    Tokens[4] = "LESS";
+    Tokens[5] = "GREATER";
+    Tokens[6] = "EQUAL";
+    Tokens[7] = "PERCENT";
+    Tokens[8] = "BACKQUOTE";
+    Tokens[9] = "LBRACE";
+    Tokens[10] = "RBRACE";
+    Tokens[11] = "LESSEQUAL";
+    Tokens[12] = "GREATEREQUAL";
+    Tokens[13] = "TILDE";
+    Tokens[14] = "CIRCUMFLEX";
+    Tokens[15] = "LEFTSHIFT";
+    Tokens[16] = "RIGHTSHIFT";
+    Tokens[17] = "DOUBLESTAR";
+    Tokens[18] = "PLUSEQUAL";
+    Tokens[19] = "MINEQUAL";
+    Tokens[20] = "STAREQUAL";
+    Tokens[21] = "SLASHEQUAL";
+    Tokens[22] = "LPAR";
+    Tokens[23] = "RPAR";
+    Tokens[24] = "LSQB";
+    Tokens[25] = "RSQB";
+    Tokens[26] = "COLON";
+    Tokens[27] = "COMMA";
+    Tokens[28] = "SEMI";
+    Tokens[29] = "PGEND";
+    Tokens[30] = "NOTEQUAL";
+    Tokens[31] = "VBAR";
+    Tokens[32] = "AMPER";
+    Tokens[33] = "NAME";
+    Tokens[34] = "NUMBER";
+    Tokens[35] = "STRING";
+    Tokens[36] = "OP";
+    Tokens[37] = "KEYWORD";
+    Tokens[38] = "ASSIGN";
+
+    // Keyword
+    Tokens[41] = "BEGIN";
+    Tokens[42] = "CALL";
+    Tokens[43] = "CONST";
+    Tokens[44] = "DO";
+    Tokens[45] = "END";
+    Tokens[46] = "IF";
+    Tokens[47] = "ODD";
+    Tokens[48] = "PROCEDURE";
+    Tokens[49] = "READ";
+    Tokens[50] = "THEN";
+    Tokens[51] = "VAR";
+    Tokens[52] = "WHILE";
+    Tokens[53] = "WRITE";
+}
+
+string KeyWord[13] = {"begin", "call", "const", "do", "end", "if", "odd", \
+				"procedure", "read", "then", "var", "while", "write"};
+
+bool ISALPHABET(char c);
+bool ISDIGITAL(char c);
+bool find_key(string s, int & index);
+char getc_and_record(FILE * fstream);
+int PL0_Token_OneChar(char c);
+int PL0_TwoChars(char c1, char c2);
+int token(FILE * fstream, char & ch);

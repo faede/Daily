@@ -8,52 +8,7 @@
 using namespace std;
 
 
-string Tokens[50];
-void init(){
-    //Tokens[]
-    Tokens[0] = "PLUS";
-    Tokens[1] = "MINUS";
-    Tokens[2] = "STAR";
-    Tokens[3] = "SLASH";
-    Tokens[4] = "LESS";
-    Tokens[5] = "GREATER";
-    Tokens[6] = "EQUAL";
-    Tokens[7] = "PERCENT";
-    Tokens[8] = "BACKQUOTE";
-    Tokens[9] = "LBRACE";
-    Tokens[10] = "RBRACE";
-    Tokens[11] = "LESSEQUAL";
-    Tokens[12] = "GREATEREQUAL";
-    Tokens[13] = "TILDE";
-    Tokens[14] = "CIRCUMFLEX";
-    Tokens[15] = "LEFTSHIFT";
-    Tokens[16] = "RIGHTSHIFT";
-    Tokens[17] = "DOUBLESTAR";
-    Tokens[18] = "PLUSEQUAL";
-    Tokens[19] = "MINEQUAL";
-    Tokens[20] = "STAREQUAL";
-    Tokens[21] = "SLASHEQUAL";
-    Tokens[22] = "LPAR";
-    Tokens[23] = "RPAR";
-    Tokens[24] = "LSQB";
-    Tokens[25] = "RSQB";
-    Tokens[26] = "COLON";
-    Tokens[27] = "COMMA";
-    Tokens[28] = "SEMI";
-    Tokens[29] = "PGEND";
-    Tokens[30] = "NOTEQUAL";
-    Tokens[31] = "VBAR";
-    Tokens[32] = "AMPER";
-    Tokens[33] = "NAME";
-    Tokens[34] = "NUMBER";
-    Tokens[35] = "STRING";
-    Tokens[36] = "OP";
-    Tokens[37] = "KEYWORD";
-    Tokens[38] = "ASSIGN";
-}
 
-string KeyWord[13] = {"if", "then", "var", "const", "procedure", "begin", "end", \
-				 "odd", "call", "while", "do", "read", "write"};
 
 // judge alphabet
 bool ISALPHABET(char c){
@@ -65,10 +20,11 @@ bool ISDIGITAL(char c){
     return c >= '0' && c <= '9';
 }
 
-bool find_key(string s){
+bool find_key(string s, int & index){
     bool find  = false;
     for (int i = 0; i < 13; i++){
         if(KeyWord[i] == s){
+        	index = i + KEY_SHIFT;
             find = true;
             break;
         }
@@ -76,8 +32,15 @@ bool find_key(string s){
     return find;
 }
 
-int
-PL0_Token_OneChar(char c)
+char getc_and_record(FILE * fstream){
+	char ch;
+	ch = getc(fstream);
+	if(ch == '\n'){
+		LINE_NUMBER++;
+	}
+	return ch;
+}
+int PL0_Token_OneChar(char c)
 {
     switch (c) {
         case '(':	return LPAR;
@@ -104,11 +67,10 @@ PL0_Token_OneChar(char c)
         case '^':	return CIRCUMFLEX;
         case '~':	return TILDE;
         case '#':   return NOTEQUAL;
-        default:	return CANT_TOKEN;
+        default:	return UNDEFINE_CHAR;
     }
 }
-int
-PL0_TwoChars(char c1, char c2)
+int PL0_TwoChars(char c1, char c2)
 {
     switch (c1) {
         case ':':
@@ -190,7 +152,7 @@ int token(FILE * fstream, char & ch){
         buf += ch;
 
         // get next
-        ch = getc(fstream);
+        ch = getc_and_record(fstream);
     }
     //cout <<"1111" << endl;
 
@@ -200,20 +162,22 @@ int token(FILE * fstream, char & ch){
     }else if(exist_alp){
         // if first letter is digit , error
         if(ISDIGITAL(buf[0])){
-            printf("ERROR, name must begin with alphabet\n");
+            printf("ERROR in line %lld, name must begin with alphabet\n", LINE_NUMBER);
             exit(NAME_DEFINE_ERROR);
         }
 
 
         // over  length
         if(buf.length() > MAX_LENGTH_NAME){
+        	printf("ERROR in line %lld, name length must less than 128\n", LINE_NUMBER);
             exit(NAME_OVER_LIMIT_ERROR);
         }
 
         //cout << "get buff:  " << buf << " 			";
-        if(find_key(buf)){
+        int index;
+        if(find_key(buf, index)){
 
-            return KEYWORD;
+            return index;
         }else{
             return NAME;
         }
@@ -226,10 +190,24 @@ int token(FILE * fstream, char & ch){
         }else if(buf.length() == 2){
             //cout << "get two !!!  :    " << buf[0] <<"  " << buf[1]<<"    ";
             check =  PL0_TwoChars(buf[0], buf[1]);
+        }else{
+        	// buf.length() >= 3
+        	check = PL0_Token_OneChar(buf[0]);
+        	if(check == UNDEFINE_CHAR){
+        		printf("ERROR in line %lld, Undefine Char\n", LINE_NUMBER);
+        		exit(UNDEFINE_CHAR_ERROR);
+        	}
+        	long int shift = - (buf.length() - 1);
+        	fseek(fstream, shift, SEEK_CUR);
+            ch = buf[1];
         }
-        if(check == CANT_TOKEN){
+        if(check == UNDEFINE_CHAR){
+        	printf("ERROR in line %lld, Undefine Char\n", LINE_NUMBER);
+        	exit(UNDEFINE_CHAR_ERROR);
+        }
+        else if(check == CANT_TOKEN){
             //cout << "get buff:  " << buf[0]<< " 			";
-            fseek(fstream,-1, SEEK_CUR);
+            fseek(fstream, -1, SEEK_CUR);
             ch = buf[1];
             return  PL0_Token_OneChar(buf[0]);
         }else{
@@ -244,28 +222,25 @@ int token(FILE * fstream, char & ch){
     return -1;
 }
 int main(){
-    //string file = "/Users/zyy/Documents/GitHub/Daily/test.txt";
     init();
     FILE * fstream ;
-    fstream =  fopen("/Users/zyy/Documents/GitHub/Daily/test.txt","r");
-    // = fopen(file,"a+");
-    //将标准输出重定向到 out.txt文件
-    freopen("/Users/zyy/Documents/GitHub/Daily/out.txt", "w", stdout);
+    fstream =  fopen(INPUT_FILE,"r");
+    freopen(OUTPUT_FILE, "w", stdout);
     char ch;
     if(fstream == NULL)
     {
         printf("Read File Failed!\n");
         exit(READ_FILE_ERROR);
     }
-    ch = getc(fstream);
+    ch = getc_and_record(fstream);
     while(ch  != EOF){
         if(ch == ' ' || ch == '\t' || ch == '\n'){
-            ch = getc(fstream);
+            ch = getc_and_record(fstream);
             continue;
         }
-        cout << Tokens[token(fstream, ch) ]<<"  " ;
+        cout << Tokens[token(fstream, ch) ]<<endl;
         //if(ISALPHABET(ch) || ISALPHABET(ch)){
-        //    ch = getc(fstream);
+        //    ch = getc_and_record(fstream);
         //}
         //cout <<"333333" << endl;
     }
