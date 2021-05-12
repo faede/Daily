@@ -220,7 +220,13 @@ int main(){
             ch = getc_and_record(fstream);
             continue;
         }
-        cout << Tokens[token(fstream, ch) ]<<endl;
+        string temp = Tokens[token(fstream, ch) ];
+        cout << temp;
+        if(temp == "SEMI"){
+        	cout << endl;
+        }else{
+        	cout << " ";
+        }
     }
     return 0;
 
