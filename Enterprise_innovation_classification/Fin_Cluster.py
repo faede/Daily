@@ -65,6 +65,10 @@ model4 = MiniBatchKMeans(n_clusters = 4)
 model4.fit(data3)
 #yhat4 = model4.predict(data3)
 
+from sklearn.cluster import KMeans
+model5 = KMeans(n_clusters=3, random_state=0)
+model5.fit(data3)
+#yhat5 = model5.predict(data3)
 
 res = {}
 # {name : sum , num}
