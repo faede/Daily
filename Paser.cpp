@@ -43,7 +43,7 @@ int Paser_ProcedureDeclaration(){
 }
 
 int Paser_ConstDeclaration(){
-	// 分程序 -> const <常量定义>  [{, <常量定义>} ; ]
+	// 分程序 -> const <常量定义>  {, <常量定义> } ; 
 
 
 	// const 
@@ -62,6 +62,12 @@ int Paser_ConstDeclaration(){
 		read_n();
 	}
 
+	if(look_n() != NUMBER){
+		printf("define need a number\n");
+	}else{
+		read_n();
+	}
+
 	// [{, <常量定义>} ; ]
 	while(look_n() == COMMA){
 		read_n();
@@ -76,11 +82,52 @@ int Paser_ConstDeclaration(){
 		}else{
 			read_n();
 		}
+
+		if(look_n() != NUMBER){
+			printf("define need a number\n");
+		}else{
+			read_n();
+		}
+	}
+
+
+	// ;
+	if(look_n() != SEMI){
+		printf("missing ';' after define\n"); 
+	}else{
+		read_n();
 	}
 }
 
 int Paser_VarDeclaration(){
+	// 分程序 -> var <变量定义> {, <变量定义> } ; 
 
+	// var 
+	read_n();
+
+	// <变量定义>
+	if(look_n() != NAME){
+		printf("define need a id\n");
+	}else{
+		read_n();
+	}
+
+	// [{, < 变量定义>} ; ]
+	while(look_n() == COMMA){
+		read_n();
+		if(look_n() != NAME){
+			printf("define need a id\n");
+		}else{
+			read_n();
+		}
+	}
+
+	// ;
+	if(look_n() != SEMI){
+		printf("missing ';' after define\n"); 
+	}else{
+		read_n();
+	}
 }
 
 int Paser_Statement(){
@@ -88,6 +135,10 @@ int Paser_Statement(){
 }
 
 int	Paser_Condition(){
+
+}
+
+int Paser_Expression(){
 
 }
 
