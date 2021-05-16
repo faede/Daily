@@ -224,6 +224,7 @@ int lex(){
         int token_index = token(fstream, ch);
         string temp = Tokens[token_index];
         Lex_Tokens.push_back(token_index);
+        Lex_Tokens_Line.push_back(LINE_NUMBER);
         cout << temp;
         if(temp == "SEMI"){
         	cout << endl;

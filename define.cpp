@@ -81,6 +81,7 @@
 #include <vector>
 using namespace std;
 vector<int> Lex_Tokens;
+vector<int> Lex_Tokens_Line;
 string Tokens[80];
 long long LINE_NUMBER = 0;
 int Paser_Token_Index = 0;

@@ -46,14 +46,14 @@ void Paser_ProcedureDeclaration(){
 
 		// id
 		if(look_n() != NAME){
-			printf("define need a id\n");
+			printf("Line %d ,define need a id \n", Lex_Tokens_Line[Paser_Token_Index]);
 		}else{
 			read_n();
 		}
 
 		// ;
 		if(look_n() != COMMA){
-			printf("missing ';' in define\n");
+			printf("Line %d ,missing ';' in define\n", Lex_Tokens_Line[Paser_Token_Index]);
 		}else{
 			read_n();
 		}
@@ -63,7 +63,7 @@ void Paser_ProcedureDeclaration(){
 
 		// ;
 		if(look_n() != COMMA){
-			printf("missing ';' in define\n");
+			printf("Line %d ,missing ';' in define\n", Lex_Tokens_Line[Paser_Token_Index]);
 		}else{
 			read_n();
 		}
@@ -78,19 +78,19 @@ void Paser_ConstDeclaration(){
 
 	// <常量定义>
 	if(look_n() != NAME){
-		printf("define need a id\n");
+		printf("Line %d ,define need a id\n", Lex_Tokens_Line[Paser_Token_Index]);
 	}else{
 		read_n();
 	}
 	
 	if(look_n() != EQUAL){
-		printf("define need a '='\n");
+		printf("Line %d ,define need a '='\n", Lex_Tokens_Line[Paser_Token_Index]);
 	}else{
 		read_n();
 	}
 
 	if(look_n() != NUMBER){
-		printf("define need a number\n");
+		printf("Line %d ,define need a number\n", Lex_Tokens_Line[Paser_Token_Index]);
 	}else{
 		read_n();
 	}
@@ -99,19 +99,19 @@ void Paser_ConstDeclaration(){
 	while(look_n() == COMMA){
 		read_n();
 		if(look_n() != NAME){
-			printf("define need a id\n");
+			printf("Line %d ,define need a id\n", Lex_Tokens_Line[Paser_Token_Index]);
 		}else{
 			read_n();
 		}
 	
 		if(look_n() != EQUAL){
-			printf("define need a '='\n");
+			printf("Line %d ,define need a '='\n", Lex_Tokens_Line[Paser_Token_Index]);
 		}else{
 			read_n();
 		}
 
 		if(look_n() != NUMBER){
-			printf("define need a number\n");
+			printf("Line %d ,define need a number\n", Lex_Tokens_Line[Paser_Token_Index]);
 		}else{
 			read_n();
 		}
@@ -120,7 +120,7 @@ void Paser_ConstDeclaration(){
 
 	// ;
 	if(look_n() != SEMI){
-		printf("missing ';' after define\n"); 
+		printf("Line %d ,missing ';' after define\n", Lex_Tokens_Line[Paser_Token_Index]); 
 	}else{
 		read_n();
 	}
@@ -134,7 +134,7 @@ void Paser_VarDeclaration(){
 
 	// <变量定义>
 	if(look_n() != NAME){
-		printf("define need a id\n");
+		printf("Line %d ,define need a id\n", Lex_Tokens_Line[Paser_Token_Index]);
 	}else{
 		read_n();
 	}
@@ -143,7 +143,7 @@ void Paser_VarDeclaration(){
 	while(look_n() == COMMA){
 		read_n();
 		if(look_n() != NAME){
-			printf("define need a id\n");
+			printf("Line %d ,define need a id\n", Lex_Tokens_Line[Paser_Token_Index]);
 		}else{
 			read_n();
 		}
@@ -151,14 +151,77 @@ void Paser_VarDeclaration(){
 
 	// ;
 	if(look_n() != SEMI){
-		printf("missing ';' after define\n"); 
+		printf("Line %d ,missing ';' after define\n", Lex_Tokens_Line[Paser_Token_Index]); 
 	}else{
 		read_n();
 	}
 }
 
 void Paser_Statement(){
+	int num = look_n();
+	switch(num){
+		case IF:
+			{
+				// if
+				read_n();
 
+				Paser_Condition();
+
+				if(look_n() != THEN){
+					printf("Line %d ,'if' must continue with 'then'\n", Lex_Tokens_Line[Paser_Token_Index]);
+				}else{
+					read_n();
+				}
+
+				Paser_Statement();
+			}
+			break;
+		case WHILE:
+			{
+				// while
+				read_n();
+
+				Paser_Condition();
+
+				if(look_n() != DO){
+					printf("Line %d ,'while' must continue with 'do'\n", Lex_Tokens_Line[Paser_Token_Index]);
+				}else{
+					read_n();
+				}
+
+				Paser_Statement();
+			}
+			break;
+		case CALL:
+			{
+				// call
+				read_n();
+
+				// id
+				if(look_n() != NAME){
+					printf("Line %d ,define need a id\n", Lex_Tokens_Line[Paser_Token_Index]);
+				}else{
+					read_n();
+				}
+			}
+			break;
+		case READ:
+			{
+				// read
+				read_n();
+
+				if(look_n() != )
+			}
+			break;
+		case WRITE:
+			{}
+			break;
+		case BEGIN:
+			{}
+			break;
+		default:
+			return ;
+	}
 }
 
 void Paser_Condition(){
@@ -180,7 +243,7 @@ void Paser_Factor(){
 void Paser(){
 	Paser_Block();
 	if(look_n() != PGEND){
-		printf("ERROR, Program must end with '.' \n");
+		printf("Line %d ,ERROR, Program must end with '.' \n", Lex_Tokens_Line[Paser_Token_Index]);
 	} 
 
 }
