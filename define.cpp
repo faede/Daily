@@ -27,7 +27,9 @@
 #define COLON		26		// :
 #define COMMA		27		// ,
 #define SEMI		28		// ;
+
 #define PGEND		29		// .
+
 #define NOTEQUAL	30		// #
 #define VBAR        31      // |
 #define AMPER       32      // &
@@ -76,10 +78,12 @@
 
 
 #include <string>
+#include <vector>
 using namespace std;
+vector<int> Lex_Tokens;
 string Tokens[80];
 long long LINE_NUMBER = 0;
-
+int Paser_Token_Index = 0;
 void init(){
     //Tokens[]
     Tokens[0] = "PLUS";
@@ -148,3 +152,20 @@ char getc_and_record(FILE * fstream);
 int PL0_Token_OneChar(char c);
 int PL0_TwoChars(char c1, char c2);
 int token(FILE * fstream, char & ch);
+
+
+int lex();
+
+
+int look_n();
+void read_n();
+int Paser_Block();
+int Paser_ProcedureDeclaration();
+int Paser_ConstDeclaration();
+int Paser_VarDeclaration();
+int Paser_Statement();
+int Paser_Condition();
+int Paser_Term();
+int Paser_Factor();
+int Paser();
+

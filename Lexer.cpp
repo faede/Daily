@@ -203,7 +203,37 @@ int token(FILE * fstream, char & ch){
     }
     return -1;
 }
-int main(){
+
+int lex(){
+	init();
+    FILE * fstream ;
+    fstream =  fopen(INPUT_FILE,"r");
+    freopen(OUTPUT_FILE, "w", stdout);
+    char ch;
+    if(fstream == NULL)
+    {
+        printf("Read File Failed!\n");
+        exit(READ_FILE_ERROR);
+    }
+    ch = getc_and_record(fstream);
+    while(ch  != EOF){
+        if(ch == ' ' || ch == '\t' || ch == '\n'){
+            ch = getc_and_record(fstream);
+            continue;
+        }
+        int token_index = token(fstream, ch);
+        string temp = Tokens[token_index];
+        Lex_Tokens.push_back(token_index);
+        cout << temp;
+        if(temp == "SEMI"){
+        	cout << endl;
+        }else{
+        	cout << " ";
+        }
+    }
+    return 0;
+}
+/* int main(){
     init();
     FILE * fstream ;
     fstream =  fopen(INPUT_FILE,"r");
@@ -220,7 +250,9 @@ int main(){
             ch = getc_and_record(fstream);
             continue;
         }
-        string temp = Tokens[token(fstream, ch) ];
+        int token_index = token(fstream, ch);
+        string temp = Tokens[token_index];
+        Lex_Tokens.push_back(token_index);
         cout << temp;
         if(temp == "SEMI"){
         	cout << endl;
@@ -231,3 +263,5 @@ int main(){
     return 0;
 
 }
+
+*/
