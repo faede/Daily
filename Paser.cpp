@@ -5,24 +5,32 @@
 #include <algorithm>
 using namespace std;
 
-int Paser_Name(){
-
-}
-
-int Paser_Identifiy(){
-
-}
-
-int Paser_Exp(){
-
-}
-
 int Paser_Block(){
 
 }
 
-int Paser_Stentment(){
+int Paser_ConstDeclaration(){
 
+}
+
+int Paser_VarDeclaration(){
+
+}
+
+int Paser_Statement(){
+
+}
+
+int	Paser_Condition(){
+
+}
+
+int Paser_Term(){
+
+}
+
+int Paser_Factor(){
+	
 }
 
 int Paser(){
