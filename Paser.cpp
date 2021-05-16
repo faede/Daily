@@ -39,12 +39,39 @@ void Paser_Block(){
 }
 
 void Paser_ProcedureDeclaration(){
+	// {procedure <id> ; <分程序>;}
+	while(look_n() == PROCEDURE){
+		// procedure
+		read_n();
 
+		// id
+		if(look_n() != NAME){
+			printf("define need a id\n");
+		}else{
+			read_n();
+		}
+
+		// ;
+		if(look_n() != COMMA){
+			printf("missing ';' in define\n");
+		}else{
+			read_n();
+		}
+
+		// <分程序>
+		Paser_Block();
+
+		// ;
+		if(look_n() != COMMA){
+			printf("missing ';' in define\n");
+		}else{
+			read_n();
+		}
+	}
 }
 
 void Paser_ConstDeclaration(){
 	// 分程序 -> const <常量定义>  {, <常量定义> } ; 
-
 
 	// const 
 	read_n();
@@ -134,7 +161,7 @@ void Paser_Statement(){
 
 }
 
-void	Paser_Condition(){
+void Paser_Condition(){
 
 }
 
