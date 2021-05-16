@@ -210,7 +210,32 @@ void Paser_Statement(){
 				// read
 				read_n();
 
-				if(look_n() != )
+				// '('
+				if(look_n() != LPAR){
+					printf("Line %d ,missing '(' after read\n", Lex_Tokens_Line[Paser_Token_Index]);
+				}else{
+					read_n();
+				}
+
+				while(look_n() == COMMA){
+					// ,
+					read_n();
+
+					// id
+					if(look_n() != NAME){
+						printf("Line %d ,define need a id\n", Lex_Tokens_Line[Paser_Token_Index]);
+					}else{
+						read_n();
+					}
+				}
+
+				// ')'
+				if(look_n() != LPAR){
+					printf("Line %d ,missing '(' after read\n", Lex_Tokens_Line[Paser_Token_Index]);
+				}else{
+					read_n();
+				}
+
 			}
 			break;
 		case WRITE:
