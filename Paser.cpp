@@ -20,7 +20,7 @@ void read_n(){
 	Paser_Token_Index++;
 }
 
-int Paser_Block(){
+void Paser_Block(){
 	int num = look_n();
 	switch(num){
 		case CONST:
@@ -38,11 +38,11 @@ int Paser_Block(){
 	}
 }
 
-int Paser_ProcedureDeclaration(){
+void Paser_ProcedureDeclaration(){
 
 }
 
-int Paser_ConstDeclaration(){
+void Paser_ConstDeclaration(){
 	// 分程序 -> const <常量定义>  {, <常量定义> } ; 
 
 
@@ -99,7 +99,7 @@ int Paser_ConstDeclaration(){
 	}
 }
 
-int Paser_VarDeclaration(){
+void Paser_VarDeclaration(){
 	// 分程序 -> var <变量定义> {, <变量定义> } ; 
 
 	// var 
@@ -130,27 +130,27 @@ int Paser_VarDeclaration(){
 	}
 }
 
-int Paser_Statement(){
+void Paser_Statement(){
 
 }
 
-int	Paser_Condition(){
+void	Paser_Condition(){
 
 }
 
-int Paser_Expression(){
+void Paser_Expression(){
 
 }
 
-int Paser_Term(){
+void Paser_Term(){
 
 }
 
-int Paser_Factor(){
+void Paser_Factor(){
 
 }
 
-int Paser(){
+void Paser(){
 	Paser_Block();
 	if(look_n() != PGEND){
 		printf("ERROR, Program must end with '.' \n");
