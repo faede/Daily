@@ -217,6 +217,13 @@ void Paser_Statement(){
 					read_n();
 				}
 
+				// id
+				if(look_n() != NAME){
+					printf("Line %d ,define need a id\n", Lex_Tokens_Line[Paser_Token_Index]);
+				}else{
+					read_n();
+				}
+
 				while(look_n() == COMMA){
 					// ,
 					read_n();
@@ -231,7 +238,7 @@ void Paser_Statement(){
 
 				// ')'
 				if(look_n() != LPAR){
-					printf("Line %d ,missing '(' after read\n", Lex_Tokens_Line[Paser_Token_Index]);
+					printf("Line %d ,missing ')' after read\n", Lex_Tokens_Line[Paser_Token_Index]);
 				}else{
 					read_n();
 				}
@@ -239,10 +246,67 @@ void Paser_Statement(){
 			}
 			break;
 		case WRITE:
-			{}
+			{
+				// read
+				read_n();
+
+				// '('
+				if(look_n() != LPAR){
+					printf("Line %d ,missing '(' after read\n", Lex_Tokens_Line[Paser_Token_Index]);
+				}else{
+					read_n();
+				}
+
+				// exp
+				Paser_Expression();
+
+				while(look_n() == COMMA){
+					// ,
+					read_n();
+
+					// exp
+					Paser_Expression();
+				}
+
+				// ')'
+				if(look_n() != LPAR){
+					printf("Line %d ,missing ')' after read\n", Lex_Tokens_Line[Paser_Token_Index]);
+				}else{
+					read_n();
+				}
+			}
 			break;
 		case BEGIN:
-			{}
+			{
+				// read
+				read_n();
+
+				// 'begin'
+				if(look_n() != BEGIN){
+					printf("Line %d ,missing 'begin' after read\n", Lex_Tokens_Line[Paser_Token_Index]);
+				}else{
+					read_n();
+				}
+
+				// state
+				Paser_Statement();
+				
+				while(look_n() == SEMI){
+					// ,
+					read_n();
+
+					// state
+					Paser_Statement();
+				}
+
+				// 'end'
+				if(look_n() != END){
+					printf("Line %d ,missing 'end' after read\n", Lex_Tokens_Line[Paser_Token_Index]);
+				}else{
+					read_n();
+				}
+
+			}
 			break;
 		default:
 			return ;
@@ -250,19 +314,83 @@ void Paser_Statement(){
 }
 
 void Paser_Condition(){
+	// odd
+	if(look_n() == ODD){
 
+		// odd
+		read_n();
+
+		Paser_Expression();
+	}else{
+
+		Paser_Expression(); 
+
+		int t = look_n();
+		if(t == EQUAL || t == NOTEQUAL || t == LESS || t == LESSEQUAL || t == GREATER || t == GREATEREQUAL){
+			read_n();
+		}else{
+			printf("Line %d ,missing symbol after exp\n", Lex_Tokens_Line[Paser_Token_Index]);
+		}
+
+		Paser_Expression();
+
+	}
 }
 
 void Paser_Expression(){
 
+	// [+ / -]
+	if(look_n() == PLUS || look_n() == MINUS){
+		read_n();
+	}
+
+	Paser_Factor();
+
+	while(look_n() == PLUS || look_n() == MINUS){
+		// [+ / -]
+		read_n();
+
+		Paser_Factor();
+	}
 }
 
 void Paser_Term(){
+	Paser_Factor();
 
+	while(look_n() == STAR || look_n() == SLASH){
+		// * / /
+		read_n();
+
+		Paser_Factor();
+	}
 }
 
 void Paser_Factor(){
 
+	if(look_n() == NAME){
+		read_n();
+	}
+	else if(look_n() == NUMBER){
+		read_n();
+	}else{
+		// '('
+		if(look_n() != LPAR){
+			printf("Line %d ,missing '(' after read\n", Lex_Tokens_Line[Paser_Token_Index]);
+		}else{
+			read_n();
+		}
+
+		// exp
+		Paser_Expression();
+
+		// ')'
+		if(look_n() != LPAR){
+			printf("Line %d ,missing ')' after read\n", Lex_Tokens_Line[Paser_Token_Index]);
+		}else{
+			read_n();
+		}
+		
+	}
 }
 
 void Paser(){
