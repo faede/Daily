@@ -22,6 +22,7 @@ void read_n(){
 
 void Paser_Block(){
 	int num = look_n();
+
 	switch(num){
 		case CONST:
 			Paser_ConstDeclaration();
@@ -33,9 +34,40 @@ void Paser_Block(){
 			Paser_ProcedureDeclaration();
 			break;
 		default:
-			Paser_Statement();
+			//Paser_Statement();
 			break;
 	}
+
+	switch(num){
+		case CONST:
+			Paser_ConstDeclaration();
+			break;
+		case VAR:
+			Paser_VarDeclaration();
+			break;
+		case PROCEDURE:
+			Paser_ProcedureDeclaration();
+			break;
+		default:
+			//Paser_Statement();
+			break;
+	}
+
+	switch(num){
+		case CONST:
+			Paser_ConstDeclaration();
+			break;
+		case VAR:
+			Paser_VarDeclaration();
+			break;
+		case PROCEDURE:
+			Paser_ProcedureDeclaration();
+			break;
+		default:
+			//Paser_Statement();
+			break;
+	}
+	Paser_Statement();
 }
 
 void Paser_ProcedureDeclaration(){
