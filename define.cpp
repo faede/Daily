@@ -82,6 +82,7 @@
 using namespace std;
 vector<int> Lex_Tokens;
 vector<int> Lex_Tokens_Line;
+vector<string> Lex_Tokens_Rel;
 string Tokens[80];
 long long LINE_NUMBER = 0;
 int Paser_Token_Index = 0;

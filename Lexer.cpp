@@ -147,6 +147,7 @@ int token(FILE * fstream, char & ch){
     }
 
     if(exist_digit && all_is_digit){
+    	Lex_Tokens_Rel.push_back(buf);
         return NUMBER;
     }else if(exist_alp){
         // if first letter is digit , error
@@ -164,9 +165,10 @@ int token(FILE * fstream, char & ch){
 
         int index;
         if(find_key(buf, index)){
-
+        	Lex_Tokens_Rel.push_back(buf);
             return index;
         }else{
+        	Lex_Tokens_Rel.push_back(buf);
             return NAME;
         }
     }else{
@@ -193,8 +195,12 @@ int token(FILE * fstream, char & ch){
         else if(check == CANT_TOKEN){
             fseek(fstream, -1, SEEK_CUR);
             ch = buf[1];
+            string ts;
+            ts.push_back(buf[0]);
+            Lex_Tokens_Rel.push_back(ts);
             return  PL0_Token_OneChar(buf[0]);
         }else{
+        	Lex_Tokens_Rel.push_back(buf);
             return  check;
         }
 
