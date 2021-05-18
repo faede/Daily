@@ -1,22 +1,14 @@
-#include <cstdlib>
-#include <iostream>
-#include <cstring>
-#include <string>
 #include <algorithm>
-// #include "/Users/zyy/Documents/GitHub/Daily/define.cpp"
-#include "/Users/zyy/Documents/GitHub/Daily/Lexer.cpp"
+#include "Lexer.cpp"
 using namespace std;
 
 
-// TODO: add error line
 
 int look_n(){
-    // TODO: read next token  return token number
     return Lex_Tokens[Paser_Token_Index];
 }
 
 void read_n(){
-    // TODO: read and move
     Paser_Token_Index++;
 }
 

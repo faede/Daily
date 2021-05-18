@@ -73,8 +73,8 @@
 #define NAME_OVER_LIMIT_ERROR	3
 #define UNDEFINE_CHAR_ERROR		4
 
-#define INPUT_FILE "/Users/zyy/Documents/GitHub/Daily/test.txt"
-#define OUTPUT_FILE "/Users/zyy/Documents/GitHub/Daily/out.txt"
+#define INPUT_FILE "../test/test.txt"
+#define OUTPUT_FILE "../out/out.txt"
 
 
 #include <string>

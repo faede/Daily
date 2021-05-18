@@ -1,10 +1,8 @@
 #include <iostream>
-#include <cstdio>
-#include <cstring>
 #include <string>
 #include <stdio.h>
 #include <stdlib.h>
-#include "/Users/zyy/Documents/GitHub/Daily/define.cpp"
+#include "./include/define.h"
 using namespace std;
 
 
@@ -243,7 +241,8 @@ int lex(){
     }
     return 0;
 }
-/* int main(){
+/*
+ int main(){
     init();
     FILE * fstream ;
     fstream =  fopen(INPUT_FILE,"r");
@@ -273,5 +272,4 @@ int lex(){
     return 0;
 
 }
-
 */

@@ -1,0 +1,32 @@
+#IncludeRegexLine: ^[ 	]*[#%][ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+/Users/zyy/Documents/GitHub/Daily/PL0/Lexer.cpp
+iostream
+-
+string
+-
+stdio.h
+-
+stdlib.h
+-
+./include/define.h
+/Users/zyy/Documents/GitHub/Daily/PL0/include/define.h
+
+/Users/zyy/Documents/GitHub/Daily/PL0/Paser.cpp
+algorithm
+-
+Lexer.cpp
+/Users/zyy/Documents/GitHub/Daily/PL0/Lexer.cpp
+
+/Users/zyy/Documents/GitHub/Daily/PL0/include/define.h
+string
+-
+vector
+-
+
