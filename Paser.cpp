@@ -21,7 +21,7 @@ void read_n(){
 }
 
 void Paser_Block(){
-	printf("Pasering Block\n");
+    printf("Pasering Block\n");
     //int num = look_n();
 
     switch(look_n()){
@@ -72,7 +72,7 @@ void Paser_Block(){
 }
 
 void Paser_ProcedureDeclaration(){
-	printf("Pasering procedure\n");
+    printf("Pasering procedure\n");
     // {procedure <id> ; <分程序>;}
     while(look_n() == PROCEDURE){
         // procedure
@@ -105,7 +105,7 @@ void Paser_ProcedureDeclaration(){
 }
 
 void Paser_ConstDeclaration(){
-	printf("Pasering Declaration\n");
+    printf("Pasering Declaration\n");
     // 分程序 -> const <常量定义>  {, <常量定义> } ;
 
     // const
@@ -162,7 +162,7 @@ void Paser_ConstDeclaration(){
 }
 
 void Paser_VarDeclaration(){
-	printf("Pasering Var\n");
+    printf("Pasering Var\n");
     // 分程序 -> var <变量定义> {, <变量定义> } ;
 
     // var
@@ -194,7 +194,7 @@ void Paser_VarDeclaration(){
 }
 
 void Paser_Statement(){
-	printf("Pasering Statement\n");
+    printf("Pasering Statement\n");
     //int num = look_n();
     switch(look_n()){
         case IF:
@@ -339,16 +339,16 @@ void Paser_Statement(){
             break;
         case NAME:
         {
-        	// read id
-        	read_n();
+            // read id
+            read_n();
 
-        	if(look_n() != ASSIGN){
-        		printf("Line %d ,missing '=' in assign\n", Lex_Tokens_Line[Paser_Token_Index]);
-        	}else{
-        		read_n();
-        	}
+            if(look_n() != ASSIGN){
+                printf("Line %d ,missing '=' in assign\n", Lex_Tokens_Line[Paser_Token_Index]);
+            }else{
+                read_n();
+            }
 
-        	Paser_Expression();
+            Paser_Expression();
         }
         default:
             return ;
@@ -356,7 +356,7 @@ void Paser_Statement(){
 }
 
 void Paser_Condition(){
-	printf("Pasering Condition\n");
+    printf("Pasering Condition\n");
     // odd
     if(look_n() == ODD){
 
@@ -381,24 +381,24 @@ void Paser_Condition(){
 }
 
 void Paser_Expression(){
-	printf("Pasering Expression\n");
+    printf("Pasering Expression\n");
     // [+ / -]
     if(look_n() == PLUS || look_n() == MINUS){
         read_n();
     }
 
-    Paser_Factor();
+    Paser_Term();
 
     while(look_n() == PLUS || look_n() == MINUS){
         // [+ / -]
         read_n();
 
-        Paser_Factor();
+        Paser_Term();
     }
 }
 
 void Paser_Term(){
-	printf("Pasering Term\n"); 
+    printf("Pasering Term\n");
 
     Paser_Factor();
 
@@ -411,7 +411,7 @@ void Paser_Term(){
 }
 
 void Paser_Factor(){
-	printf("Pasering Factor\n");
+    printf("Pasering Factor\n");
     if(look_n() == NAME){
         read_n();
     }
