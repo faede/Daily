@@ -22,7 +22,6 @@ void read_n(){
 
 void Paser_Block(){
     printf("Pasering Block\n");
-    //int num = look_n();
 
     switch(look_n()){
         case CONST:
@@ -69,6 +68,8 @@ void Paser_Block(){
             break;
     }
     Paser_Statement();
+
+    printf("Pasering Block End , No error\n");
 }
 
 void Paser_ProcedureDeclaration(){
@@ -102,6 +103,8 @@ void Paser_ProcedureDeclaration(){
             read_n();
         }
     }
+
+    printf("Pasering procedure End , No error\n");
 }
 
 void Paser_ConstDeclaration(){
@@ -159,6 +162,8 @@ void Paser_ConstDeclaration(){
     }else{
         read_n();
     }
+
+    printf("Pasering ConstDeclaration End , No error\n");
 }
 
 void Paser_VarDeclaration(){
@@ -191,6 +196,8 @@ void Paser_VarDeclaration(){
     }else{
         read_n();
     }
+
+    printf("Pasering VarDeclaration End , No error\n");
 }
 
 void Paser_Statement(){
@@ -353,6 +360,8 @@ void Paser_Statement(){
         default:
             return ;
     }
+
+    printf("Pasering Statement End , No error\n");
 }
 
 void Paser_Condition(){
@@ -378,6 +387,7 @@ void Paser_Condition(){
         Paser_Expression();
 
     }
+    printf("Pasering Condition End , No error\n");
 }
 
 void Paser_Expression(){
@@ -395,6 +405,8 @@ void Paser_Expression(){
 
         Paser_Term();
     }
+
+    printf("Pasering Expression End , No error\n");
 }
 
 void Paser_Term(){
@@ -408,6 +420,8 @@ void Paser_Term(){
 
         Paser_Factor();
     }
+
+    printf("Pasering Term End , No error\n");
 }
 
 void Paser_Factor(){
@@ -436,6 +450,8 @@ void Paser_Factor(){
         }
 
     }
+
+    printf("Pasering Factor End , No error\n");
 }
 
 void Paser(){
