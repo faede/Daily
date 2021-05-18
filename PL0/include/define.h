@@ -3,9 +3,9 @@
 #define STAR		2		// *
 #define SLASH		3		// /
 #define LESS		4		// <
-#define GREATER		5		// >
+#define GREATER     5		// >
 #define EQUAL		6		// =
-#define PERCENT		7 		// %
+#define PERCENT     7 		// %
 #define BACKQUOTE	8		// `
 #define LBRACE		9 		// {        left brace
 #define RBRACE		10		// }		right brace
@@ -36,11 +36,11 @@
 #define NAME		33
 #define NUMBER		34
 #define STRING		35
-#define OP 			36
+#define OP          36
 #define KEYWORD 	37
-#define ASSIGN 		38		// :=
+#define ASSIGN      38		// :=
 
-#define CANT_TOKEN 		39
+#define CANT_TOKEN  39
 #define UNDEFINE_CHAR 	40
 
 #define KEY_SHIFT 41
@@ -50,13 +50,13 @@
 #define CALL		42
 #define CONST		43
 #define DO			44
-#define END			45
+#define END         45
 #define IF			46
-#define ODD			47
+#define ODD         47
 #define PROCEDURE	48
 #define READ		49
 #define THEN		50
-#define VAR			51
+#define VAR         51
 #define WHILE		52
 #define WRITE		53
 
@@ -71,7 +71,7 @@
 #define READ_FILE_ERROR 		1
 #define NAME_DEFINE_ERROR 		2
 #define NAME_OVER_LIMIT_ERROR	3
-#define UNDEFINE_CHAR_ERROR		4
+#define UNDEFINE_CHAR_ERROR     4
 
 #define INPUT_FILE "../test/test.txt"
 #define OUTPUT_FILE "../out/out.txt"
