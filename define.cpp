@@ -172,3 +172,31 @@ void Paser_Term();
 void Paser_Factor();
 void Paser();
 void Paser_Expression();
+
+
+
+class Paser_tree{
+ 	Node * root;
+	void adding_exp_node(string  op, Node * n1, Node * n2){
+
+	}
+}
+
+typedef struct _node {
+    short		n_type;
+    string		n_str;
+    int			n_lineno;
+    int			n_nchildren;
+    struct _node	*n_child;
+} node;
+
+extern DL_IMPORT(node *) PL0_New(int type);
+extern DL_IMPORT(int) PL0_AddChild(node *n, int type,
+                                      char *str, int lineno);
+extern DL_IMPORT(void) PL0_Free(node *n);
+
+/* Node access functions */
+#define NCH(n)		((n)->n_nchildren)
+#define CHILD(n, i)	(&(n)->n_child[i])
+#define TYPE(n)		((n)->n_type)
+#define STR(n)		((n)->n_str)
