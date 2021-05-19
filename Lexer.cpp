@@ -212,6 +212,17 @@ int token(FILE * fstream, char & ch){
     return -1;
 }
 
+int read_next_token(){
+	// TODO: read token while paser
+	return 0;
+}
+
+int look_next_token(){
+	// TODO: read and reset file pointer (buf.length()) to 
+	// achieve look next token while paser
+	return 0;
+}
+
 int lex(){
 	init();
     FILE * fstream ;
@@ -233,6 +244,10 @@ int lex(){
         string temp = Tokens[token_index];
         Lex_Tokens.push_back(token_index);
         Lex_Tokens_Line.push_back(LINE_NUMBER);
+
+
+        #if DEBUG_MODE == 1
+
         // cout << temp;
         cout << temp << ": " <<Lex_Tokens_Rel[NumOfToken - 1] <<" ";
         if(temp == "SEMI"){
@@ -240,6 +255,10 @@ int lex(){
         }else{
         	cout << " ";
         }
+
+
+        #endif
+
     }
     return 0;
 }

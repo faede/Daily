@@ -456,7 +456,7 @@ void Paser(){
 
 int main(){
     lex();
-
+    vector<int>()
     printf("\nPaser begin:\n");
     Paser();
 }

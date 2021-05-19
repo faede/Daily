@@ -174,26 +174,74 @@ void Paser();
 void Paser_Expression();
 
 
+// TODO:
+// Achieve Paser Tree After Paser
+// 
 
-class Paser_tree{
- 	Node * root;
-	void adding_exp_node(string  op, Node * n1, Node * n2){
+#define DEBUG_MODE 1
 
-	}
-}
+#define Block 	1
 
-typedef struct _node {
-    short		n_type;
+
+class node {
+public:
+    int		n_type;
     string		n_str;
     int			n_lineno;
     int			n_nchildren;
-    struct _node	*n_child;
-} node;
+    
+    vector<node *> n_child;
+};
 
-extern DL_IMPORT(node *) PL0_New(int type);
-extern DL_IMPORT(int) PL0_AddChild(node *n, int type,
-                                      char *str, int lineno);
-extern DL_IMPORT(void) PL0_Free(node *n);
+
+class Paser_tree{
+public:
+ 	node * root;
+
+
+ 	// class function
+ 	node * PL0_New(int type, string name, int line_index){
+ 		node * nnode = new node();
+ 		nnode -> n_type = type;
+ 		nnode -> n_str  = name;
+ 		nnode -> n_lineno = line_index;
+ 		nnode -> n_nchildren = 0;
+ 		/*switch(type){
+ 			case Block:
+ 				{
+
+ 				}
+ 				break;
+ 			default:
+ 				break;
+ 		}*/
+ 		return nnode;
+ 	}
+
+	int PL0_AddChild(node *fa, int type, string str, int lineno){
+		fa -> n_nchildren++;
+		node *cnode = PL0_New(type, str, lineno);
+
+		fa -> n_child.push_back(cnode);
+		return 0;
+	}
+
+	void PL0_Free(node *n){
+
+	}
+	// init function
+	void paser_tree_init(){
+		root = PL0_New(0, "Programe", 0);
+	}
+
+	void show_tree(){
+
+	}
+
+
+};
+
+
 
 /* Node access functions */
 #define NCH(n)		((n)->n_nchildren)

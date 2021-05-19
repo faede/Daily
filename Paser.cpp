@@ -21,7 +21,9 @@ void read_n(){
 }
 
 void Paser_Block(){
+	#if DEBUG_MODE == 1
     printf("Pasering Block\n");
+    #endif
 
     switch(look_n()){
         case CONST:
@@ -69,11 +71,15 @@ void Paser_Block(){
     }
     Paser_Statement();
 
+    #if DEBUG_MODE == 1
     printf("Pasering Block End , No error\n");
+    #endif
 }
 
 void Paser_ProcedureDeclaration(){
+	#if DEBUG_MODE == 1
     printf("Pasering procedure\n");
+    #endif
     // {procedure <id> ; <分程序>;}
     while(look_n() == PROCEDURE){
         // procedure
@@ -103,12 +109,15 @@ void Paser_ProcedureDeclaration(){
             read_n();
         }
     }
-
+    #if DEBUG_MODE == 1
     printf("Pasering procedure End , No error\n");
+    #endif
 }
 
 void Paser_ConstDeclaration(){
+	#if DEBUG_MODE == 1
     printf("Pasering Declaration\n");
+    #endif
     // 分程序 -> const <常量定义>  {, <常量定义> } ;
 
     // const
@@ -163,11 +172,15 @@ void Paser_ConstDeclaration(){
         read_n();
     }
 
+    #if DEBUG_MODE == 1
     printf("Pasering ConstDeclaration End , No error\n");
+    #endif
 }
 
 void Paser_VarDeclaration(){
+	#if DEBUG_MODE == 1
     printf("Pasering Var\n");
+    #endif
     // 分程序 -> var <变量定义> {, <变量定义> } ;
 
     // var
@@ -197,11 +210,15 @@ void Paser_VarDeclaration(){
         read_n();
     }
 
+    #if DEBUG_MODE == 1
     printf("Pasering VarDeclaration End , No error\n");
+    #endif
 }
 
 void Paser_Statement(){
+	#if DEBUG_MODE == 1
     printf("Pasering Statement\n");
+    #endif
     //int num = look_n();
     switch(look_n()){
         case IF:
@@ -361,11 +378,15 @@ void Paser_Statement(){
             return ;
     }
 
+    #if DEBUG_MODE == 1
     printf("Pasering Statement End , No error\n");
+    #endif
 }
 
 void Paser_Condition(){
+	#if DEBUG_MODE == 1
     printf("Pasering Condition\n");
+    #endif
     // odd
     if(look_n() == ODD){
 
@@ -387,11 +408,16 @@ void Paser_Condition(){
         Paser_Expression();
 
     }
+
+    #if DEBUG_MODE == 1
     printf("Pasering Condition End , No error\n");
+    #endif
 }
 
 void Paser_Expression(){
+	#if DEBUG_MODE == 1
     printf("Pasering Expression\n");
+    #endif
     // [+ / -]
     if(look_n() == PLUS || look_n() == MINUS){
         read_n();
@@ -405,13 +431,15 @@ void Paser_Expression(){
 
         Paser_Term();
     }
-
+    #if DEBUG_MODE == 1
     printf("Pasering Expression End , No error\n");
+    #endif
 }
 
 void Paser_Term(){
+	#if DEBUG_MODE == 1
     printf("Pasering Term\n");
-
+    #endif
     Paser_Factor();
 
     while(look_n() == STAR || look_n() == SLASH){
@@ -421,11 +449,16 @@ void Paser_Term(){
         Paser_Factor();
     }
 
+    #if DEBUG_MODE == 1
     printf("Pasering Term End , No error\n");
+    #endif
 }
 
 void Paser_Factor(){
+	#if DEBUG_MODE == 1
     printf("Pasering Factor\n");
+    #endif
+
     if(look_n() == NAME){
         read_n();
     }
@@ -451,7 +484,9 @@ void Paser_Factor(){
 
     }
 
+    #if DEBUG_MODE == 1
     printf("Pasering Factor End , No error\n");
+    #endif
 }
 
 void Paser(){
@@ -464,7 +499,10 @@ void Paser(){
 
 int main(){
     lex();
-
+    #if DEBUG_MODE == 1
     printf("\nPaser begin:\n");
+    #endif
+
+    Paser_tree P_t ;
     Paser();
 }
