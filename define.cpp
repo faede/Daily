@@ -65,7 +65,7 @@
 
 // MAX length
 #define MAX_LENGTH_NAME 128
-
+#define MAX_TREE_LEVE 16
 
 // ERROR CODE
 #define READ_FILE_ERROR 		1
@@ -87,6 +87,8 @@ int NumOfToken = 0;
 string Tokens[80];
 long long LINE_NUMBER = 0;
 int Paser_Token_Index = 0;
+
+
 void init(){
     //Tokens[]
     Tokens[0] = "PLUS";
@@ -218,12 +220,12 @@ public:
  		return nnode;
  	}
 
-	int PL0_AddChild(node *fa, int type, string str, int lineno){
+	node * PL0_AddChild(node *fa, int type, string str, int lineno){
 		fa -> n_nchildren++;
 		node *cnode = PL0_New(type, str, lineno);
 
 		fa -> n_child.push_back(cnode);
-		return 0;
+		return cnode;
 	}
 
 	void PL0_Free(node *n){

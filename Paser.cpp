@@ -20,20 +20,21 @@ void read_n(){
     Paser_Token_Index++;
 }
 
-void Paser_Block(){
+void Paser_Block(ndoe * fa){
 	#if DEBUG_MODE == 1
     printf("Pasering Block\n");
     #endif
+    fa = PL0_AddChild(fa, Block, "Block", Lex_Tokens_Lineo[Paser_Token_Index]);
 
     switch(look_n()){
         case CONST:
-            Paser_ConstDeclaration();
+            Paser_ConstDeclaration(fa);
             break;
         case VAR:
-            Paser_VarDeclaration();
+            Paser_VarDeclaration(fa);
             break;
         case PROCEDURE:
-            Paser_ProcedureDeclaration();
+            Paser_ProcedureDeclaration(fa);
             break;
         default:
             //Paser_Statement();
@@ -42,13 +43,13 @@ void Paser_Block(){
 
     switch(look_n()){
         case CONST:
-            Paser_ConstDeclaration();
+            Paser_ConstDeclaration(fa);
             break;
         case VAR:
-            Paser_VarDeclaration();
+            Paser_VarDeclaration(fa);
             break;
         case PROCEDURE:
-            Paser_ProcedureDeclaration();
+            Paser_ProcedureDeclaration(fa);
             break;
         default:
             //Paser_Statement();
@@ -57,29 +58,31 @@ void Paser_Block(){
 
     switch(look_n()){
         case CONST:
-            Paser_ConstDeclaration();
+            Paser_ConstDeclaration(fa);
             break;
         case VAR:
-            Paser_VarDeclaration();
+            Paser_VarDeclaration(fa);
             break;
         case PROCEDURE:
-            Paser_ProcedureDeclaration();
+            Paser_ProcedureDeclaration(fa);
             break;
         default:
             //Paser_Statement();
             break;
     }
-    Paser_Statement();
+    Paser_Statement(fa);
 
     #if DEBUG_MODE == 1
     printf("Pasering Block End , No error\n");
     #endif
 }
 
-void Paser_ProcedureDeclaration(){
+void Paser_ProcedureDeclaration(ndoe * fa){
 	#if DEBUG_MODE == 1
     printf("Pasering procedure\n");
     #endif
+
+    fa = PL0_AddChild(fa, 0, "procedure", Lex_Tokens_Lineo[Paser_Token_Index]);
     // {procedure <id> ; <分程序>;}
     while(look_n() == PROCEDURE){
         // procedure
@@ -100,7 +103,7 @@ void Paser_ProcedureDeclaration(){
         }
 
         // <分程序>
-        Paser_Block();
+        Paser_Block(fa);
 
         // ;
         if(look_n() != SEMI){
@@ -114,7 +117,7 @@ void Paser_ProcedureDeclaration(){
     #endif
 }
 
-void Paser_ConstDeclaration(){
+void Paser_ConstDeclaration(ndoe * fa){
 	#if DEBUG_MODE == 1
     printf("Pasering Declaration\n");
     #endif
@@ -177,7 +180,7 @@ void Paser_ConstDeclaration(){
     #endif
 }
 
-void Paser_VarDeclaration(){
+void Paser_VarDeclaration(ndoe * fa){
 	#if DEBUG_MODE == 1
     printf("Pasering Var\n");
     #endif
@@ -215,7 +218,7 @@ void Paser_VarDeclaration(){
     #endif
 }
 
-void Paser_Statement(){
+void Paser_Statement(ndoe * fa){
 	#if DEBUG_MODE == 1
     printf("Pasering Statement\n");
     #endif
@@ -226,7 +229,7 @@ void Paser_Statement(){
             // if
             read_n();
 
-            Paser_Condition();
+            Paser_Condition(fa);
 
             if(look_n() != THEN){
                 printf("Line %d ,'if' must continue with 'then'\n", Lex_Tokens_Line[Paser_Token_Index]);
@@ -234,7 +237,7 @@ void Paser_Statement(){
                 read_n();
             }
 
-            Paser_Statement();
+            Paser_Statement(fa);
         }
             break;
         case WHILE:
@@ -242,7 +245,7 @@ void Paser_Statement(){
             // while
             read_n();
 
-            Paser_Condition();
+            Paser_Condition(fa);
 
             if(look_n() != DO){
                 printf("Line %d ,'while' must continue with 'do'\n", Lex_Tokens_Line[Paser_Token_Index]);
@@ -250,7 +253,7 @@ void Paser_Statement(){
                 read_n();
             }
 
-            Paser_Statement();
+            Paser_Statement(fa);
         }
             break;
         case CALL:
@@ -319,14 +322,14 @@ void Paser_Statement(){
             }
 
             // exp
-            Paser_Expression();
+            Paser_Expression(fa);
 
             while(look_n() == COMMA){
                 // ,
                 read_n();
 
                 // exp
-                Paser_Expression();
+                Paser_Expression(fa);
             }
 
             // ')'
@@ -343,14 +346,14 @@ void Paser_Statement(){
             read_n();
 
             // state
-            Paser_Statement();
+            Paser_Statement(fa);
 
             while(look_n() == SEMI){
                 // ;
                 read_n();
 
                 // state
-                Paser_Statement();
+                Paser_Statement(fa);
             }
             // 'end'
             if(look_n() != END){
@@ -372,7 +375,7 @@ void Paser_Statement(){
                 read_n();
             }
 
-            Paser_Expression();
+            Paser_Expression(fa);
         }
         default:
             return ;
@@ -383,7 +386,7 @@ void Paser_Statement(){
     #endif
 }
 
-void Paser_Condition(){
+void Paser_Condition(ndoe * fa){
 	#if DEBUG_MODE == 1
     printf("Pasering Condition\n");
     #endif
@@ -393,10 +396,10 @@ void Paser_Condition(){
         // odd
         read_n();
 
-        Paser_Expression();
+        Paser_Expression(fa);
     }else{
 
-        Paser_Expression();
+        Paser_Expression(fa);
 
         int t = look_n();
         if(t == EQUAL || t == NOTEQUAL || t == LESS || t == LESSEQUAL || t == GREATER || t == GREATEREQUAL){
@@ -405,7 +408,7 @@ void Paser_Condition(){
             printf("Line %d ,missing symbol after exp\n", Lex_Tokens_Line[Paser_Token_Index]);
         }
 
-        Paser_Expression();
+        Paser_Expression(fa);
 
     }
 
@@ -414,7 +417,7 @@ void Paser_Condition(){
     #endif
 }
 
-void Paser_Expression(){
+void Paser_Expression(ndoe * fa){
 	#if DEBUG_MODE == 1
     printf("Pasering Expression\n");
     #endif
@@ -423,30 +426,30 @@ void Paser_Expression(){
         read_n();
     }
 
-    Paser_Term();
+    Paser_Term(fa);
 
     while(look_n() == PLUS || look_n() == MINUS){
         // [+ / -]
         read_n();
 
-        Paser_Term();
+        Paser_Term(fa);
     }
     #if DEBUG_MODE == 1
     printf("Pasering Expression End , No error\n");
     #endif
 }
 
-void Paser_Term(){
+void Paser_Term(ndoe * fa){
 	#if DEBUG_MODE == 1
     printf("Pasering Term\n");
     #endif
-    Paser_Factor();
+    Paser_Factor(fa);
 
     while(look_n() == STAR || look_n() == SLASH){
         // * / /
         read_n();
 
-        Paser_Factor();
+        Paser_Factor(fa);
     }
 
     #if DEBUG_MODE == 1
@@ -454,7 +457,7 @@ void Paser_Term(){
     #endif
 }
 
-void Paser_Factor(){
+void Paser_Factor(ndoe * fa){
 	#if DEBUG_MODE == 1
     printf("Pasering Factor\n");
     #endif
@@ -473,7 +476,7 @@ void Paser_Factor(){
         }
 
         // exp
-        Paser_Expression();
+        Paser_Expression(fa);
 
         // ')'
         if(look_n() != RPAR){
@@ -489,7 +492,7 @@ void Paser_Factor(){
     #endif
 }
 
-void Paser(){
+void Paser(ndoe * fa){
     Paser_Block();
     if(look_n() != PGEND){
         printf("Line %d ,ERROR, Program must end with '.' \n", Lex_Tokens_Line[Paser_Token_Index]);
@@ -504,5 +507,5 @@ int main(){
     #endif
 
     Paser_tree P_t ;
-    Paser();
+    Paser(P_t.root);
 }
