@@ -82,11 +82,12 @@ void Paser_ProcedureDeclaration(ndoe * fa){
     printf("Pasering procedure\n");
     #endif
 
-    fa = PL0_AddChild(fa, 0, "procedure", Lex_Tokens_Lineo[Paser_Token_Index]);
+    //
     // {procedure <id> ; <分程序>;}
     while(look_n() == PROCEDURE){
         // procedure
         read_n();
+
 
         // id
         if(look_n() != NAME){
@@ -102,8 +103,9 @@ void Paser_ProcedureDeclaration(ndoe * fa){
             read_n();
         }
 
+        node *fa2 = PL0_AddChild(fa, 0, "procedure", Lex_Tokens_Lineo[Paser_Token_Index]);
         // <分程序>
-        Paser_Block(fa);
+        Paser_Block(fa2);
 
         // ;
         if(look_n() != SEMI){
@@ -126,6 +128,7 @@ void Paser_ConstDeclaration(ndoe * fa){
     // const
     read_n();
 
+    node * fa2 = PL0_AddChild(fa, 0, Lex_Tokens_Rel[Paser_Token_Index], Lex_Tokens_Lineo[Paser_Token_Index]);
     // <常量定义>
     if(look_n() != NAME){
         printf("Line %d ,define need a id\n", Lex_Tokens_Line[Paser_Token_Index]);
@@ -147,6 +150,7 @@ void Paser_ConstDeclaration(ndoe * fa){
 
     // [{, <常量定义>} ; ]
     while(look_n() == COMMA){
+    	fa2 = PL0_AddChild(fa, 0, Lex_Tokens_Rel[Paser_Token_Index], Lex_Tokens_Lineo[Paser_Token_Index]);
         read_n();
         if(look_n() != NAME){
             printf("Line %d ,define need a id\n", Lex_Tokens_Line[Paser_Token_Index]);
@@ -166,7 +170,7 @@ void Paser_ConstDeclaration(ndoe * fa){
             read_n();
         }
     }
-
+    fa = fa2
 
     // ;
     if(look_n() != SEMI){
