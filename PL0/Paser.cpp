@@ -1,8 +1,11 @@
 #include <algorithm>
 #include "Lexer.cpp"
+#include <iomanip>
 using namespace std;
 
 
+
+string name,value;
 
 int look_n(){
     return Lex_Tokens[Paser_Token_Index];
@@ -75,6 +78,8 @@ void Paser_ProcedureDeclaration(){
         if(look_n() != NAME){
             printf("Line %d ,define need a id \n", Lex_Tokens_Line[Paser_Token_Index]);
         }else{
+            name =  Lex_Tokens_Rel[Paser_Token_Index];
+            Symbol_Table[name] = make_pair("procedure", "0");
             read_n();
         }
 
@@ -106,10 +111,12 @@ void Paser_ConstDeclaration(){
     // const
     read_n();
 
+
     // <常量定义>
     if(look_n() != NAME){
         printf("Line %d ,define need a id\n", Lex_Tokens_Line[Paser_Token_Index]);
     }else{
+        name =  Lex_Tokens_Rel[Paser_Token_Index];
         read_n();
     }
 
@@ -122,6 +129,8 @@ void Paser_ConstDeclaration(){
     if(look_n() != NUMBER){
         printf("Line %d ,define need a number\n", Lex_Tokens_Line[Paser_Token_Index]);
     }else{
+        value = Lex_Tokens_Rel[Paser_Token_Index];
+        Symbol_Table[name] = make_pair("const", value);
         read_n();
     }
 
@@ -131,6 +140,7 @@ void Paser_ConstDeclaration(){
         if(look_n() != NAME){
             printf("Line %d ,define need a id\n", Lex_Tokens_Line[Paser_Token_Index]);
         }else{
+            name =  Lex_Tokens_Rel[Paser_Token_Index];
             read_n();
         }
 
@@ -143,6 +153,8 @@ void Paser_ConstDeclaration(){
         if(look_n() != NUMBER){
             printf("Line %d ,define need a number\n", Lex_Tokens_Line[Paser_Token_Index]);
         }else{
+            value = Lex_Tokens_Rel[Paser_Token_Index];
+            Symbol_Table[name] = make_pair("const", value);
             read_n();
         }
     }
@@ -169,6 +181,8 @@ void Paser_VarDeclaration(){
     if(look_n() != NAME){
         printf("Line %d ,define need a id\n", Lex_Tokens_Line[Paser_Token_Index]);
     }else{
+        name =  Lex_Tokens_Rel[Paser_Token_Index];
+        Symbol_Table[name] = make_pair("var", "0");
         read_n();
     }
 
@@ -178,6 +192,8 @@ void Paser_VarDeclaration(){
         if(look_n() != NAME){
             printf("Line %d ,define need a id\n", Lex_Tokens_Line[Paser_Token_Index]);
         }else{
+            name =  Lex_Tokens_Rel[Paser_Token_Index];
+            Symbol_Table[name] = make_pair("var", "0");
             read_n();
         }
     }
@@ -456,7 +472,38 @@ void Paser(){
 
 int main(){
     lex();
-    vector<int>()
+    vector<int>();
     printf("\nPaser begin:\n");
     Paser();
+    cout << std::left << setfill('-') << setw(21) << "|";
+    cout << std::left << setfill('-') << setw(21) << "|";
+    cout << std::left << setfill('-') << setw(21) << "|";
+    cout <<"|" << endl;
+    //cout <<"|" << std::left << setfill('-') << setw(20) << " ";
+    //cout <<"|" << std::left << setfill('-') << setw(20) << " ";
+    //cout <<"|" << std::left << setfill('-') << setw(20) << " ";
+    //cout <<"|" << endl;
+
+    cout <<"|" << std::left << setfill(' ') << setw(20) << "Symbol Name";
+    cout <<"|" << std::left << setfill(' ') << setw(20) << "Type";
+    cout <<"|" << std::left << setfill(' ') << setw(20) << "Value";
+    cout <<"|" << endl;
+
+    cout << std::left << setfill('-') << setw(21) << "|";
+    cout << std::left << setfill('-') << setw(21) << "|";
+    cout << std::left << setfill('-') << setw(21) << "|";
+    cout <<"|" << endl;
+
+    for(auto i : Symbol_Table){
+        cout <<"|" << std::left << setfill(' ') << setw(20) << i.first;
+        cout <<"|" << std::left << setfill(' ') << setw(20) << i.second.first;
+        cout <<"|" << std::left << setfill(' ') << setw(20) << i.second.second;
+        cout <<"|" << endl;
+
+        cout << std::left << setfill('-') << setw(21) << "|";
+        cout << std::left << setfill('-') << setw(21) << "|";
+        cout << std::left << setfill('-') << setw(21) << "|";
+        cout <<"|" << endl;
+    }
+
 }

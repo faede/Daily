@@ -79,6 +79,7 @@
 
 #include <string>
 #include <vector>
+#include <map>
 using namespace std;
 vector<int> Lex_Tokens;
 vector<int> Lex_Tokens_Line;
@@ -87,6 +88,9 @@ int NumOfToken = 0;
 string Tokens[80];
 long long LINE_NUMBER = 0;
 int Paser_Token_Index = 0;
+// name -> (type, value)
+map<string, pair<string,string>> Symbol_Table;
+
 void init(){
     //Tokens[]
     Tokens[0] = "PLUS";

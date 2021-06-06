@@ -78,6 +78,7 @@
 
 
 #include <string>
+#include <map>
 #include <vector>
 using namespace std;
 vector<int> Lex_Tokens;
@@ -88,6 +89,8 @@ string Tokens[80];
 long long LINE_NUMBER = 0;
 int Paser_Token_Index = 0;
 
+// name -> (type, value)
+map<string, pair<string,string>> Symbol_Table;
 
 void init(){
     //Tokens[]
@@ -162,6 +165,8 @@ int token(FILE * fstream, char & ch);
 int lex();
 
 
+
+
 int look_n();
 void read_n();
 void Paser_Block();
@@ -185,68 +190,67 @@ void Paser_Expression();
 #define Block 	1
 
 
-class node {
-public:
-    int		n_type;
-    string		n_str;
-    int			n_lineno;
-    int			n_nchildren;
-    
-    vector<node *> n_child;
-};
-
-
-class Paser_tree{
-public:
- 	node * root;
-
-
- 	// class function
- 	node * PL0_New(int type, string name, int line_index){
- 		node * nnode = new node();
- 		nnode -> n_type = type;
- 		nnode -> n_str  = name;
- 		nnode -> n_lineno = line_index;
- 		nnode -> n_nchildren = 0;
- 		/*switch(type){
- 			case Block:
- 				{
-
- 				}
- 				break;
- 			default:
- 				break;
- 		}*/
- 		return nnode;
- 	}
-
-	node * PL0_AddChild(node *fa, int type, string str, int lineno){
-		fa -> n_nchildren++;
-		node *cnode = PL0_New(type, str, lineno);
-
-		fa -> n_child.push_back(cnode);
-		return cnode;
-	}
-
-	void PL0_Free(node *n){
-
-	}
-	// init function
-	void paser_tree_init(){
-		root = PL0_New(0, "Programe", 0);
-	}
-
-	void show_tree(){
-
-	}
-
-
-};
 
 
 
-/* Node access functions */
-#define NCH(n)		((n)->n_nchildren)
-#define CHILD(n, i)	(&(n)->n_child[i])
-#define TYPE(n)		((n)->n_type)
-#define STR(n)		((n)->n_str)
+// node * PL0_New(int type, string name, int line_index){
+//     node * nnode = new node();
+//     nnode -> n_type = type;
+//     nnode -> n_str  = name;
+//     nnode -> n_lineno = line_index;
+//     nnode -> n_nchildren = 0;
+//     /*switch(type){
+//         case Block:
+//             {
+
+//             }
+//             break;
+//         default:
+//             break;
+//     }*/
+//     return nnode;
+// }
+
+// node * PL0_AddChild(node *fa, int type, string str, int lineno){
+//         fa -> n_nchildren++;
+//         node *cnode = PL0_New(type, str, lineno);
+
+//         fa -> n_child.push_back(cnode);
+//         return cnode;
+// }
+
+// class Paser_tree{
+// public:
+//  	node * root;
+
+
+//  	// class function
+ 	
+
+	
+
+// 	void PL0_Free(node *n){
+
+// 	}
+// 	// init function
+// 	void paser_tree_init(){
+// 		root = PL0_New(0, "Programe", 0);
+// 	}
+
+// 	void show_tree(){
+
+// 	}
+
+
+// };
+
+
+
+
+// /* Node access functions */
+// #define NCH(n)		((n)->n_nchildren)
+// #define CHILD(n, i)	(&(n)->n_child[i])
+// #define TYPE(n)		((n)->n_type)
+// #define STR(n)		((n)->n_str)
+
+
