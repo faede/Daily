@@ -255,3 +255,13 @@ union会将查找到的结果合并
 
 
 
+## [Training: GPG](http://www.wechall.net/challenge/training/crypto/gpg/index.php) ([Crypto](http://www.wechall.net/challs/Crypto), [Training](http://www.wechall.net/challs/Training))
+
+GPG suite Mac
+
+生成密钥
+
+解密时 右键文件-> 服务 -> GPG decrypt
+
+
+
