@@ -230,7 +230,7 @@ $query = "SELECT * FROM users WHERE username='$username'";
 CREATE TABLE IF NOT EXISTS users (
 userid    INT(11) UNSIGNED AUTO_INCREMENT PRIMARY KEY,
 username  VARCHAR(32) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
-password  CHAR(32) CHARACTER SET ascii COLLATE ascii_bin NOT NULL
+password  CHAR(32) CHARACTER SE3T ascii COLLATE ascii_bin NOT NULL
 ) ENGINE=myISAM;
 */
 ```
