@@ -223,7 +223,7 @@ Fast-Fib
 
 There is a clever algorithm for computing the Fibonacci numbers in a logarithmic
 number of steps. Recall the transformation of the state variables a and b in
-the f ib-iter process of section 1 .2.2: $a \leftarrow  a +b$ and $b \leftarrow  a$. Call this transformation
+the f ib-iter process of section 1.2.2: $a \leftarrow  a +b$ and $b \leftarrow  a$. Call this transformation
 T, and observe that applying T over and over again n times, starting with
 1 and 0, produces the pair Fib(n+1) and Fib(n) . In other words, the Fibonacci
 numbers are produced by applying $T^n$, the nth power of the transformation T,
@@ -262,6 +262,8 @@ $q' = q^2 + 2pq$
 
 $p'=p^2+q^2$
 
+so as b
+
 
 
 Greatest Common Divisors
@@ -278,7 +280,25 @@ If Euclid's Algorithm requires k steps to compute the GCD of some pair, then the
 
 Test for Primality
 
+1. Searching for divisors
 
+2. The Fermat test
 
+The 0 (log n) primality test is based on a result from number theory known as Fermat's Little Theorem.
+Fermat's Little Theorem:
 
+If n is a prime number and a is any positive integer less than n, then a raised to the nth power is congruent to a modulo n .
+
+(Two numbers are said to be *congruent modulo n*  if they both have the
+same remainder when divided by n . The remainder of a number a when
+divided by n is also referred to as the *remainder of a modulo* n, or simply
+as a modulo n .)
+
+If n is not prime, then, in general, most of the numbers a < n will not satisfy the above relation. This leads to the following algorithm for testing primality: Given a number n, pick a random number a < n and compute the remainder of an modulo n . If the result is not equal to a, then n is certainly not prime. If it is a, then chances are good that n is prime. Now pick another random number a and test it with the same method. If it also satisfies the equation, then we can be even more confident that n is prime. By trying more and more values of a , we can increase our confidence in the result. This algorithm is known as the Fermat test. To implement the Fermat test, we need a procedure that computes the exponential of a number modulo another number:
+
+There do exist numbers that fool the Fermat test: numbers n that are not prime and yet have the property that an is congruent to a modulo n for all integers a < n
+
+```
+47Numbers that fool the Fermat test are called Carmichael numbers, and little is known about them other than that they are extremely rare. There are 255 Carmichael numbers below 100,000,000. The smallest few are 561, 1 1 05, 1 729, 2465, 282 1 , and 660 1 . In testing primality of very large numbers chosen at random, the chance of stumbling upon a value that fools the Fermat test is less than the chance that cosmic radiation will cause the computer to make an error in carrying out a "correct" algorithm. Considering an algorithm to be inadequate for the first reason but not for the second illustrates the difference between mathematics and engineering.
+```
 
