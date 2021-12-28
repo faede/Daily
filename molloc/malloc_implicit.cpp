@@ -26,7 +26,10 @@ typedef struct
 	
 } block_t;
 
+// to acollcate no==one page for heap
+void os_syscall_brk(uint64_t start_vaddr){
 
+}
 
 static uint64_t round_up(uint64_t x, uint64_t n){
 	return n * ((x + n - 1)/ n);
@@ -147,23 +150,14 @@ int heap_check(){
 	return 0;
 }
 
-// size - requested payload size
-// return - the virtual address of payload
-uint64_t mem_alloc(uint32_t size){
-
-
-	uint32_t request_blocksize = round_up(size,  8) + 4 + 4;
-
-	uint64_t b = heap_start_vaddr;
-
-	while(b <= heap_end_vaddr){
-		uint32_t b_blocksize = get_blocksize(b);
-		uint32_t b_allocated = get_allocated(b);
-
-		if(b_allocated == 0 && b_blocksize >= request_blocksize){
-			// allocated this block
-			if(b_blocksize > request_blocksize){
-				// split
+static uint64_t try_alloc(uint64_t block_vaddr, uint32_t request_blocksize){
+	uint64_t b = block_vaddr;
+	uint32_t b_blocksize = get_blocksize(b);
+	uint32_t b_allocated = get_allocated(b);
+	if(b_allocated == 0 && b_blocksize >= request_blocksize){
+		// allocated this block
+		if(b_blocksize > request_blocksize){
+			// split
 				// b_blocksize - request_blocksize >= 8
 				set_allocated(b, 1);
 				set_blocksize(b, request_blocksize);
@@ -176,20 +170,80 @@ uint64_t mem_alloc(uint32_t size){
 				set_allocated(next_header_vaddr, 0);
 				set_blocksize(next_header_vaddr, b_blocksize - request_blocksize);
 
-				return get_payload(b);
+				return get_payload(b);	
 			
-			}else{
-				// no need to split
+		}else{
+			// no need to split
 				// set_blocksize(b, request_blocksize);
 				set_allocated(b,1);
-				return get_payload(b);
-			}
+				return get_payload(b);	
+		}	
+	}			
+		
+	return 0;
+}
+
+// size - requested payload size
+// return - the virtual address of payload
+uint64_t mem_alloc(uint32_t size){
+	assert(0 < size && size < 4096 - 8);
+	uint64_t payload_vaddr = 0;
+	uint32_t request_blocksize = round_up(size,  8) + 4 + 4;
+
+	uint64_t last_block = 0;
+	uint64_t b = heap_start_vaddr;
+
+	
+	while(b <= heap_end_vaddr){
+
+		payload_vaddr = try_alloc(b, request_blocksize);
+		if(payload_vaddr != 0){
+			return payload_vaddr;
+		
 		}else{
 			// go to next block
+			if(is_lastblock(b)){
+				last_block = b;
+			}
 			b = get_nextheader(b);
 		}
 	}
 
+	// here b should be the block after the last block
+
+	// request a new page
+	if(heap_end_vaddr + 1 + 4096 <= HEAP_MAX_SIZE){
+		// allocate one page
+		uint64_t old_heap_end = heap_end_vaddr;
+
+		os_syscall_brk(heap_end_vaddr + 1);
+		heap_end_vaddr += 4096;
+
+		uint32_t last_allocated = get_allocated(last_block);
+		uint32_t last_blocksize = get_blocksize(last_block);
+		if(last_allocated == 1){
+			// no merging is need
+
+			// add footer 
+			set_allocated(old_heap_end, 1);
+			set_blocksize(old_heap_end, last_blocksize);
+
+			set_allocated(old_heap_end + 4 ,0 );
+			set_blocksize(old_heap_end + 4, 4096);
+
+			// update
+			last_block = old_heap_end + 4;
+		}else{
+			// merging 
+			set_blocksize(last_blocksize, last_blocksize + 4096);
+		}
+		// no space
+		payload_vaddr = try_alloc(last_block, request_blocksize);
+		if(payload_vaddr != 0){
+			return payload_vaddr;
+		}
+	}
+	
 	// NULL
 	return 0;
 }
@@ -237,6 +291,19 @@ void mem_free(uint64_t vaddr){
 		set_blocksize(prev, req_blocksize + prev_blocksize + next_blocksize);
 	}
 }
+void test_roundup()
+{
+	printf("Testing round up ...\n");
+	for(int i = 0; i < 100; ++i){
+		for(int j = 1; j <= 8; ++j){
+			uint32_t x = i * 8 + j;
+			assert(round_up(x, 8) == (i + 1) * 8);
+		}
+	}
+
+	printf("\033[32;1m\tPass\033[0m\n");
+}
+
 
 #ifdef DEBUG_MALLOC
 int main()
