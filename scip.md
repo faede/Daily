@@ -302,3 +302,126 @@ There do exist numbers that fool the Fermat test: numbers n that are not prime a
 47Numbers that fool the Fermat test are called Carmichael numbers, and little is known about them other than that they are extremely rare. There are 255 Carmichael numbers below 100,000,000. The smallest few are 561, 1 1 05, 1 729, 2465, 282 1 , and 660 1 . In testing primality of very large numbers chosen at random, the chance of stumbling upon a value that fools the Fermat test is less than the chance that cosmic radiation will cause the computer to make an error in carrying out a "correct" algorithm. Considering an algorithm to be inadequate for the first reason but not for the second illustrates the difference between mathematics and engineering.
 ```
 
+
+
+
+
+Procedures that manipulate procedures are called higher-order procedures. 
+
+```scheme
+(define (sum term a next b)
+  (if (> a b)
+      0
+      (+ (term a)
+         (sum term (next a) next b))))
+```
+
+so we can define sum-cubes
+
+```scheme
+(define (inc n )(+ n 1))
+
+(sum cube a inc b)
+```
+
+
+
+```scheme
+(define (identity x) x)
+(define (sum-integers a b)
+	(sum identity a inc b))
+
+(sum-integers 1 10)
+
+```
+
+
+
+#### 1.3.2 lambda
+
+```scheme
+(define (pi-sum a b)
+  (sum (lambda (x) (/ 1.0 (* x (+ x 2))))
+       a
+       (lambda (x) (+ x 4))
+       b))
+```
+
+In general, lambda is used to create procedures in the same way as define , except that no name is specified for the procedure:
+
+```(lambda (<formal-parameters>) <body> )```
+
+#### using let to create locate varibles
+
+$f(x,y)=x(1+xy)^2+y(1-y)+(1+xy)(1-y)$
+
+$a=1+xy$
+
+$b=1-y$
+
+$f(x,y)=xa^2+yb+ab$
+
+
+
+we can use aux produrces such as
+
+```scheme
+(define (f x y)
+  (define (f-helper a b)
+    (+ (* x (square a))
+       (* y b)
+       (* a b)))
+  (f-helper (+ 1 (* x y))
+            (- 1 y)))
+```
+
+or lambda,
+
+or let:
+
+```scheme
+(define (f x y)
+  (let ((a (+ 1 (* x y)))
+        (b (- 1 y)))
+    (+ (* x (square a))
+       (* y b)
+       (* a b))))
+```
+
+ 
+
+general 
+
+```scheme
+(let ((<var1> <exp1>)
+      (<var2> <exp2>)
+      .
+      .
+      .
+      (<varn> <expn>))
+  <body>)
+```
+
+
+
+A let expression is simply syntactic sugar for the underlying lambda application.
+
+
+
+Elements with the fewest restrictions are said to have first-class status.
+
+• They may be named by variables.
+
+• They may be passed as arguments to procedures.
+
+• They may be returned as the results of procedures.
+
+• They may be included in data structures.
+
+
+
+Lisp, unlike other common programming languages, awards procedures full first-class status. This poses challenges for efficient implementation, but the resulting gain in expressive power is enormous
+
+### 2 Building Abstractions with Data
+
+the means it provides for building abstractions by combining data obj ects to form compound data.
