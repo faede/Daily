@@ -240,8 +240,8 @@ Now consider T to be the special case of p = 0 and q = 1 in a family of transfor
         ((even? count)
          (fib-iter a
                    b
-                   (+ (* q q) (* 2 (* q p)) )
                    (+ (* q q) (* p p))
+                   (+ (* q q) (* 2 (* q p)) )
                    (/ count 2)))
         (else (fib-iter (+ (* b q) (* a q) (* a p))
                         (+ (* b q) (* a q))
