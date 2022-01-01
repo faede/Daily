@@ -20,4 +20,7 @@ target_link_libraries(toy libanswer)
     ./build/toy      # 运行 answer 程序
 
     Ctrl-D quit
+
+
+    cmake PATH # PATH 是CMakeLists.txt所在目录
 #]]
