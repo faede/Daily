@@ -292,6 +292,99 @@ This is the final step where the "rubber meets the road", but how it is done is 
 
 
 
+# __printf Changeable Argument
+
+```c
+int __printf (const char *format, ...)
+{
+    va_list arg;
+    int done;
+
+    va_start (arg, format);
+    done = vfprintf (stdout, format, arg);
+    va_end (arg);
+
+    return done;
+}
+```
+
+
+
+vfprintf (FILE *s, const CHAR_T *format, va_list ap)
+
+```c
+va_list ap: continer 
+  
+void va_start ( va_list ap, const char * format);
+ap： va_list
+format: set arg using format, figure out where the variable arguments begin
+
+type va_arg (FILE *, va_list ap, type);
+fetching and executing arguments, second argument is the data type expect
+  such as 
+ 			int i = va_arg(arg, int);
+
+
+void va_end ( va_list ap );
+clean up
+```
+
+
+
+
+
+va_arg
+
+```c
+#define va_arg(ap, t)					\
+	 (((ap) = (ap) + __va_argsiz(t)),		\
+	  *((t*) (void*) ((ap) - __va_argsiz(t))))
+```
+
+
+
+`https://www.rpi.edu/dept/cis/software/g77-mingw32/include/stdarg.h`
+
+```c
+/*
+ * stdarg.h
+ *
+ * Provides facilities for stepping through a list of function arguments of
+ * an unknown number and type.
+ *
+ * NOTE: Gcc should provide stdarg.h, and I believe their version will work
+ *       with crtdll. If necessary I think you can replace this with the GCC
+ *       stdarg.h.
+ *
+ * Note that the type used in va_arg is supposed to match the actual type
+ * *after default promotions*. Thus, va_arg (..., short) is not valid.
+ *
+ * This file is part of the Mingw32 package.
+ *
+ * Contributors:
+ *  Created by Colin Peters <colin@bird.fu.is.saga-u.ac.jp>
+ *
+ *  THIS SOFTWARE IS NOT COPYRIGHTED
+ *
+ *  This source code is offered for use in the public domain. You may
+ *  use, modify or distribute it freely.
+ *
+ *  This code is distributed in the hope that it will be useful but
+ *  WITHOUT ANY WARRANTY. ALL WARRANTIES, EXPRESS OR IMPLIED ARE HEREBY
+ *  DISCLAMED. This includes but is not limited to warranties of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * $Revision: 1.5 $
+ * $Author: cgf $
+ * $Date: 2000/02/05 04:04:57 $
+ *
+ */
+```
+
+
+
+
+
 # vfprintf
 
 ### Overview
