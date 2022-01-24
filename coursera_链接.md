@@ -86,17 +86,91 @@ p = process , s = section
 
 
 
+![image-20220124190203151](coursera_链接.assets/image-20220124190203151.png)
+
+![image-20220124190344895](coursera_链接.assets/image-20220124190344895.png)
+
+![image-20220124190400524](coursera_链接.assets/image-20220124190400524.png)
+
+![image-20220124190828267](coursera_链接.assets/image-20220124190828267.png)
+
+
+
+![image-20220124190959746](coursera_链接.assets/image-20220124190959746.png)
+
+![image-20220124191112085](coursera_链接.assets/image-20220124191112085.png)
+
+![image-20220124191741814](coursera_链接.assets/image-20220124191741814.png)
+
+![image-20220124192451981](coursera_链接.assets/image-20220124192451981.png)
+
+![image-20220124192509199](coursera_链接.assets/image-20220124192509199.png)
+
+![image-20220124192632370](coursera_链接.assets/image-20220124192632370.png)
+
+![image-20220124194008723](coursera_链接.assets/image-20220124194008723.png)
+
+
+
+![image-20220124194119295](coursera_链接.assets/image-20220124194119295.png)
+
+![image-20220124194218093](coursera_链接.assets/image-20220124194218093.png)
+
+![image-20220124194303755](coursera_链接.assets/image-20220124194303755.png)
+
+
+
+![image-20220124195511662](coursera_链接.assets/image-20220124195511662.png)
+
+7 是要重定位位置的起始地址 也就是 fc的地址（因为是小端机）
+
+这里减init是因为我们需要计算的是pc， 而init是相对于pc得到的， 我们需要反向加（减）回去
+
+![image-20220124200057594](coursera_链接.assets/image-20220124200057594.png)
+
+![image-20220124200103779](coursera_链接.assets/image-20220124200103779.png)
+
+![image-20220124200253465](coursera_链接.assets/image-20220124200253465.png)
+
+
+
+![image-20220124200502320](coursera_链接.assets/image-20220124200502320.png)
+
+
+
+![image-20220124200856154](coursera_链接.assets/image-20220124200856154.png)
 
 
 
 
 
+![image-20220124201413577](coursera_链接.assets/image-20220124201413577.png)
+
+
+
+![image-20220124201847352](coursera_链接.assets/image-20220124201847352.png)
+
+
+
+![image-20220124202008312](coursera_链接.assets/image-20220124202008312.png)
+
+
+
+![image-20220124202120414](coursera_链接.assets/image-20220124202120414.png)
+
+![image-20220124202313625](coursera_链接.assets/image-20220124202313625.png)
+
+![image-20220124202512198](coursera_链接.assets/image-20220124202512198.png)
+
+
+
+![image-20220124202602537](coursera_链接.assets/image-20220124202602537.png)
 
 
 
 
 
-
+![image-20220124203053479](coursera_链接.assets/image-20220124203053479.png)
 
 
 
