@@ -174,3 +174,46 @@ p = process , s = section
 
 
 
+![image-20220124203349497](coursera_链接.assets/image-20220124203349497.png)
+
+![image-20220124203617617](coursera_链接.assets/image-20220124203617617.png)
+
+![image-20220124203918998](coursera_链接.assets/image-20220124203918998.png)
+
+![image-20220124203930380](coursera_链接.assets/image-20220124203930380.png)
+
+![image-20220124204158270](coursera_链接.assets/image-20220124204158270.png)
+
+
+
+![image-20220124204437148](coursera_链接.assets/image-20220124204437148.png)
+
+![image-20220124205350558](coursera_链接.assets/image-20220124205350558.png)
+
+![image-20220124205858195](coursera_链接.assets/image-20220124205858195.png)
+
+![image-20220124210343799](coursera_链接.assets/image-20220124210343799.png)
+
+这里的call 是为了找pc，符号引用的地方
+
+![image-20220124212202409](coursera_链接.assets/image-20220124212202409.png)
+
+
+
+![image-20220124213000043](coursera_链接.assets/image-20220124213000043.png)
+
+1. call 804834c + offset 调用PLT[1]里的 ext
+2. jmp到 用间接地址*8049590里的地址 也就是 08048352 也就是jmp的下一条指令
+3. 把标识函数的值ID压到栈里，
+4.  jmp33c,
+5.  压GOT[1] 也就是动态连接器的标识信息
+6. jmp到 *804958c 也就是 GOT[2] 转到动态链接器入口地址
+
+以后只需要执行 45b指令 到*590 也就是GOT[3]真正的的地址
+
+
+
+
+
+
+
