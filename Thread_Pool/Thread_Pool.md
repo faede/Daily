@@ -184,7 +184,54 @@ The get() function of std::future always return the type T of the future. **This
 
 ### Use-Case #2
 
+The multiply function has a parameter passed by ref:
 
+```cpp
+// Simple function that adds multiplies two numbers and updates the out_res variable passed by ref
+void  multiply(int& out_res, const int a, const int b) {
+	out_res = a * b;
+}
+```
+
+Now, we have to call the submit function with a subtle difference. Because we are using templates and type deduction (universal references), the parameter passed by ref needs to be called using **std::ref(param)** to make sure that we are passing it by ref and not by value.
+
+```cpp
+int result = 0;
+auto future = pool.submit(multiply, std::ref(result), 2, 3); // Universal References
+// result is 0
+future.get();
+// result is 6
+std::cout << result << std::endl;
+```
+
+In this case, what's the type of future? Well, as I said before, the return type will always be equal to the return type of the function passed to the submit method. Because this function is of type void, the future is **std::future**. Calling future.get() returns void. That's not very useful, but we still need to call .get() to **make sure that the work has been done.**
+
+
+
+### Use-Case #3
+
+The last case is the easiest one. Our multiply function simply prints the result:
+
+We have a simple function without output parameters. For this example I implemented the following multiplication function:
+
+```
+// Simple function that adds multiplies two numbers and prints the result
+void multiply(const int a, const int b) {
+  const int result = a * b;
+  std::cout << result << std::endl;
+}
+```
+
+Then, we can simply call:
+
+```
+auto future = pool.submit(multiply, 2, 3);
+future.get();
+```
+
+In this case, we know that as soon as the multiplication is done it will be printed. If we care when this is done, we can wait for it calling future.get().
+
+Checkout the [main](https://github.com/mtrebi/thread-pool/blob/master/src/main.cpp) program for a complete example.
 
 ## Addition
 
@@ -481,6 +528,12 @@ std::vector<int> v;     // v[0] is a rvalue , because you can use v[0] = 1 etc.
 ...
 auto&& val = v[0];               // val becomes an lvalue reference 
 ```
+
+### perfect forwarding
+
+https://eli.thegreenplace.net/2014/perfect-forwarding-and-universal-references-in-c/
+
+
 
 ### std::bind
 
