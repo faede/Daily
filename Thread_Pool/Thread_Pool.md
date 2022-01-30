@@ -33,16 +33,46 @@ in case two threads try to take the same works at the same time, we need using l
 
 ```cpp
 // Submit a function to be executed asynchronously by the pool
+//
+// beacuse return type that depends on the input parameters of the function
+// we using decltype to delay type deduction, and use universal reference.
+// std::future
+// In our case, we want to know the return type of the function f, 
+// so we give decltype our generic function f and the parameter pack args.
 template<typename F, typename...Args>
-auto submit(F&& f, Args&&... args) -> std::future<decltype(f(args...))> {
-    // beacuse return type that depends on the input parameters of the function
-    // we using decltype to delay type deduction
+auto submit(F&& f, Args&&... args) -> std::future<decltype(f(args...))> {    
     // Create a function with bounded parameters ready to execute
+    //
+    // std::bind(F, Args) creates a wrapper for F with the given Args
+    // simply calling bind with our generic function f and the parameter pack 
+    // args but using another wrapper std::forward(t) for each parameter.
+    // using forward to achieve perfect forwarding of universal references.
+    //
+    // The result of this bind call is a std::function
+    // The template type of any std::function is the signature of that function:
+    // std::function< return-type (arguments)>.
+    // because we bound all arguments args to the function f we just have to add
+    // an empty pair of parenthesis that represents an empty list of arguments:
+    // decltype(f(args...))(), and know return type of this function using decltype
     std::function<decltype(f(args...))()> func = std::bind(std::forward<F>(f), std::forward<Args>(args)...);
-    // Encapsulate it into a shared ptr in order to be able to copy construct / assign 
+    
+    
+    
+    // Encapsulate it into a shared ptr in order to be able to copy construct / assign
+    //
+    // A packaged_task is a wrapper around a function that can be executed asynchronously.
+    // It's result is stored in a shared state inside an std::future object
+    // templated type of std::packaged_task(t) is the type of the function t 
+    // that is wrapping.
     auto task_ptr = std::make_shared<std::packaged_task<decltype(f(args...))()>>(func);
 
     // Wrap packaged task into void function
+    //
+    // note that this time its template type is void(). 
+    // Independently of the function f and its parameters args this wrapperfunc 
+    // the return type will always be void. Since all functions f may have different
+    // return types, the only way to store them in a container (our Queue) is wrapping
+    // them with a generic void function. 
     std::function<void()> wrapper_func = [task_ptr]() {
       (*task_ptr)(); 
     };
@@ -54,9 +84,109 @@ auto submit(F&& f, Args&&... args) -> std::future<decltype(f(args...))> {
     m_conditional_lock.notify_one();
 
     // Return future from promise
+    //
+    // Because we are returning the future that is bound to the packaged_task taskptr
+    // that, at the same time, is bound with the function func, executing this taskptr 
+    // will automatically update the future. Because we wrapped the execution of the 
+    // taskptr with a generic wrapper function, is the execution of wrapperfunc that, 
+    // in fact, updates the future.
+    // since we enqueued this wrapper function, it will be executed by a thread after 
+    // being dequeued calling the operator()
     return task_ptr->get_future();
 }
 ```
+
+## Thread worker
+
+implementation is done by "sleeping" the threads until some work is added to the queue
+
+```
+Loop
+	If Queue is empty
+		Wait signal
+	Dequeue work
+	Do it
+```
+
+This signal system is implemented in C++ with **conditional variables**. Conditional variables are always bound to a mutex, so I added a mutex to the thread pool class just to manage this. The final code of a worker looks like this:
+
+```cpp
+void operator()() {
+	std::function<void()> func;
+	bool dequeued;
+	while (!m_pool->m_shutdown) {
+		{
+			std::unique_lock<std::mutex> lock(m_pool->m_conditional_mutex);
+			if (m_pool->m_queue.empty()) {
+				m_pool->m_conditional_lock.wait(lock);
+			}
+			dequeued = m_pool->m_queue.dequeue(func);
+		}
+		if (dequeued) {
+	  		func();
+		}
+	}	
+}
+```
+
+## Usage example
+
+```cpp
+// Create pool with 3 threads
+ThreadPool pool(3);
+
+// Initialize pool
+pool.init();
+
+// Shutdown the pool, releasing all threads
+pool.shutdown()
+```
+
+Depending on the type of work, I've distinguished different use-cases. Suppose that the work that we have to do is multiply two numbers. We can do it in many different ways. I've implemented the three most common ways to do it that I can imagine:
+
+- Use-Case #1. Function returns the result
+
+- Use-Case #2. Function updates by ref parameter with the result
+
+- Use-Case #3. Function prints the result
+
+Note: This is just to show how the submit function works. Options are not exclusive
+
+### Use-Case #1
+
+The multiply function with a return looks like this:
+
+```c++
+// Simple function that adds multiplies two numbers and returns the result
+int multiply(const int a, const int b) {
+  const int res = a * b;
+  return res;
+}
+```
+
+Then, the submit:
+
+```cpp
+// The type of future is given by the return type of the function
+std::future<int> future = pool.submit(multiply, 2, 3);
+```
+
+Nice, when the work is finished by the thread pool we know that the future will get updated and we can retrieve the result calling:
+
+```c++
+const int result = future.get();
+std::cout << result << std::endl;
+```
+
+The get() function of std::future always return the type T of the future. **This type will always be equal to the return type of the function passed to the submit method**. In this case, int.
+
+
+
+### Use-Case #2
+
+
+
+## Addition
 
 ### right value
 
@@ -352,4 +482,9 @@ std::vector<int> v;     // v[0] is a rvalue , because you can use v[0] = 1 etc.
 auto&& val = v[0];               // val becomes an lvalue reference 
 ```
 
+### std::bind
+
+### std:future
+
+### 匿名函数 模板函数
 
