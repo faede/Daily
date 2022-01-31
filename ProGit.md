@@ -1,4 +1,77 @@
+# Chapter 1. Getting Started
+
+## Git Basics
+
+### Snapshots, Not Differences
+
+The major difference between Git and any other VCS (Subversion and friends included) is the way Git thinks about its data. Conceptually, most other systems
+store information as a list of file-based changes. These systems (CVS, Subversion, Perforce, Bazaar, and so on) think of the information they keep as a set of files and the changes made to each file over time.
+
+![image-20220131232302736](ProGit.assets/image-20220131232302736.png)
+
+Git doesn’t think of or store its data this way. Instead, Git thinks of its data more like a set of snapshots of a miniature filesystem. Every time you commit,
+or save the state of your project in Git, it basically takes a picture of what all your files look like at that moment and stores a reference to that snapshot. To be efficient, if files have not changed, Git doesn’t store the file again, just a link to the previous identical file it has already stored. Git thinks about its data more like a**stream of snapshots.**
+
+![image-20220131232324191](ProGit.assets/image-20220131232324191.png)
+
+This is an important distinction between Git and nearly all other VCSs. It makes Git reconsider almost every aspect of version control that most other systems copied from the previous generation. This makes Git more like a mini filesystem with some incredibly powerful tools built on top of it, rather than simply a VCS. We’ll explore some of the benefits you gain by thinking of your data this way when we cover Git branching in Chapter 3.
+
+### Nearly Every Operation Is Local
+
+Most operations in Git only need local files and resources to operate – generally no information is needed from another computer on your network. If you’re used to a CVCS where most operations have that network latency overhead, this aspect of Git will make you think that the gods of speed have blessed Git with unworldly powers. Because you have the entire history of the project right there on your local disk, most operations seem almost instantaneous.
+
+For example, to browse the history of the project, Git doesn’t need to go out to the server to get the history and display it for you – it simply reads it directly
+from your local database. This means you see the project history almost instantly. If you want to see the changes introduced between the current version of a file and the file a month ago, Git can look up the file a month ago and do a local difference calculation, instead of having to either ask a remote server to do it or pull an older version of the file from the remote server to do it locally.
+
+This also means that there is very little you can’t do if you’re offline or off VPN. If you get on an airplane or a train and want to do a little work, you can commit happily until you get to a network connection to upload. If you go home and can’t get your VPN client working properly, you can still work. In many other systems, doing so is either impossible or painful. In Perforce, for example, you can’t do much when you aren’t connected to the server; and in Subversion and CVS, you can edit files, but you can’t commit changes to your database (because your database is offline). This may not seem like a huge deal, but you may be surprised what a big difference it can make.
+
+
+
+### Git Has Integrity
+
+Everything in Git is check-summed before it is stored and is then referred to by that checksum. This means it’s impossible to change the contents of any file or
+directory without Git knowing about it. This functionality is built into Git at the lowest levels and is integral to its philosophy. You can’t lose information in transit or get file corruption without Git being able to detect it.
+
+The mechanism that Git uses for this checksumming is called a SHA-1 hash. This is a 40-character string composed of hexadecimal characters (0–9 and a–f) and calculated based on the contents of a file or directory structure in Git. A SHA-1 hash looks something like this:
+
+​		24b9da6552252987aa493b52f8696cd6d3b00373
+
+You will see these hash values all over the place in Git because it uses them so much. In fact, Git stores everything in its database not by file name but by the hash value of its contents.
+
+### Git Generally Only Adds Data
+
+When you do actions in Git, nearly all of them only add data to the Git database. It is hard to get the system to do anything that is not undoable or to make it erase data in any way. As in any VCS, you can lose or mess up changes you haven’t committed yet; but after you commit a snapshot into Git, it is very difficult to lose, especially if you regularly push your database to another repository. 
+
+This makes using Git a joy because we know we can experiment without the danger of severely screwing things up. For a more in-depth look at how Git stores its data and how you can recover data that seems lost, see “Undoing Things”.
+
+### The Three States
+
+Now, pay attention. This is the main thing to remember about Git if you want the rest of your learning process to go smoothly. Git has three main states that
+your files can reside in: committed, modified, and staged. Committed means that the data is safely stored in your local database. Modified means that you have changed the file but have not committed it to your database yet. Staged means that you have marked a modified file in its current version to go into your next commit snapshot.
+
+This leads us to the three main sections of a Git project: the Git directory, the working directory, and the staging area.
+
+![image-20220131232534857](ProGit.assets/image-20220131232534857.png)
+
+The Git directory is where Git stores the metadata and object database for your project. This is the most important part of Git, and it is what is copied when you clone a repository from another computer.
+
+The working directory is a single checkout of one version of the project.
+
+These files are pulled out of the compressed database in the Git directory and placed on disk for you to use or modify.
+
+The staging area is a file, generally contained in your Git directory, that stores information about what will go into your next commit. It’s sometimes referred to as the “index”, but it’s also common to refer to it as the staging area.
+
+The basic Git workflow goes something like this:
+
+1. You modify files in your working directory.
+2. You stage the files, adding snapshots of them to your staging area.
+3. You do a commit, which takes the files as they are in the staging area and
+stores that snapshot permanently to your Git directory.
+
+If a particular version of a file is in the Git directory, it’s considered committed. If it has been modified and was added to the staging area, it is staged. And if it was changed since it was checked out but has not been staged, it is modified. In Chapter 2, you’ll learn more about these states and how you can either take advantage of them or skip the staged part entirely.
+
 ## First-Time Git Setup
+
 ```shell
 sudo apt-get install git-all
 ```
@@ -58,7 +131,7 @@ $ git <verb> --help
 $ man git-<verb>
 ```
 
-# Git Basics
+# Chapter 2. Git Basics
 
 ## Getting a Git Repository
 
@@ -1184,6 +1257,805 @@ $ git config --global alias.visual '!gitk'
 ### Summary
 
 At this point, you can do all the basic local Git operations – creating or cloning a repository, making changes, staging and committing those changes, and viewing the history of all the changes the repository has been through. Next, we’ll cover Git’s killer feature: its branching model.
+
+# Chapter 3. Git Branching
+
+Some people refer to Git’s branching model as its “killer feature,” and it cer-
+tainly sets Git apart in the VCS community.The way Git
+branches is incredibly lightweight, making branching operations nearly instan-
+taneous, and switching back and forth between branches generally just as fast.
+
+## Branches in a Nutshell
+
+Git then creates a commit object that has the metadata and a pointer to the root project tree so it can re-create that snapshot when needed.
+
+Your Git repository now contains five objects: one blob for the contents of each of your three files, one tree that lists the contents of the directory and
+specifies which file names are stored as which blobs, and one commit with the pointer to that root tree and all the commit metadata.
+
+![image-20220131160048019](ProGit.assets/image-20220131160048019.png)
+
+If you make some changes and commit again, the next commit stores a pointer to the commit that came immediately before it.
+
+![image-20220131160124810](ProGit.assets/image-20220131160124810.png)
+
+A branch in Git is simply a lightweight movable pointer to one of these commits. The default branch name in Git is master . As you start making commits, you’re given a master branch that points to the last commit you made. Every time you commit, it moves forward automatically.
+
+>The “master” branch in Git is not a special branch. It is exactly like any
+>other branch. The only reason nearly every repository has one is that the
+>git init command creates it by default and most people don’t bother to
+>change it.
+
+![image-20220131161309692](ProGit.assets/image-20220131161309692.png)
+
+
+
+### Creating a New Branch
+
+```shell
+$ git branch testing
+```
+
+This creates a new pointer to the same commit you’re currently on.
+
+![image-20220131161439696](ProGit.assets/image-20220131161439696.png)
+
+How does Git know what branch you’re currently on? It keeps a special pointer called HEAD . Note that this is a lot different than the concept of HEAD in
+other VCSs you may be used to, such as Subversion or CVS. In Git, this is a pointer to the local branch you’re currently on. In this case, you’re still on master . The git branch command only created a new branch – it didn’t switch to that branch.
+
+![image-20220131161545068](ProGit.assets/image-20220131161545068.png)
+
+You can easily see this by running a simple git log command that shows you where the branch pointers are pointing. This option is called --decorate .
+
+```shell
+$ git log --oneline --decorate
+f30ab (HEAD -> master, testing) add feature #32 - ability to add new formats to the central
+34ac2 Fixed bug #1328 - stack overflow under certain conditions
+98ca9 The initial commit of my project
+```
+
+### Switching Branches
+
+```shell
+$ git checkout testing
+```
+
+This moves HEAD to point to the testing branch.
+
+![image-20220131161838246](ProGit.assets/image-20220131161838246.png)
+
+What is the significance of that? Well, let’s do another commit:
+```cpp
+$ vim test.rb
+$ git commit -a -m 'made a change'
+```
+
+![image-20220131162541954](ProGit.assets/image-20220131162541954.png)
+
+This is interesting, because now your testing branch has moved forward, but your master branch still points to the commit you were on when you ran git checkout to switch branches. Let’s switch back to the master branch:
+
+```shell
+$ git checkout master
+```
+
+![image-20220131162837370](ProGit.assets/image-20220131162837370.png)
+
+That command did two things. It moved the HEAD pointer back to point to the master branch, and it reverted the files in your working directory back to
+the snapshot that master points to. This also means the changes you make from this point forward will diverge from an older version of the project. It essentially rewinds the work you’ve done in your testing branch so you can go in a different direction
+
+Let’s make a few changes and commit again:
+
+```shell
+$ vim test.rb
+$ git commit -a -m 'made other changes'
+```
+
+![image-20220131164756216](ProGit.assets/image-20220131164756216.png)
+
+You can also see this easily with the git log command. If you run git log --oneline --decorate --graph --all it will print out the history of your commits, showing where your branch pointers are and how your history has diverged.
+
+```shell
+$ git log --oneline --decorate --graph --all
+* c2b9e (HEAD, master) made other changes
+| * 87ab2 (testing) made a change
+|/
+* f30ab add feature #32 - ability to add new formats to the
+* 34ac2 fixed bug #1328 - stack overflow under certain conditions
+* 98ca9 initial commit of my project
+```
+
+Because a branch in Git is in actuality a simple file that contains the 40 character SHA-1 checksum of the commit it points to, branches are cheap to create and destroy. Creating a new branch is as quick and simple as writing 41 bytes to a file (40 characters and a newline).
+
+## Basic Branching and Merging
+
+Let’s go through a simple example of branching and merging with a workflow that you might use in the real world. You’ll follow these steps:
+1. Do work on a web site.
+2. Create a branch for a new story you’re working on.
+3. Do some work in that branch.
+At this stage, you’ll receive a call that another issue is critical and you need a
+hotfix. You’ll do the following:
+1. Switch to your production branch.
+2. Create a branch to add the hotfix.
+3. After it’s tested, merge the hotfix branch, and push to production.
+4. Switch back to your original story and continue working.
+
+### Basic Branching
+
+![image-20220131165401069](ProGit.assets/image-20220131165401069.png)
+
+```shell
+$ git checkout -b iss53
+Switched to a new branch "iss53"
+```
+
+This is shorthand for:
+
+```shell
+$ git branch iss53
+$ git checkout iss53
+```
+
+![image-20220131165433297](ProGit.assets/image-20220131165433297.png)
+
+```shell
+$ vim index.html
+$ git commit -a -m 'added a new footer [issue 53]'
+```
+
+![image-20220131165507515](ProGit.assets/image-20220131165507515.png)
+
+note that if your working directory or staging area has uncommitted changes that conflict with the branch you’re checking
+out, Git won’t let you switch branches.
+
+It’s best to have a clean working state when you switch branches. There are ways to get around this (namely, stashing and commit amending) that we’ll cover later on, in “Stashing and Cleaning”. For now, let’s assume you’ve committed all your changes, so you can switch back to your master branch:
+
+> $ git stash
+>
+>$ git stash list
+>
+>$ git stash apply stash@{2} 
+>
+>$ git stash apply # recent
+
+```shell
+$ git checkout master
+Switched to branch 'master'
+```
+
+```shell
+$ git checkout -b hotfix
+Switched to a new branch 'hotfix'
+$ vim index.html
+$ git commit -a -m 'fixed the broken email address'
+[hotfix 1fb7853] fixed the broken email address
+ 1 file changed, 2 insertions(+)
+```
+
+![image-20220131174031723](ProGit.assets/image-20220131174031723.png)
+
+
+
+
+
+```shell
+$ git checkout master
+$ git merge hotfix
+Updating f42c576..3a0874c
+Fast-forward
+index.html | 2 ++
+1 file changed, 2 insertions(+)
+```
+
+![image-20220131174111000](ProGit.assets/image-20220131174111000.png)
+
+After your super-important fix is deployed, you’re ready to switch back to the work you were doing before you were interrupted. However, first you’ll delete the hotfix branch, because you no longer need it – the master branch points at the same place. You can delete it with the -d option to git branch :
+
+```shell
+$ git branch -d hotfix
+Deleted branch hotfix (3a0874c).
+```
+
+Now you can switch back to your work-in-progress branch on issue #53 and continue working on it.
+
+```shell
+$ git checkout iss53
+Switched to branch "iss53"
+$ vim index.html
+$ git commit -a -m 'finished the new footer [issue 53]'
+[iss53 ad82d7a] finished the new footer [issue 53]
+ 1 file changed, 1 insertion(+)
+```
+
+![image-20220131174311840](ProGit.assets/image-20220131174311840.png)
+
+It’s worth noting here that the work you did in your hotfix branch is not  contained in the files in your iss53 branch. If you need to pull it in, you can
+merge your master branch into your iss53 branch by running git merge master , or you can wait to integrate those changes until you decide to pull the iss53 branch back into master later.
+
+### Basic Merging
+
+Suppose you’ve decided that your issue #53 work is complete and ready to be merged into your master branch. In order to do that, you’ll merge your iss53 branch into master , much like you merged your hotfix branch earlier. All you have to do is check out the branch you wish to merge into and then run the git merge command:
+
+```shell
+$ git checkout master
+Switched to branch 'master'
+$ git merge iss53
+Merge made by the 'recursive' strategy.
+index.html |	1 +
+1 file changed, 1 insertion(+)
+```
+
+This looks a bit different than the hotfix merge you did earlier. In this case, your development history has diverged from some older point. Because the
+commit on the branch you’re on isn’t a direct ancestor of the branch you’re merging in, Git has to do some work. In this case, Git does a simple three-way merge, using the two snapshots pointed to by the branch tips and the common ancestor of the two.
+
+![image-20220131174830614](ProGit.assets/image-20220131174830614.png)
+
+Instead of just moving the branch pointer forward, Git creates a new snap- shot that results from this three-way merge and automatically creates a new commit that points to it. This is referred to as a merge commit, and is special in that it has more than one parent.
+
+![image-20220131174928407](ProGit.assets/image-20220131174928407.png)
+
+It’s worth pointing out that Git determines the best common ancestor to use for its merge base; this is different than older tools like CVS or Subversion (before version 1.5), where the developer doing the merge had to figure out the best merge base for themselves. This makes merging a heck of a lot easier in Git than in these other systems.
+
+Now that your work is merged in, you have no further need for the iss53 branch. You can close the ticket in your ticket-tracking system, and delete the branch:
+
+```shell
+$ git branch -d iss53
+```
+
+### Basic Merge Conflicts
+
+Occasionally, this process doesn’t go smoothly. If you changed the same part of the same file differently in the two branches you’re merging together, Git won’t be able to merge them cleanly. If your fix for issue #53 modified the same part of a file as the hotfix , you’ll get a merge conflict that looks something like this:
+
+```shell
+$ git merge iss53
+Auto-merging index.html
+CONFLICT (content): Merge conflict in index.html
+Automatic merge failed; fix conflicts and then commit the result.
+```
+
+Git hasn’t automatically created a new merge commit. It has paused the process while you resolve the conflict. If you want to see which files are unmerged at any point after a merge conflict, you can run git status :
+
+```shell
+$ git status
+On branch master
+You have unmerged paths.
+	(fix conflicts and run "git commit")
+Unmerged paths:
+	(use "git add <file>..." to mark resolution)
+		
+		both modified:		index.html
+		
+no changes added to commit (use "git add" and/or "git commit -a")
+```
+
+Anything that has merge conflicts and hasn’t been resolved is listed as unmerged. Git adds standard conflict-resolution markers to the files that have
+conflicts, so you can open them manually and resolve those conflicts. Your file contains a section that looks something like this:
+
+```shell
+<<<<<<< HEAD:index.html
+<div id="footer">contact : email.support@github.com</div>
+=======
+<div id="footer">
+please contact us at support@github.com
+</div>
+>>>>>>> iss53:index.html
+```
+
+This means the version in HEAD (your master branch, because that was what you had checked out when you ran your merge command) is the top part of
+that block (everything above the ======= ), while the version in your iss53 branch looks like everything in the bottom part. In order to resolve the conflict, you have to either choose one side or the other or merge the contents yourself. For instance, you might resolve this conflict by replacing the entire block with this:
+
+```shell
+<div id="footer">
+please contact us at email.support@github.com
+</div>
+```
+
+This resolution has a little of each section, and the` <<<<<<<` ,` =======` , and `>>>>>>>` lines have been completely removed. After you’ve resolved each of these sections in each conflicted file, run `git add` on each file to mark it as resolved. Staging the file marks it as resolved in Git.
+
+If you want to use a graphical tool to resolve these issues, you can run git mergetool , which fires up an appropriate visual merge tool and walks you through the conflicts:
+
+```shell
+$ git mergetool
+
+This message is displayed because 'merge.tool' is not configured.
+See 'git mergetool --tool-help' or 'git help config' for more details.
+'git mergetool' will now attempt to use one of the following tools:
+opendiff kdiff3 tkdiff xxdiff meld tortoisemerge gvimdiff diffuse diffmerge ecmerge p4merge
+Merging:
+index.html
+
+Normal merge conflict for 'index.html':
+  {local}: modified file
+  {remote}: modified file
+Hit return to start merge resolution tool (opendiff):
+```
+
+If you want to use a merge tool other than the default (Git chose opendiff in this case because the command was run on a Mac), you can see all the sup-
+ported tools listed at the top after “one of the following tools.” Just type the name of the tool you’d rather use.
+
+>If you need more advanced tools for resolving tricky merge conflicts, we
+>cover more on merging in “Advanced Merging”.
+
+
+
+After you exit the merge tool, Git asks you if the merge was successful. If you tell the script that it was, it stages the file to mark it as resolved for you. You can run git status again to verify that all conflicts have been resolved:
+
+```shell
+$ git status
+On branch master
+All conflicts fixed but you are still merging.
+	(use "git commit" to conclude merge)
+
+Changes to be committed:
+
+	modified:		index.html
+```
+
+
+
+If you’re happy with that, and you verify that everything that had conflicts has been staged, you can type git commit to finalize the merge commit. The commit message by default looks something like this:
+
+```shell
+Merge branch 'iss53'
+Conflicts:
+index.html
+#
+# It looks like you may be committing a merge.
+# If this is not correct, please remove the file
+#		.git/MERGE_HEAD
+# and try again.
+# Please enter the commit message for your changes. Lines starting
+# with '#' will be ignored, and an empty message aborts the commit.
+# On branch master
+# All conflicts fixed but you are still merging.
+#
+# Changes to be committed:
+# 		modified:	index.html
+#
+```
+
+You can modify that message with details about how you resolved the merge if you think it would be helpful to others looking at this merge in the future  why you did what you did, if it’s not obvious.
+
+## Branch Management
+
+The `git branch` command does more than just create and delete branches. If you run it with no arguments, you get a simple listing of your current branches:
+
+```shell
+$ git branch
+  iss53
+* master
+  testing
+```
+
+To see the last commit on each branch, you can run git branch -v :
+
+```shell
+$ git branch -v
+  iss53   93b412c fix javascript issue
+* master  7a98805 Merge branch 'iss53'
+  testing 782fd34 add scott to the author list in the readmes
+```
+
+The useful --merged and --no-merged options can filter this list to branches that you have or have not yet merged into the branch you’re currently on. To
+see which branches are already merged into the branch you’re on, you can run `git branch --merged` :
+
+```shell
+$ git branch --merged
+  iss53
+* master
+```
+
+Branch-
+es on this list without the * in front of them are generally fine to delete with git `branch -d` ; you’ve already incorporated their work into another branch, so you’re not going to lose anything.
+
+To see all the branches that contain work you haven’t yet merged in, you can run git branch `--no-merged `:
+
+```shell
+$ git branch --no-merged
+testing
+```
+
+This shows your other branch. Because it contains work that isn’t merged in yet, trying to delete it with git branch -d will fail:
+
+```shell
+$ git branch -d testing
+error: The branch 'testing' is not fully merged.
+If you are sure you want to delete it, run 'git branch -D testing'.
+```
+
+## Branching Workflows
+
+### Long-Running Branches
+
+Many Git developers have a workflow that embraces this approach, such as having only code that is entirely stable in their master branch – possibly only
+code that has been or will be released. They have another parallel branch named develop or next that they work from or use to test stability – it isn’t
+necessarily always stable, but whenever it gets to a stable state, it can be merged into master . It’s used to pull in topic branches (short-lived branches, like your earlier iss53 branch) when they’re ready, to make sure they pass all the tests and don’t introduce bugs.
+
+![image-20220131193925582](ProGit.assets/image-20220131193925582.png)
+
+It’s generally easier to think about them as work silos, where sets of commits graduate to a more stable silo when they’re fully tested.
+
+![image-20220131193951141](ProGit.assets/image-20220131193951141.png)
+
+### Topic Branches
+
+Topic branches, however, are useful in projects of any size. A topic branch is a short-lived branch that you create and use for a single particular feature or related work. This is something you’ve likely never done with a VCS before because it’s generally too expensive to create and merge branches. But in Git it’s common to create, work on, merge, and delete branches several times a day.
+
+![image-20220131194151492](ProGit.assets/image-20220131194151492.png)
+
+Now, let’s say you decide you like the second solution to your issue best ( iss91v2 ); and you showed the dumbidea branch to your coworkers, and it
+turns out to be genius. You can throw away the original iss91 branch (losing commits C5 and C6 ) and merge in the other two. Your history then looks like this:
+
+![image-20220131194300049](ProGit.assets/image-20220131194300049.png)
+
+We will go into more detail about the various possible workflows for your Git project in Chapter 5, so before you decide which branching scheme your next project will use, be sure to read that chapter. It’s important to remember when you’re doing all this that these branches are completely local. When you’re branching and merging, everything is being done only in your Git repository – no server communication is happening.
+
+
+
+## Remote Branches
+
+Remote references are references (pointers) in your remote repositories, including branches, tags, and so on. You can get a full list of remote references explicitly with `git ls-remote [remote] `, or` git remote show [remote]` for remote branches as well as more information. Nevertheless, a more common way is to take advantage of remote-tracking branches.
+
+Remote-tracking branches are references to the state of remote branches. They’re local references that you can’t move; they’re moved automatically for you whenever you do any network communication. Remote-tracking branches act as bookmarks to remind you where the branches in your remote repositories were the last time you connected to them
+
+They take the form (remote)/(branch) . For instance, if you wanted to see what the master branch on your origin remote looked like as of the last time you communicated with it, you would check the origin/master branch. If you were working on an issue with a partner and they pushed up an iss53 branch, you might have your own local iss53 branch; but the branch on the server would point to the commit at origin/iss53 .
+
+This may be a bit confusing, so let’s look at an example. Let’s say you have a Git server on your network at git.ourcompany.com . If you clone from this, Git’s clone command automatically names it origin for you, pulls down all its data, creates a pointer to where its master branch is, and names it origin/master locally. Git also gives you your own local master branch starting at the same place as origin’s master branch, so you have something to work from.
+
+>“ORIGIN” IS NOT SPECIAL
+>
+>Just like the branch name “master” does not have any special meaning in Git, neither does “origin”. While “master” is the default name for a
+>starting branch when you run git init which is the only reason it’s widely used, “origin” is the default name for a remote when you run git clone . If you run git clone -o booyah instead, then you will have booyah/master as your default remote branch.
+
+![image-20220131200732157](ProGit.assets/image-20220131200732157.png)
+
+If you do some work on your local master branch, and, in the meantime, someone else pushes to git.ourcompany.com and updates its master branch, then your histories move forward differently. Also, as long as you stay out of contact with your origin server, your origin/master pointer doesn’t move.
+
+![image-20220131203325583](ProGit.assets/image-20220131203325583.png)
+
+To synchronize your work, you run a git fetch origin command. This command looks up which server “origin” is (in this case, it’s git.ourcompany.com ), fetches any data from it that you don’t yet have, and updates your lo- cal database, moving your origin/master pointer to its new, more up-to-date position.
+
+### Pushing
+
+When you want to share a branch with the world, you need to push it up to a remote that you have write access to. Your local branches aren’t automatically synchronized to the remotes you write to – you have to explicitly push the branches you want to share. That way, you can use private branches for work you don’t want to share, and push up only the topic branches you want to collaborate on.
+
+If you have a branch named serverfix that you want to work on with others, you can push it up the same way you pushed your first branch. Run git push`<remote> <branch> `:
+
+```shell
+$ git push origin serverfix
+Counting objects: 24, done.
+Delta compression using up to 8 threads.
+Compressing objects: 100% (15/15), done.
+Writing objects: 100% (24/24), 1.91 KiB | 0 bytes/s, done.
+Total 24 (delta 2), reused 0 (delta 0)
+To https://github.com/schacon/simplegit
+ * [new branch]		serverfix -> serverfix
+```
+
+This is a bit of a shortcut. Git automatically expands the serverfix branchname out to refs/heads/serverfix:refs/heads/serverfix , which means, “Take my serverfix local branch and push it to update the remote’s serverfix branch.” We’ll go over the refs/heads/ part in detail in Chapter 10, but you can generally leave it off. You can also do git push origin serverfix:serverfix , which does the same thing – it says, “Take my serverfix and make it the remote’s serverfix.” You can use this format to push a local branch into a remote branch that is named differently. If you didn’t want it to be called serverfix on the remote, you could instead run git push origin server- fix:awesomebranch to push your local serverfix branch to the awesome- branch branch on the remote project.
+
+>DON’T TYPE YOUR PASSWORD EVERY TIME
+>
+>If you’re using an HTTPS URL to push over, the Git server will ask you for your username and password for authentication. By default it will prompt you on the terminal for this information so the server can tell if you’re allowed to push.
+>
+>If you don’t want to type it every single time you push, you can set up a “credential cache”. The simplest is just to keep it in memory for a few minutes, which you can easily set up by running git config --global credential.helper cache .
+>
+>For more information on the various credential caching options avail-
+>able, see “Credential Storage”.
+
+The next time one of your collaborators fetches from the server, they will get a reference to where the server’s version of serverfix is under the remote branch origin/serverfix :
+
+```shell
+$ git fetch origin
+remote: Counting objects: 7, done.
+remote: Compressing objects: 100% (2/2), done.
+remote: Total 3 (delta 0), reused 3 (delta 0)
+Unpacking objects: 100% (3/3), done.
+From https://github.com/schacon/simplegit
+* [new branch]		serverfix		-> origin/serverfix
+```
+
+It’s important to note that when you do a fetch that brings down new remote-tracking branches, you don’t automatically have local, editable copies of them. In other words, in this case, you don’t have a new serverfix branch – you only have an origin/serverfix pointer that you can’t modify.
+
+To merge this work into your current working branch, you can run git merge origin/serverfix . If you want your own serverfix branch that you can work on, you can base it off your remote-tracking branch:
+
+```shell
+$ git checkout -b serverfix origin/serverfix
+Branch serverfix set up to track remote branch serverfix from origin.
+Switched to a new branch 'serverfix'
+```
+
+This gives you a local branch that you can work on that starts where origin/serverfix is.
+
+### Tracking Branches
+
+Checking out a local branch from a remote-tracking branch automatically cre- ates what is called a “tracking branch” (and the branch it tracks is called an “upstream branch”). Tracking branches are local branches that have a direct re- lationship to a remote branch. If you’re on a tracking branch and type git pull , Git automatically knows which server to fetch from and branch to merge into.
+
+ When you clone a repository, it generally automatically creates a master branch that tracks origin/master . However, you can set up other tracking branches if you wish – ones that track branches on other remotes, or don’t track the master branch. The simple case is the example you just saw, running git checkout -b [branch] [remotename]/[branch] . This is a common enough operation that git provides the --track shorthand:
+
+```shell
+$ git checkout --track origin/serverfix
+Branch serverfix set up to track remote branch serverfix from origin.
+Switched to a new branch 'serverfix'
+```
+
+In fact, this is so common that there’s even a shortcut for that shortcut. If the branch name you’re trying to checkout (a) doesn’t exist and (b) exactly matches a name on only one remote, Git will create a tracking branch for you:
+
+```shell
+$ git checkout serverfix
+Branch serverfix set up to track remote branch serverfix from origin.
+Switched to a new branch 'serverfix'
+```
+
+To set up a local branch with a different name than the remote branch, you can easily use the first version with a different local branch name:
+
+```shell
+$ git checkout -b sf origin/serverfix
+Branch sf set up to track remote branch serverfix from origin.
+Switched to a new branch 'sf'
+```
+
+Now, your local branch sf will automatically pull from origin/serverfix . If you already have a local branch and want to set it to a remote branch you just pulled down, or want to change the upstream branch you’re tracking, you can use the -u or --set-upstream-to option to git branch to explicitly set it at any time
+
+```shell
+$ git branch -u origin/serverfix
+Branch serverfix set up to track remote branch serverfix from origin.
+```
+
+>UPSTREAM SHORTHAND
+>
+>When you have a tracking branch set up, you can reference its upstream branch with the @{upstream} or @{u} shorthand. So if you’re on the master branch and it’s tracking origin/master , you can say something like git merge @{u} instead of git merge origin/master if you wish.
+
+If you want to see what tracking branches you have set up, you can use the -vv option to git branch . This will list out your local branches with more information including what each branch is tracking and if your local branch is ahead, behind or both.
+
+```shell
+$ git branch -vv
+  iss53		7e424c3 [origin/iss53: ahead 2] forgot the brackets
+  master	1ae2a45 [origin/master] deploying index fix
+* serverfix f8674d9 [teamone/server-fix-good: ahead 3, behind 1] this should do it
+  testing	5ea463a trying something new
+```
+
+So here we can see that our iss53 branch is tracking origin/iss53 and is “ahead” by two, meaning that we have two commits locally that are not pushed to the server. We can also see that our master branch is tracking origin/master and is up to date. Next we can see that our serverfix branch is tracking the server-fix-good branch on our teamone server and is ahead by three and behind by one, meaning that there is one commit on the server we haven’t merged in yet and three commits locally that we haven’t pushed. Finally we can see that our testing branch is not tracking any remote branch.
+
+It’s important to note that these numbers are only since the last time you fetched from each server. This command does not reach out to the servers, it’s telling you about what it has cached from these servers locally. If you want totally up to date ahead and behind numbers, you’ll need to fetch from all your remotes right before running this. You could do that like this: `git fetch --all; git branch -vv`
+
+### Pulling
+
+While the git fetch command will fetch down all the changes on the server that you don’t have yet, it will not modify your working directory at all. It will simply get the data for you and let you merge it yourself. However, there is a command called git pull which is essentially a git fetch immediately followed by a git merge in most cases. If you have a tracking branch set up as demonstrated in the last section, either by explicitly setting it or by having it created for you by the clone or checkout commands, git pull will look up what server and branch your current branch is tracking, fetch from that server and then try to merge in that remote branch.
+
+Generally it’s better to simply use the fetch and merge commands explicitly as the magic of git pull can often be confusing.
+
+## Rebasing
+
+In Git, there are two main ways to integrate changes from one branch into another: the merge and the rebase . In this section you’ll learn what rebasing is, how to do it, why it’s a pretty amazing tool, and in what cases you won’t want to use it.
+
+### The Basic Rebase
+
+If you go back to an earlier example from “Basic Merging”, you can see that you diverged your work and made commits on two different branches.
+
+![image-20220131214520861](ProGit.assets/image-20220131214520861.png)
+
+The easiest way to integrate the branches, as we’ve already covered, is the merge command. It performs a three-way merge between the two latest branch snapshots ( C3 and C4 ) and the most recent common ancestor of the two ( C2 ), creating a new snapshot (and commit).
+
+![image-20220131214543500](ProGit.assets/image-20220131214543500.png)
+
+However, there is another way: you can take the patch of the change that was introduced in C4 and reapply it on top of C3 . In Git, this is called rebasing. With the rebase command, you can take all the changes that were committed on one branch and replay them on another one.
+
+In this example, you’d run the following:
+
+```shell
+$ git checkout experiment
+$ git rebase master
+First, rewinding head to replay your work on top of it...
+Applying: added staged command
+```
+
+It works by going to the common ancestor of the two branches (the one you’re on and the one you’re rebasing onto), getting the diff introduced by each commit of the branch you’re on, saving those diffs to temporary files, resetting the current branch to the same commit as the branch you are rebasing onto, and finally applying each change in turn.
+
+![image-20220131215517722](ProGit.assets/image-20220131215517722.png)
+
+At this point, you can go back to the master branch and do a fast-forward merge.
+
+```shell
+$ git checkout master
+$ git merge experiment
+```
+
+![image-20220131215550890](ProGit.assets/image-20220131215550890.png)
+
+Now, the snapshot pointed to by C4' is exactly the same as the one that was pointed to by C5 in the merge example. There is no difference in the end product of the integration, but rebasing makes for a cleaner history. If you examine the log of a rebased branch, it looks like a linear history: it appears that all the work happened in series, even when it originally happened in parallel.
+
+Often, you’ll do this to make sure your commits apply cleanly on a remote branch – perhaps in a project to which you’re trying to contribute but that you don’t maintain. In this case, you’d do your work in a branch and then rebase your work onto origin/master when you were ready to submit your patches to the main project. That way, the maintainer doesn’t have to do any integration work – just a fast-forward or a clean apply.
+
+Note that the snapshot pointed to by the final commit you end up with, whether it’s the last of the rebased commits for a rebase or the final merge commit after a merge, is the same snapshot – it’s only the history that is different. Rebasing replays changes from one line of work onto another in the order they were introduced, whereas merging takes the endpoints and merges them together.
+
+### More Interesting Rebases
+
+You can also have your rebase replay on something other than the rebase target branch. Take a history like Figure 3-31, for example. You branched a topic branch ( server ) to add some server-side functionality to your project, and made a commit. Then, you branched off that to make the client-side changes( client ) and committed a few times. Finally, you went back to your server branch and did a few more commits.
+
+![image-20220131220656135](ProGit.assets/image-20220131220656135.png)
+
+Suppose you decide that you want to merge your client-side changes into your mainline for a release, but you want to hold off on the server-side changes until it’s tested further. You can take the changes on client that aren’t on server ( C8 and C9 ) and replay them on your master branch by using the --onto option of git rebase :
+
+```shell
+$ git rebase --onto master server client
+```
+
+This basically says, “Check out the client branch, figure out the patches from the common ancestor of the client and server branches, and then replay them onto master .” It’s a bit complex, but the result is pretty cool.
+
+![image-20220131222907541](ProGit.assets/image-20220131222907541.png)
+
+Now you can fast-forward your master branch (see Figure 3-33):
+
+```shell
+$ git checkout master
+$ git merge client
+```
+
+![image-20220131222958448](ProGit.assets/image-20220131222958448.png)
+
+Let’s say you decide to pull in your server branch as well. You can rebase the server branch onto the master branch without having to check it out first by running git rebase [basebranch] [topicbranch] – which checks out the topic branch (in this case, server ) for you and replays it onto the base branch ( master ):
+
+```shell
+$ git rebase master server
+```
+
+This replays your server work on top of your master work, as shown in
+
+![image-20220131223149950](ProGit.assets/image-20220131223149950.png)
+
+Then, you can fast-forward the base branch ( master ):
+
+```shell
+$ git checkout master
+$ git merge server
+```
+
+You can remove the client and server branches because all the work is integrated and you don’t need them anymore, leaving your history for this entire process looking like Figure:
+
+```shell
+$ git branch -d client
+$ git branch -d server
+```
+
+![image-20220131223430385](ProGit.assets/image-20220131223430385.png)
+
+
+
+### The Perils of Rebasing
+
+Ahh, but the bliss of rebasing isn’t without its drawbacks, which can be summed up in a single line:
+
+**Do not rebase commits that exist outside your repository**
+
+If you follow that guideline, you’ll be fine. If you don’t, people will hate you, and you’ll be scorned by friends and family.
+
+When you rebase stuff, you’re abandoning existing commits and creating new ones that are similar but different. If you push commits somewhere and others pull them down and base work on them, and then you rewrite those commits with git rebase and push them up again, your collaborators will have to re-merge their work and things will get messy when you try to pull their work back into yours.
+
+Let’s look at an example of how rebasing work that you’ve made public can cause problems. Suppose you clone from a central server and then do some work off that. Your commit history looks like this:
+
+![image-20220131224732722](ProGit.assets/image-20220131224732722.png)
+
+Now, someone else does more work that includes a merge, and pushes that work to the central server. You fetch it and merge the new remote branch into your work, making your history look something like this:
+
+![image-20220131224820337](ProGit.assets/image-20220131224820337.png)
+
+Next, the person who pushed the merged work decides to go back and rebase their work instead; they do a git push --force to overwrite the history on the server. You then fetch from that server, bringing down the new commits.
+
+![image-20220131224929228](ProGit.assets/image-20220131224929228.png)
+
+​					Figure	3-38
+
+Now you’re both in a pickle. If you do a git pull , you’ll create a merge
+commit which includes both lines of history, and your repository will look like
+this:
+
+![image-20220131225031578](ProGit.assets/image-20220131225031578.png)
+
+​					Figure 3-39
+
+If you run a git log when your history looks like this, you’ll see two commits that have the same author, date, and message, which will be confusing.
+Furthermore, if you push this history back up to the server, you’ll reintroduce all those rebased commits to the central server, which can further confuse people. It’s pretty safe to assume that the other developer doesn’t want C4 and C6 to be in the history; that’s why they rebased in the first place.
+
+### Rebase When You Rebase
+
+If you **do** find yourself in a situation like this, Git has some further magic that might help you out. If someone on your team force pushes changes that overwrite work that you’ve based work on, your challenge is to figure out what is yours and what they’ve rewritten.
+
+It turns out that in addition to the commit SHA-1 checksum, Git also calculates a checksum that is based just on the patch introduced with the commit.
+This is called a “patch-id”.
+
+If you pull down work that was rewritten and rebase it on top of the new commits from your partner, Git can often successfully figure out what is uniquely yours and apply them back on top of the new branch.
+
+For instance, in the previous scenario, if instead of doing a merge when we’re at Figure 3-38 we run git rebase teamone/master , Git will:
+
+• Determine what work is unique to our branch (C2, C3, C4, C6, C7)
+• Determine which are not merge commits (C2, C3, C4)
+• Determine which have not been rewritten into the target branch (just C2
+and C3, since C4 is the same patch as C4')
+• Apply those commits to the top of teamone/master
+
+
+
+So instead of the result we see in Figure 3-39, we would end up with something more like Figure 3-40.
+
+![image-20220131225955003](ProGit.assets/image-20220131225955003.png)
+
+
+
+This only works if C4 and C4’ that your partner made are almost exactly the same patch. Otherwise the rebase won’t be able to tell that it’s a duplicate and will add another C4-like patch (which will probably fail to apply cleanly, since the changes would already be at least somewhat there).
+
+You can also simplify this by running a git pull --rebase instead of a normal git pull . Or you could do it manually with a git fetch followed by a git rebase teamone/master in this case.
+
+If you are using git pull and want to make --rebase the default, you can set the pull.rebase config value with something like git config --global pull.rebase true .
+
+If you treat rebasing as a way to clean up and work with commits before you push them, and if you only rebase commits that have never been available publicly, then you’ll be fine. If you rebase commits that have already been pushed publicly, and people may have based work on those commits, then you may be in for some frustrating trouble, and the scorn of your teammates.
+
+If you or a partner does find it necessary at some point, make sure everyone knows to run git pull --rebase to try to make the pain after it happens a little bit simpler.
+
+### Rebase vs. Merge
+
+Now that you’ve seen rebasing and merging in action, you may be wondering which one is better. Before we can answer this, let’s step back a bit and talk about what history means.
+
+
+
+One point of view on this is that your repository’s commit history is a **record of what actually happened**. It’s a historical document, valuable in its own right, and shouldn’t be tampered with. From this angle, changing the commit history is almost blasphemous; you’re lying about what actually transpired. So what if there was a messy series of merge commits? That’s how it happened, and the repository should preserve that for posterity.
+
+The opposing point of view is that the commit history is the **story of how your project was made**. You wouldn’t publish the first draft of a book, and the manual for how to maintain your software deserves careful editing. This is the camp that uses tools like rebase and filter-branch to tell the story in the way that’s best for future readers. 
+
+Now, to the question of whether merging or rebasing is better: hopefully you’ll see that it’s not that simple. Git is a powerful tool, and allows you to do many things to and with your history, but every team and every project is differ- ent. Now that you know how both of these things work, it’s up to you to decide which one is best for your particular situation.
+
+In general the way to get the best of both worlds is to rebase local changes you’ve made but haven’t shared yet before you push them in order to clean up your story, but never rebase anything you’ve pushed somewhere.
+
+## Summary
+
+We’ve covered basic branching and merging in Git. You should feel comfortable creating and switching to new branches, switching between branches and merging local branches together. You should also be able to share your branches by pushing them to a shared server, working with others on shared branches and rebasing your branches before they are shared. Next, we’ll cover what you’ll need to run your own Git repository-hosting server.
+
+# Chapter 4. Git on the Server
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
