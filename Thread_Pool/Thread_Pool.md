@@ -533,6 +533,133 @@ auto&& val = v[0];               // val becomes an lvalue reference
 
 https://eli.thegreenplace.net/2014/perfect-forwarding-and-universal-references-in-c/
 
+qs:
+
+if T1 is a reference, but it is not visible in the caller of wrapper(because it function(func) passing param by valie)
+
+```c++
+template <typename T1, typename T2>
+void wrapper(T1 e1, T2 e2) {
+    func(e1, e2);
+}
+```
+
+change to ->
+
+can't receive value
+
+```cpp
+template <typename T1, typename T2>
+void wrapper(T1& e1, T2& e2) {
+    func(e1, e2);
+}
+```
+
+
+
+qs:
+
+```cpp
+template <typename T>
+void baz(T t) {
+  T& k = t;
+}
+int ii = 4;
+baz<int&>(ii);
+```
+
+
+
+
+
+ what happens when various reference types augment (e.g. what does `int&& &` mean?).
+
+**reference collapsing** rule.
+
+The rule is very simple. `&` always wins. So `& &` is `&`, and so are `&& &` and `& &&`. The only case where `&&` emerges from collapsing is `&& &&`. You can think of it as a logical-OR, with `&` being 1 and `&&` being 0.
+
+
+
+《the c++ programming language 》
+
+23.5.2 Function Template Argument Deduction
+
+
+
+**universal reference**
+
+```cpp
+template <class T>
+void func(T&& t) {
+}
+func(4);            // 4 is an rvalue: T deduced to int
+
+double d = 3.14;
+func(d);            // d is an lvalue; T deduced to double&
+
+float f() {...}
+func(f());          // f() is an rvalue; T deduced to float
+
+int bar(int i) {
+  func(i);          // i is an lvalue; T deduced to int&
+}
+```
+
+
+
+**Solving perfect forwarding**
+
+forward ->`<utility> `->`std::forward`.
+
+```cpp
+template <typename T1, typename T2>
+void wrapper(T1&& e1, T2&& e2) {
+    func(forward<T1>(e1), forward<T2>(e2));
+}
+```
+
+
+
+```cpp
+  /**
+   *  @brief  Forward an lvalue.
+   *  @return The parameter cast to the specified type.
+   *
+   *  This function is used to implement "perfect forwarding".
+   */
+  template<typename _Tp>
+    constexpr _Tp&&
+    forward(typename std::remove_reference<_Tp>::type& __t) noexcept
+    { return static_cast<_Tp&&>(__t); }
+
+  /**
+   *  @brief  Forward an rvalue.
+   *  @return The parameter cast to the specified type.
+   *
+   *  This function is used to implement "perfect forwarding".
+   */
+  template<typename _Tp>
+    constexpr _Tp&&
+    forward(typename std::remove_reference<_Tp>::type&& __t) noexcept
+    {
+      static_assert(!std::is_lvalue_reference<_Tp>::value, "template argument"
+		    " substituting _Tp is an lvalue reference type");
+      return static_cast<_Tp&&>(__t);
+    }
+
+```
+
+```cpp
+
+wrapper(ii, ff);
+ii ->forward int & -> static_cast<int & &&> -> static_cast<int &>
+-> int &
+
+wrapper(42, 3.14f);
+ii ->forward int && -> static_cast<int && &&> -> static_cast<int &&>
+-> int &&
+```
+
 
 
 ### std::bind
