@@ -139,7 +139,7 @@ alt+o 行末
 | CTRL + SHIFT + V:    | 粘贴（Linux中不需要复制的动作，文本被选择就自动被复制） |
 | CTRL + SHIFT + T:    | 新建标签页                                              |
 | CTRL + D:            | 关闭标签页                                              |
-| CTRL + L:            | 清楚屏幕                                                |
+| CTRL + L:            | 清空屏幕                                                |
 | CTRL + R + 文本:     | 在输入历史中搜索                                        |
 | CTRL + A:            | 移动到行首                                              |
 | CTRL + E:            | 移动到行末                                              |

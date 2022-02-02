@@ -1209,7 +1209,7 @@ for state in $(cat $file)
 
 如果你列出了一个名字中有空格的单词，for命令仍然会将每个单词当作单独的值。
 
-### 更改字段分隔符
+### 更改字段分隔符 IFS
 
 默认情况下，bash shell会将下列字符当作字段分隔符：
 
@@ -3252,7 +3252,18 @@ echo "This is a test" | gawk '/test/{print $0}'
 .*[]^${}\+?|()
 ```
 
+# GWAK
 
+## 1 Getting Started with awk
+
+```shell
+#! /bin/awk -f
+BEGIN { print "Don't Panic!" }
+
+$ chmod +x advice
+$ ./advice
+a Don't Panic!
+```
 
 
 
