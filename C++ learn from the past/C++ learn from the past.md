@@ -881,5 +881,461 @@ Preventing buffer overruns is primarily about writing good code. Always validate
 - Maguire, Steve [1993], *Writing Solid Code*, ISBN 1-55615-551-4, Microsoft Press, Redmond, Washington.
 - Howard, Michael and LeBlanc, David [2003], *Writing Secure Code*, 2d ed., ISBN 0-7356-1722-8, Microsoft Press, Redmond, Washington.
 
+### extern "C"
+
+https://stackoverflow.com/questions/1041866/what-is-the-effect-of-extern-c-in-c
+
+`extern "C"` makes a function-name in C++ have C linkage (compiler does not mangle the name) so that client C code can link to (use) your function using a C compatible header file that contains just the declaration of your function. Your function definition is contained in a binary format (that was compiled by your C++ compiler) that the client C linker will then link to using the C name.
+
+Since C++ has overloading of function names and C does not, the C++ compiler cannot just use the function name as a unique id to link to, so it mangles the name by adding information about the arguments. A C compiler does not need to mangle the name since you can not overload function names in C. When you state that a function has `extern "C"` linkage in C++, the C++ compiler does not add argument/parameter type information to the name used for linkage.
+
+Just so you know, you can specify `extern "C"` linkage to each individual declaration/definition explicitly or use a block to group a sequence of declarations/definitions to have a certain linkage:
+
+```csharp
+extern "C" void foo(int);
+extern "C"
+{
+   void g(char);
+   int i;
+}
+```
+
+If you care about the technicalities, they are listed in section 7.5 of the C++03 standard, here is a brief summary (with emphasis on `extern "C"`):
+
+- `extern "C"` is a linkage-specification
+- Every compiler is *required* to provide "C" linkage
+- A linkage specification shall occur only in namespace scope
+- ~~All function types, function names and variable names have a language linkage ~~**[See Richard's Comment:](https://stackoverflow.com/questions/1041866/in-c-source-what-is-the-effect-of-extern-c#comment20842899_1041880)** Only function names and variable names with external linkage have a language linkage
+- Two function types with distinct language linkages are distinct types even if otherwise identical
+- Linkage specs nest, inner one determines the final linkage
+- `extern "C"` is ignored for class members
+- At most one function with a particular name can have "C" linkage (regardless of namespace)
+- ~~`extern "C"` forces a function to have external linkage (cannot make it static) ~~**[See Richard's comment:](https://stackoverflow.com/questions/1041866/what-is-the-effect-of-extern-c-in-c?rq=1#comment20842893_1041880)** `static` inside `extern "C"` is valid; an entity so declared has internal linkage, and so does not have a language linkage
+- Linkage from C++ to objects defined in other languages and to objects defined in C++ from other languages is implementation-defined and language-dependent. Only where the object layout strategies of two language implementations are similar enough can such linkage be achieved
+
+### right value
+
+Rvalue references solve at least two problems:
+
+1. Implementing move semantics
+2. Perfect forwarding
+
+> The original definition of lvalues and rvalues from the earliest days of C is as follows: An lvalue is an expression e that may appear on the left or on the right hand side of an assignment, whereas an rvalue is an expression that can only appear on the right hand side of an assignment.
+
+http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2006/n2027.html#:~:text=Rvalue%20references%20is%20a%20small,performance%20and%20more%20robust%20libraries.
+
+e.g.:
+
+```cpp
+A&  a_ref3 = A();  // Error!
+A&& a_ref4 = A();  // Ok
+```
+
+*Question:* Why on Earth would we want to do this?
+
+It turns out that the combination of rvalue references and lvalue references is just what is needed to easily code *move semantics*. The rvalue reference can also be used to achieve *perfect forwarding*, a heretofore unsolved problem in C++. From a casual programmer's perspective, what we get from rvalue references is more general and better performing libraries.
+
+` Move Semantics`
+
+```cpp
+template <class T> swap(T& a, T& b)
+{
+    T tmp(a);   // now we have two copies of a
+    a = b;      // now we have two copies of b
+    b = tmp;    // now we have two copies of tmp (aka a)
+}
+```
+
+But, we didn't want to have *any* copies of `a` or `b`, we just wanted to swap them. Let's try again:
+
+```cpp
+template <class T> swap(T& a, T& b)
+{
+    T tmp(std::move(a));
+    a = std::move(b);   
+    b = std::move(tmp);
+}
+```
+
+In this particular case, we could have optimized `swap` by a specialization. However, we can't specialize every function that copies a large object just before it deletes or overwrites it. That would be unmanageable.
+
+The first task of rvalue references is to allow us to implement `move()` without verbosity, or rutime overhead.
+
+`move`
+
+The `move` function really does very little work. All `move` does is accept either an lvalue or rvalue argument, and return it as an rvalue *without* triggering a copy construction:
+
+```cpp
+template <class T>
+typename remove_reference<T>::type&&
+move(T&& a)
+{
+    return a;
+}
+```
+
+It is now up to client code to overload key functions on whether their argument is an lvalue or rvalue (e.g. copy constructor and assignment operator). When the argument is an lvalue, the argument must be copied from. When it is an rvalue, it can safely be moved from.
+
+```cpp
+template <class T>
+class clone_ptr
+{
+private:
+    T* ptr;
+public:
+    // construction
+    explicit clone_ptr(T* p = 0) : ptr(p) {}
+
+    // destruction
+    ~clone_ptr() {delete ptr;}
+
+    // copy semantics
+    clone_ptr(const clone_ptr& p)
+        : ptr(p.ptr ? p.ptr->clone() : 0) {}
+
+    clone_ptr& operator=(const clone_ptr& p)
+    {
+        if (this != &p)
+        {
+            delete ptr;
+            ptr = p.ptr ? p.ptr->clone() : 0;
+        }
+        return *this;
+    }
+
+    // move semantics
+    clone_ptr(clone_ptr&& p)
+        : ptr(p.ptr) {p.ptr = 0;}
+
+    clone_ptr& operator=(clone_ptr&& p)
+    {
+        std::swap(ptr, p.ptr);
+        return *this;
+    }
+
+    // Other operations
+    T& operator*() const {return *ptr;}
+    // ...
+};
+```
+
+For classes made up of other classes (via either containment or inheritance), the move constructor and move assignment can easily be coded using the `std::move` function:
+
+```cpp
+class Derived
+    : public Base
+{
+    std::vector<int> vec;
+    std::string name;
+    // ...
+public:
+    // ...
+    // move semantics
+    Derived(Derived&& x)              // rvalues bind here
+        : Base(std::move(x)), 
+          vec(std::move(x.vec)),
+          name(std::move(x.name)) { }
+
+    Derived& operator=(Derived&& x)   // rvalues bind here
+    {
+        Base::operator=(std::move(x));
+        vec  = std::move(x.vec);
+        name = std::move(x.name);
+        return *this;
+    }
+    // ...
+};
+```
+
+Note :
+
+above that the argument `x` is treated as an lvalue internal to the move functions, even though it is declared as an rvalue reference parameter. That's why it is necessary to say `move(x)` instead of just `x` when passing down to the base class. This is a key safety feature of move semantics designed to prevent accidently moving twice from some named variable. All moves occur only from rvalues, or with an explicit cast to rvalue such as using `std::move`. *If you have a name for the variable, it is an lvalue.*
+
+`Movable but Non-Copyable Types`
+
+Some types are not amenable to copy semantics but can still be made movable. For example:
+
+- `fstream`
+- `unique_ptr` (non-shared, non-copyable ownership)
+- A type representing a thread of execution
+
+Movable but non-copyable types can also safely be put into standard containers. If the container needs to "copy" an element internally (e.g. vector reallocation) it will move the element instead of copy it.
+
+```cpp
+vector<unique_ptr<base>> v1, v2;
+v1.push_back(unique_ptr<base>(new derived()));  // ok, moving, not copying
+...
+v2 = v1;             // Compile time error.  This is not a copyable type.
+v2 = move(v1);       // Move ok.  Ownership of pointers transferred to v2.
+```
+
+Many standard algorithms benefit from moving elements of the sequence as opposed to copying them. This not only provides better performance (like the improved `std::swap` implementation described above), but also allows these algorithms to operate on movable but non-copyable types. For example the following code sorts a `vector<unique_ptr<T>>` based on comparing the pointed-to types:
+
+```cpp
+struct indirect_less
+{
+    template <class T>
+    bool operator()(const T& x, const T& y)
+        {return *x < *y;}
+};
+...
+std::vector<std::unique_ptr<A>> v;
+...
+std::sort(v.begin(), v.end(), indirect_less())
+```
+
+As `sort` moves the `unique_ptr`'s around, it will use `swap` (which no longer requires `Copyability`) or move construction / move assignment. Thus during the entire algorithm, the invariant that each item is owned and referenced by one and only one smart pointer is maintained. If the algorithm were to attempt a copy (say by programming mistake) a compile time error would result.
+
+`Perfect Forwarding`
+
+```cpp
+template <class T>
+std::shared_ptr<T>
+factory()   // no argument version
+{
+    return std::shared_ptr<T>(new T);
+}
+
+template <class T, class A1>
+std::shared_ptr<T>
+factory(const A1& a1)   // one argument version
+{
+    return std::shared_ptr<T>(new T(a1));
+}
+
+// all the other versions
+```
+
+In the interest of brevity, we will focus on just the one-parameter version. For example:
+
+```cpp
+std::shared_ptr<A> p = factory<A>(5);
+```
+
+*Question:* What if `T`'s constructor takes a parameter by non-const reference?
+
+In that case, we get a compile-time error as the const-qualifed argument of the `factory` function will not bind to the non-const parameter of `T`'s constructor.
+
+To solve that problem, we could use non-const parameters in our factory functions:
+
+```cpp
+template <class T, class A1>
+std::shared_ptr<T>
+factory(A1& a1)
+{
+    return std::shared_ptr<T>(new T(a1));
+}
+```
+
+This example worked with our first version of `factory`, but now it's broken: The "`5`" causes the `factory` template argument to be deduced as `int&` and subsequently will not bind to the rvalue "`5`". Neither solution so far is right. Each breaks reasonable and common code.
+
+*Question:* What about overloading on every combination of `AI&` and `const AI&`?
+
+This would allow us to handle all examples, but at a cost of an exponential explosion: For our two-parameter case, this would require 4 overloads. For a three-parameter `factory` we would need 8 additional overloads. For a four-parameter `factory` we would need 16, and so on. This is not a scalable solution.
+
+Rvalue references offer a simple, scalable solution to this problem:
+
+```cpp
+template <class T, class A1>
+std::shared_ptr<T>
+factory(A1&& a1)
+{
+ return std::shared_ptr<T>(new T(std::forward<A1>(a1)));
+}
+```
+
+Now rvalue arguments can bind to the `factory` parameters. If the argument is const, that fact gets deduced into the `factory` template parameter type.
+
+*Question:* What is that `forward` function in our solution?
+
+Like `move`, `forward` is a simple standard library function used to express our intent directly and explicitly, rather than through potentially cryptic uses of references. We want to forward the argument `a1`, so we simply say so.
+
+Here, `forward` preserves the lvalue/rvalue-ness of the argument that was passed to `factory`. If an rvalue is passed to `factory`, then an rvalue will be passed to `T`'s constructor with the help of the `forward` function. Similarly, if an lvalue is passed to `factory`, it is forwarded to `T`'s constructor as an lvalue.
+
+The definition of `forward` looks like this:
+
+```
+template <class T>
+struct identity
+{
+ typedef T type;
+};
+
+template <class T>
+T&& forward(typename identity<T>::type&& a)
+{
+ return a;
+}
+```
+
+### right value reference and  universal reference
+
+https://isocpp.org/blog/2012/11/universal-references-in-c11-scott-meyers
+
+```cpp
+Widget&& var1 = someWidget;      // here, “&&” means rvalue reference
+
+auto&& var2 = var1;              // here, “&&” does not mean rvalue reference
+
+template<typename T>
+void f(std::vector<T>&& param);  // here, “&&” means rvalue reference
+
+template<typename T>
+void f(T&& param);               // here, “&&”does not mean rvalue referenc
+```
+
+Key :
+
+```
+If a variable or parameter is declared to have type T&& for some deduced type T, that variable or parameter is a universal reference.
+```
+
+Like all references, universal references **must be initialized**, and it is a universal reference’s initializer that determines whether it represents an lvalue reference or an rvalue reference:
+
+- If the expression initializing a universal reference is an lvalue, the universal reference becomes an lvalue reference.
+- If the expression initializing the universal reference is an rvalue, the universal reference becomes an rvalue reference.
+
+This information is useful only if you are able to distinguish lvalues from rvalues. A precise definition for these terms is difficult to develop (the C++11 standard generally specifies whether an expression is an lvalue or an rvalue on a case-by-case basis), but in practice, the following suffices:
+
+- If you can take the address of an expression, the expression is an lvalue.
+- If the type of an expression is an lvalue reference (e.g., `T&` or `const T&`, etc.), that expression is an lvalue. 
+- Otherwise, the expression is an rvalue. Conceptually (and typically also in fact), rvalues correspond to temporary objects, such as those returned from functions or created through implicit type conversions. Most literal values (e.g., `10` and `5.3`) are also rvalues.
+
+```cpp
+std::vector<int> v;     // v[0] is a rvalue , because you can use v[0] = 1 etc.
+...
+auto&& val = v[0];               // val becomes an lvalue reference 
+```
+
+### perfect forwarding
+
+https://eli.thegreenplace.net/2014/perfect-forwarding-and-universal-references-in-c/
+
+qs:
+
+if T1 is a reference, but it is not visible in the caller of wrapper(because it function(func) passing param by valie)
+
+```c++
+template <typename T1, typename T2>
+void wrapper(T1 e1, T2 e2) {
+    func(e1, e2);
+}
+```
+
+change to ->
+
+can't receive value
+
+```cpp
+template <typename T1, typename T2>
+void wrapper(T1& e1, T2& e2) {
+    func(e1, e2);
+}
+```
+
+
+
+qs:
+
+```cpp
+template <typename T>
+void baz(T t) {
+  T& k = t;
+}
+int ii = 4;
+baz<int&>(ii);
+```
+
+
+
+
+
+ what happens when various reference types augment (e.g. what does `int&& &` mean?).
+
+**reference collapsing** rule.
+
+The rule is very simple. `&` always wins. So `& &` is `&`, and so are `&& &` and `& &&`. The only case where `&&` emerges from collapsing is `&& &&`. You can think of it as a logical-OR, with `&` being 1 and `&&` being 0.
+
+
+
+《the c++ programming language 》
+
+23.5.2 Function Template Argument Deduction
+
+
+
+**universal reference**
+
+```cpp
+template <class T>
+void func(T&& t) {
+}
+func(4);            // 4 is an rvalue: T deduced to int
+
+double d = 3.14;
+func(d);            // d is an lvalue; T deduced to double&
+
+float f() {...}
+func(f());          // f() is an rvalue; T deduced to float
+
+int bar(int i) {
+  func(i);          // i is an lvalue; T deduced to int&
+}
+```
+
+
+
+**Solving perfect forwarding**
+
+forward ->`<utility> `->`std::forward`.
+
+```cpp
+template <typename T1, typename T2>
+void wrapper(T1&& e1, T2&& e2) {
+    func(forward<T1>(e1), forward<T2>(e2));
+}
+```
+
+
+
+```cpp
+  /**
+   *  @brief  Forward an lvalue.
+   *  @return The parameter cast to the specified type.
+   *
+   *  This function is used to implement "perfect forwarding".
+   */
+  template<typename _Tp>
+    constexpr _Tp&&
+    forward(typename std::remove_reference<_Tp>::type& __t) noexcept
+    { return static_cast<_Tp&&>(__t); }
+
+  /**
+   *  @brief  Forward an rvalue.
+   *  @return The parameter cast to the specified type.
+   *
+   *  This function is used to implement "perfect forwarding".
+   */
+  template<typename _Tp>
+    constexpr _Tp&&
+    forward(typename std::remove_reference<_Tp>::type&& __t) noexcept
+    {
+      static_assert(!std::is_lvalue_reference<_Tp>::value, "template argument"
+		    " substituting _Tp is an lvalue reference type");
+      return static_cast<_Tp&&>(__t);
+    }
+
+```
+
+```cpp
+wrapper(ii, ff);
+ii ->forward int & -> static_cast<int & &&> -> static_cast<int &>
+-> int &
+
+wrapper(42, 3.14f);
+ii ->forward int && -> static_cast<int && &&> -> static_cast<int &&>
+-> int &&
+```
+
 
 
