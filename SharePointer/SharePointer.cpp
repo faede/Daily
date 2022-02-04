@@ -27,7 +27,7 @@ public:
     ControlBlock(std::function<void()> deleter = de) noexcept
         : _reference_count(0), _weak_reference_count(0), _deleter(deleter)
     {
-        _deleter();
+       // _deleter();
     }
 
     // static fun -> function arg -> init list ->  func define
@@ -69,9 +69,10 @@ public:
         
         return 1; // 1 to exist 
     }
-protected:
+public:
     ~ControlBlock(){
-
+        std::cout << "deleter:" << std::endl;
+        _deleter();
     }
 };
 
@@ -234,7 +235,14 @@ public:
         }
         _controlblock->print_reference();
         
-        _controlblock->check_reference(_data);
+        
+        // _controlblock->check_reference(_data);
+        // TODO:
+        // lock
+        if(_controlblock->get_reference() == 0){
+            delete _controlblock;
+        }
+        
         std::cout << std::endl;
     }
 };
