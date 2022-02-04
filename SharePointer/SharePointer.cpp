@@ -4,6 +4,8 @@
 #include <mutex>
 #include <functional>
 #include <typeinfo>
+#include <cassert> 
+#include <memory>
 
 template<typename T>
 class Shared_Pointer;
@@ -12,8 +14,8 @@ class Shared_Pointer;
 
 class ControlBlock{
 private:
-    int _reference_count;
-    int _weak_reference_count;
+    long _reference_count;
+    long _weak_reference_count;
     std::mutex _r_mutex;
     std::function<void()> _deleter;
     // TODO:
@@ -41,7 +43,7 @@ public:
         std::lock_guard<std::mutex> lock(_r_mutex);
         _reference_count--;
     }
-    int get_reference() noexcept
+    long get_reference() noexcept
     {
         std::lock_guard<std::mutex> lock(_r_mutex);
         return _reference_count;
@@ -58,7 +60,7 @@ public:
     }
 
     template<typename T>
-    int check_reference(T __data) noexcept
+    long check_reference(T __data) noexcept
     {
         std::lock_guard<std::mutex> lock(_r_mutex);
         if(_reference_count == 0){
@@ -71,7 +73,7 @@ public:
     }
 public:
     ~ControlBlock(){
-        std::cout << "deleter:" << std::endl;
+        std::cout << "control block free, deleter:" << std::endl;
         _deleter();
     }
 };
@@ -152,12 +154,17 @@ public:
     }
     
     // Copy assignment operator.
+    // Don't need, may beacuse concurrency
     Shared_Pointer<T> & operator=(const Shared_Pointer<T>& other) noexcept
     {
-        if(this != other){
+        if(this != &other){
+            _controlblock->decrease_reference();
+            other._controlblock->increase_reference();
+
             _data = other._data;
             _controlblock = other._controlblock;
-            _controlblock->increase_reference();
+
+            //_controlblock->increase_reference();
             std::cout << "do a copy  assignment operator" << std::endl;
         }
         _controlblock->print_reference();
@@ -217,6 +224,11 @@ public:
         return *(this->_data);
     }   
 
+    long use_count() noexcept
+    {
+        return _controlblock->get_reference();
+    }
+
     ~Shared_Pointer() noexcept
     {
         if(_controlblock == nullptr){
@@ -239,10 +251,11 @@ public:
         // _controlblock->check_reference(_data);
         // TODO:
         // lock
+        assert(_controlblock->get_reference() >= 0 && "error ref c");
         if(_controlblock->get_reference() == 0){
             delete _controlblock;
         }
-        
+        assert(_controlblock->get_reference() >= 0 && "error ref c");
         std::cout << std::endl;
     }
 };
@@ -263,27 +276,57 @@ public:
 int df(test *){
     std::cout << "my deleter" << std::endl;
 }   
+
+
+
 int main(){
-    //int a = 5;
+    // TODO: trans to test
     test* t = new test(5);
+    test* t2 = new test(4);
+
+    // shared_ptr use
+    test* lib_t = new test(5);
+    test* lib_t2 = new test(4);
 
 
+    std::cout << "-------------1------------------" << std::endl;
+    Shared_Pointer<test> sd_ptr (t, df);
+    std::shared_ptr<test> lib_sd_ptr(lib_t, df);
+    assert(lib_sd_ptr.use_count() == sd_ptr.use_count() && "compare error");
 
-    std::cout << "-------------------------------" << std::endl;
-    Shared_Pointer<test> sd_ptr (t,df);
-    std::cout << "-------------------------------" << std::endl;
+    std::cout << "-------------2------------------" << std::endl;
     auto p2(sd_ptr);
-    std::cout << "-------------------------------" << std::endl;
+    auto lib_p2(lib_sd_ptr);
+    assert(lib_p2.use_count() == p2.use_count() && "compare error");
+
+    std::cout << "-------------3------------------" << std::endl;
     auto p3 = sd_ptr;
-    std::cout << "-------------------------------" << std::endl;
+    auto lib_p3(lib_sd_ptr);
+    assert(lib_p3.use_count() == p3.use_count() && "compare error");
+
+    std::cout << "-------------4------------------" << std::endl;
+    std::cout <<"lib: " << lib_sd_ptr.use_count() << "      my: " << sd_ptr.use_count() << std::endl;
     auto p4 = std::move(sd_ptr);
+    auto lib_p4 = std::move(lib_sd_ptr);
+
+    std::cout <<"lib: " << lib_p4.use_count() << "      my: " << p4.use_count() << std::endl;
+    assert(lib_p4.use_count() == p4.use_count() && "compare error");
+
+    std::cout << "-------------5------------------" << std::endl;
+    // don't need
+    Shared_Pointer<test> p5 = t2;
+    // std::shared_ptr<test> lib_p5 = lib_t2;
+    // assert(lib_p5.use_count() == p5.use_count() && "compare error");
+
+    std::cout << "-------------6------------------" << std::endl;
+    p5 = p4;
 
     // TODO: 
-    // std::cout << "-------------------------------" << std::endl;
-    // auto p5(std::move(sd_ptr),df); 
+    //std::cout << "-------------------------------" << std::endl;
+    //auto p6(std::move(sd_ptr), df); 
 
-    std::cout << "-------------------------------" << std::endl;
+    std::cout << "-------------7------------------" << std::endl;
     (*p4).p();
-    std::cout << "-------------------------------" << std::endl;
-    //new Shared_Pointer()
+    std::cout << "-------------9------------------" << std::endl;
+
 }
