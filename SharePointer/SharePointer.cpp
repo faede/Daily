@@ -94,30 +94,34 @@ protected:
 template<typename T>
 class Weak_Ponter{
     T * _wk_data;
-    ControlBlock * _wk_control_block;
+    ControlBlock * _wk_controlblock;
     //Shared_Pointer<T> * bind_pointer;
 
     Weak_Ponter(Shared_Pointer<T> sd_ptr){
         _wk_data = sd_ptr._data;
-        _wk_control_block = sd_ptr._controlblock;
-        _wk_control_block->increase_reference();
+        _wk_controlblock = sd_ptr._controlblock;
+        _wk_controlblock->increase_reference();
         //bind_pointer = sd_ptr;
     }
 
     bool expired(){
-        if(_wk_control_block == nullptr){
+        if(_wk_controlblock == nullptr){
             return 1;
         }
-        return _wk_control_block->get_reference() == 0;
+        return _wk_controlblock->get_reference() == 0;
     }
 
     auto lock(){
+        Shared_Pointer<T> rt();
+        rt._data = _wk_data;
+        rt._controlblock = _wk_controlblock;
+        _wk_controlblock->increase_reference();
         //return Shared_Pointer<T>
         // TODO
     }
     ~Weak_Ponter(){
-        if(_wk_control_block != nullptr){
-            _wk_control_block->check_weak_reference(_wk_data);
+        if(_wk_controlblock != nullptr){
+            _wk_controlblock->check_weak_reference(_wk_data);
         }
     }
 };
