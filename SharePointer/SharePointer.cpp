@@ -200,16 +200,8 @@ public:
         id = std::rand();
         std::cout << "id -----> " << id << " construct " << std::endl;
 
-        std::cout <<"here sec 1" << std::endl;
-        //_controlblock->increase_reference(); // need lock
-        std::cout <<"here sec 2" << std::endl;
-        //other.~Shared_Pointer();
-        std::cout <<"here sec 3" << std::endl;
-
         other._data = nullptr;
         other._controlblock = nullptr;
-        
-        std::cout <<"here sec 2" << std::endl;
         std::cout << "do a Move constructor" << std::endl;
         _controlblock->print_reference();
     }
@@ -304,22 +296,25 @@ int main(){
     test* lib_t2 = new test(4);
 
 
-    std::cout << "-------------1------------------" << std::endl;
+    std::cout << "--------------------------1-------------------------------" << std::endl;
     Shared_Pointer<test> sd_ptr (t, df); // error de
     std::shared_ptr<test> lib_sd_ptr(lib_t, df); // ok de
     assert(lib_sd_ptr.use_count() == sd_ptr.use_count() && "compare error");
 
-    std::cout << "-------------2------------------" << std::endl;
+    std::cout << "--------------------------2-------------------------------" << std::endl;
     auto p2(sd_ptr); // ok de
     auto lib_p2(lib_sd_ptr); // ok de
     assert(lib_p2.use_count() == p2.use_count() && "compare error");
 
-    std::cout << "-------------3------------------" << std::endl;
+    std::cout << "--------------------------3-------------------------------" << std::endl;
     auto p3 = sd_ptr; // ok de
     auto lib_p3(lib_sd_ptr); //  ok de
     assert(lib_p3.use_count() == p3.use_count() && "compare error");
 
-    std::cout << "-------------4------------------" << std::endl;
+    std::cout << "--------------------------4-------------------------------" << std::endl;
+
+
+
     std::cout <<"lib: " << lib_sd_ptr.use_count() << "      my: " << sd_ptr.use_count() << std::endl;
     
 
@@ -336,26 +331,50 @@ int main(){
     p4_2 = p4;
     lib_p4_2 = lib_p4;
     }
-     std::cout << "------------4 - mid ------------------" << std::endl;
+     std::cout << "--------------------------4 - mid -------------------------------" << std::endl;
     assert(lib_p4_2.use_count() == p4_2.use_count() && "compare error");
     std::cout <<"lib: " << lib_p4_2.use_count() << "      my: " << p4_2.use_count() << std::endl;
 
 
-    std::cout << "-------------5------------------" << std::endl;
+
+
+    std::cout << "--------------------------5-------------------------------" << std::endl;
+    std::cout <<"lib: " << lib_p4_2.use_count() << "      my: " << p4_2.use_count() << std::endl;
+    
+
+    Shared_Pointer<test> p5_2;
+    std::shared_ptr<test> lib_p5_2;
+    {
+
+    auto p5 (std::move(p4_2)) ; //  ok de
+    auto lib_p5 (std::move(lib_p4_2)); // ok de
+
+    std::cout <<"lib: " << lib_p5.use_count() << "      my: " << p5.use_count() << std::endl;
+    assert(lib_p5.use_count() == p5.use_count() && "compare error");
+    
+    p5_2 = p5;
+    lib_p5_2 = lib_p5;
+    }
+    std::cout << "-------------------------- 5 - mid -------------------------------" << std::endl;
+    assert(lib_p5_2.use_count() == p5_2.use_count() && "compare error");
+    std::cout <<"lib: " << lib_p5_2.use_count() << "      my: " << p5_2.use_count() << std::endl;
+
+
+
     // don't need
-    Shared_Pointer<test> p5 = t2; // ok de 
+    // Shared_Pointer<test> p5 = t2; // ok de 
     // std::shared_ptr<test> lib_p5 = lib_t2;
     // assert(lib_p5.use_count() == p5.use_count() && "compare error");
 
-    std::cout << "-------------6------------------" << std::endl;
+    std::cout << "--------------------------6-------------------------------" << std::endl;
     //p5 = p4;
 
     // TODO: 
-    //std::cout << "-------------------------------" << std::endl;
+    //std::cout << "---------------------------------------------------------" << std::endl;
     //auto p6(std::move(sd_ptr), df); 
 
-    std::cout << "-------------7------------------" << std::endl;
+    std::cout << "--------------------------7-------------------------------" << std::endl;
     //(*p4).p();
-    std::cout << "-------------9------------------" << std::endl;
+    std::cout << "--------------------------9-------------------------------" << std::endl;
 
 }
