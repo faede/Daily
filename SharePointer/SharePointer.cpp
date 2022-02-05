@@ -16,7 +16,7 @@ class Shared_Pointer;
 class ControlBlock{
 private:
     long _reference_count;
-    long _weak_reference_count;
+    long _weak_reference_count; // TODO: 
     std::mutex _r_mutex;
     std::function<void()> _deleter;
     // TODO:
@@ -61,7 +61,7 @@ public:
     }
 
     template<typename T>
-    long check_reference(T __data) noexcept
+    void check_reference(T __data) noexcept
     {
         std::lock_guard<std::mutex> lock(_r_mutex);
         _reference_count--;
@@ -69,10 +69,7 @@ public:
             std::cout <<"need to be delete"<<std::endl;
             delete __data;
             this->~ControlBlock();
-            return 1; // 1 to deleted
         }
-        
-        return 0; // 0 to exist 
     }
 public:
     ~ControlBlock(){
