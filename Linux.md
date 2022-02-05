@@ -3252,9 +3252,176 @@ echo "This is a test" | gawk '/test/{print $0}'
 .*[]^${}\+?|()
 ```
 
+# Objdump
+
+`objdump`命令是Linux下的反汇编目标文件或者可执行文件的命令，可以看作是`nm`的增强型。
+`objdump -d out` :反汇编test中的需要执行指令的那些section；
+`objdump -x out` :以某种分类信息的形式把目标文件的数据组成输出；
+`objdump -t out` :输出目标文件的符号表；
+`objdump -h out` :输出目标文件的所有段概括;
+`objdump -j ./text/.data -S out` : 输出指定段的信息（反汇编源代码）;
+`objdump -S out` :输出目标文件的符号表（） 当gcc -g时打印更明显；
+`objdump -j .text -Sl stack1 | more`:
+`-S` 尽可能反汇编出源代码，尤其当编译的时候指定了-g这种调试参数时，效果比较明显。隐含了-d参数。
+`-l` 用文件名和行号标注相应的目标代码，仅仅和-d、-D或者-r一起使用。使用-ld和使用-d的区别不是很大，在源码级调试的时候有用，要求编译时使用了-g之类的调试编译选项。
+
+# readelf
+
+-h：文件头
+-S：段表
+-s：符号表
+-d: 查看依赖库
+-p：查看某个段内容，非常重要。如：readelf -p .comment libc.so 
+
+# od
+如：十六进制输出数据并且地址以十进制打印：od -A d -t xCc 文件
+
+命令中各选项的含义：
+- A 指定地址基数，包括：
+d 十进制
+o 八进制（系统默认值）
+x 十六进制
+n 不打印位移值
+- t 指定数据的显示格式，主要的参数有：
+c ASCII字符或反斜杠序列
+d 有符号十进制数
+f 浮点数
+o 八进制（系统默认值为02）
+u 无符号十进制数
+x 十六进制数
+
+
+
+# Ubuntu环境配置
+
+
+
+```shell
+
+# sougoupinyin
+配置完之后务必重启， 登出 并不起作用
+
+
+
+sudo apt-get install git-all
+git config --global user.name "faede"
+git config --global user.email 2554622161@qq.com
+git init
+sudo apt-get install ssh
+ssh-keygen -t rsa -C "2554622161@qq.com"
+cat ~/.ssh/id_rsa.pub > clipboard
+登陆到GitHub上，右上角小头像->Setting->SSH and GPG keys中，点击new SSH key
+
+ssh -T git@github.com # test
+
+
+
+git remote add origin git@github.com:faede/Daily.git
+
+
+
+# 主题配置
+sudo apt install gnome-tweak-tool
+sudo apt install chrome-gnome-shell
+sudo apt install gnome-shell-extensions
+# open tweaks, set USER THEME
+
+# in fire fox, install extension
+https://extensions.gnome.org/
+
+# search "dash to panel", install
+
+# THEME
+https://www.pling.com/s/Gnome/p/1403328
+# clone git link, ./install.sh
+
+
+
+
+cmake /home/zyy/files/GitHub/llvm-project/llvm -DCMAKE_INSTALL_PREFIX="/home/zyy/files/llvm" -DLLVM_ENABLE_PROJECTS=clang -G "Unix Makefiles" 
+
+
+# find uuid:
+UUID="d79ef69c-c653-4c05-b340-65ea849908ec"
+
+
+
+sudo mount /dev/nvme1n1p1 /home/zyy/files
+ 
+sudo vim /etc/fstab
+ 
+
+<fs spec>：分区定位，可以给UUID或LABEL，例如：UUID=6E9ADAC29ADA85CD或LABEL=software
+<fs file>：具体挂载点的位置，例如：/data
+<fs vfstype>：挂载磁盘类型，根据实际情况填写，linux 分区一般为 ext4，windows 分区一般为 ntfs
+<fs mntops>：挂载参数，一般为defaults
+<fs freq>：磁盘检查，默认为0，需要开机检查磁盘则为1
+<fs passno>：引导选项，0不启动，1启动，2非启动，一般情况下只能为0或2
+
+UUID=d79ef69c-c653-4c05-b340-65ea849908ec /home/zyy/files                ext4     defaults       0      2
+
+
+
+export PATH="$PATH:/home/zyy/files/llvm/bin"
+
+
+
+
+
+wget -qO- https://deepin-wine.i-m.dev/setup.sh | sudo sh
+sudo apt-get install deepin.com.qq.office      #安装/更新TIM
+sudo apt-get install deepin.com.qq.im          #安装/更新QQ
+sudo apt-get install deepin.com.wechat         #安装/更新微信
+
+
+正常安装后wine窗口为独立窗口，为了便于美观建议安装如下插件：
+
+Gnome Shell 插件：TopIcons Plus
+
+
+
+
+
+sudo apt-get update
+sudo apt-get install openssh-server
+sudo apt-get install openssh-client
+
+sudo vim /etc/ssh/sshd_config 
+设置如下：
+# Port 22
+# PermitRootLogin yes
+# PasswordAuthentication yes
+
+启动ssh服务器
+sudo service ssh start
+ps -aux | grep ssh # 查看状态
+
+ss -a | grep ssh # netstat => ss
+
+
+ip -c a # alias ifconfig="ip -c a | sed -e 's/\// \//g'" # :(
+192.168.2.205
+
+on mac:
+ssh zyy@192.168.2.205
+
+or:
+ssh zyy@zyy  # usr_name@pc_name
+
+
+```
+
+
+
+
+
+
+
 # GWAK
 
 ## 1 Getting Started with awk
+
+**self-contained awk scripts**
 
 ```shell
 #! /bin/awk -f
@@ -3265,5 +3432,30 @@ $ ./advice
 a Don't Panic!
 ```
 
+**Understanding ‘#!’**
 
+awk is an interpreted language. This means that the awk utility reads your program and
+then processes your data according to the instructions in your program. (This is different
+from a compiled language such as C, where your program is first compiled into machine
+code that is executed directly by your system’s processor.) The awk utility is thus termed
+an interpreter. Many modern languages are interpreted.
 
+The line beginning with ‘#!’ lists the full file name of an interpreter to run and a single
+optional initial command-line argument to pass to that interpreter. The operating system
+then runs the interpreter with the given argument and the full argument list of the executed
+program. The first argument in the list is the full file name of the awk program. The rest
+of the argument list contains either options to awk, or data files, or both. (Note that on
+many systems awk is found in /usr/bin instead of in /bin.)
+
+Some systems limit the length of the interpreter name to 32 characters. Often, this can
+be dealt with by using a symbolic link.
+
+You should not put more than one argument on the ‘#!’ line after the path to awk. It
+does not work. The operating system treats the rest of the line as a single argument and
+passes it to awk. Doing this leads to confusing behavior—most likely a usage diagnostic of
+some sort from awk.
+
+Finally, the value of ARGV[0] (see Section 7.5 [Predefined Variables], page 157) varies
+depending upon your operating system. Some systems put ‘awk’ there, some put the full
+pathname of awk (such as /bin/awk), and some put the name of your script (‘advice’).
+Don’t rely on the value of ARGV[0] to provide your script name.
