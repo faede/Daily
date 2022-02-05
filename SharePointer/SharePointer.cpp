@@ -39,11 +39,6 @@ public:
         std::lock_guard<std::mutex> lock(_r_mutex);
         _reference_count++;
     }
-    void decrease_reference() noexcept
-    {
-        std::lock_guard<std::mutex> lock(_r_mutex);
-        _reference_count--;
-    }
     long get_reference() noexcept
     {
         std::lock_guard<std::mutex> lock(_r_mutex);
@@ -177,13 +172,10 @@ public:
         std::cout << "id -----> " << id << " construct " << std::endl;
 
         if(this != &other){
-            // _controlblock->decrease_reference();
             other._controlblock->increase_reference();
 
             _data = other._data;
             _controlblock = other._controlblock;
-
-            //_controlblock->increase_reference();
             std::cout << "do a copy  assignment operator" << std::endl;
         }
         _controlblock->print_reference();
@@ -279,6 +271,7 @@ public:
 
 int df(test *){
     std::cout << "my deleter" << std::endl;
+    return 0;
 }   
 
 
