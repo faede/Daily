@@ -6,6 +6,7 @@
 #include <typeinfo>
 #include <cassert> 
 #include <memory>
+#include <random>
 
 template<typename T>
 class Shared_Pointer;
@@ -63,13 +64,15 @@ public:
     long check_reference(T __data) noexcept
     {
         std::lock_guard<std::mutex> lock(_r_mutex);
+        _reference_count--;
         if(_reference_count == 0){
             std::cout <<"need to be delete"<<std::endl;
             delete __data;
-            return 0; // 0 to deleted
+            this->~ControlBlock();
+            return 1; // 1 to deleted
         }
         
-        return 1; // 1 to exist 
+        return 0; // 0 to exist 
     }
 public:
     ~ControlBlock(){
@@ -93,9 +96,12 @@ class Shared_Pointer
 private:
     T * _data;
     ControlBlock * _controlblock;
+    int id ;
 public:
     Shared_Pointer() noexcept
     {
+        id = std::rand();
+        
         _data = nullptr;
         _controlblock = nullptr;
     }
@@ -103,6 +109,8 @@ public:
     // Copy constructor from new.
     Shared_Pointer(T * data, std::function<void()> deleter = NULL) noexcept
     {
+        id = std::rand();
+        std::cout << "id -----> " << id << " construct " << std::endl;
         _data = data;
         _controlblock = new ControlBlock();
         _controlblock->increase_reference(); // set it to 1
@@ -113,7 +121,10 @@ public:
     // Copy constructor from new with special deleter.
     template<typename F>
     Shared_Pointer(T * data, F && f) noexcept
-    {   
+    { 
+        id = std::rand();
+        std::cout << "id -----> " << id << " construct " << std::endl;
+
         std::cout << "This is a shared_ptr with special deleter" << std::endl;
         // Create a function f with bounded parameters 
         std::function<decltype(f(data))()> func = std::bind(std::forward<F>(f),
@@ -132,6 +143,9 @@ public:
     // Copy assignment operator from new.
     Shared_Pointer<T> & operator=(const T * data) noexcept
     {
+        id = std::rand();
+        std::cout << "id -----> " << id << " construct " << std::endl;
+
         _data = data;
         _controlblock = new ControlBlock();
         _controlblock->increase_reference();
@@ -147,6 +161,9 @@ public:
     Shared_Pointer(const Shared_Pointer<T>& other, std::function<void()> deleter = NULL) noexcept
         : _data(other._data), _controlblock(other._controlblock)
     {
+        id = std::rand();
+        std::cout << "id -----> " << id << " construct " << std::endl;
+
         _controlblock->increase_reference();
         std::cout << "do a copy constructor" << std::endl;
 
@@ -154,11 +171,16 @@ public:
     }
     
     // Copy assignment operator.
-    // Don't need, may beacuse concurrency
+    // we need to redefine
+    // we can't change bind, we onlu create
     Shared_Pointer<T> & operator=(const Shared_Pointer<T>& other) noexcept
     {
+        assert(_data == nullptr && "error, can't change bind");
+        id = std::rand();
+        std::cout << "id -----> " << id << " construct " << std::endl;
+
         if(this != &other){
-            _controlblock->decrease_reference();
+            // _controlblock->decrease_reference();
             other._controlblock->increase_reference();
 
             _data = other._data;
@@ -175,10 +197,19 @@ public:
     Shared_Pointer(Shared_Pointer<T> && other, std::function<void()> deleter = NULL) noexcept
         : _data(other._data), _controlblock(other._controlblock)
     {
+        id = std::rand();
+        std::cout << "id -----> " << id << " construct " << std::endl;
+
+        std::cout <<"here sec 1" << std::endl;
+        //_controlblock->increase_reference(); // need lock
+        std::cout <<"here sec 2" << std::endl;
+        //other.~Shared_Pointer();
+        std::cout <<"here sec 3" << std::endl;
+
         other._data = nullptr;
         other._controlblock = nullptr;
         
-
+        std::cout <<"here sec 2" << std::endl;
         std::cout << "do a Move constructor" << std::endl;
         _controlblock->print_reference();
     }
@@ -189,6 +220,9 @@ public:
     Shared_Pointer(Shared_Pointer<T> && other, F && f) noexcept
         : _data(other._data), _controlblock(other._controlblock)
     {   
+        id = std::rand();
+        std::cout << "id -----> " << id << " construct " << std::endl;
+
         other._data = nullptr;
         other._controlblock = nullptr;
         std::cout << "This is a shared_ptr with special deleter" << std::endl;
@@ -207,6 +241,9 @@ public:
     // Move assignment operator.
     Shared_Pointer<T> & operator=(Shared_Pointer<T>&& other) noexcept
     {
+        id = std::rand();
+        std::cout << "id -----> " << id << " construct " << std::endl;
+
         if(this != other){
             _data = other._data;
             _controlblock = other._controlblock;
@@ -231,32 +268,10 @@ public:
 
     ~Shared_Pointer() noexcept
     {
-        if(_controlblock == nullptr){
-            // TODO: fix bug
-            return ;
+        std::cout << "id -----> " << id << " destruct " << std::endl;
+        if(_controlblock != nullptr){
+            _controlblock->check_reference(_data);
         }
-        std::cout << "before delete :" << std::endl;
-        _controlblock->print_reference();
-
-        _controlblock->decrease_reference(); // by move shouldn't be decreased
-
-        
-        if(_controlblock == nullptr){
-            // TODO: fix bug
-            return ;
-        }
-        _controlblock->print_reference();
-        
-        
-        // _controlblock->check_reference(_data);
-        // TODO:
-        // lock
-        assert(_controlblock->get_reference() >= 0 && "error ref c");
-        if(_controlblock->get_reference() == 0){
-            delete _controlblock;
-        }
-        assert(_controlblock->get_reference() >= 0 && "error ref c");
-        std::cout << std::endl;
     }
 };
 
@@ -290,43 +305,57 @@ int main(){
 
 
     std::cout << "-------------1------------------" << std::endl;
-    Shared_Pointer<test> sd_ptr (t, df);
-    std::shared_ptr<test> lib_sd_ptr(lib_t, df);
+    Shared_Pointer<test> sd_ptr (t, df); // error de
+    std::shared_ptr<test> lib_sd_ptr(lib_t, df); // ok de
     assert(lib_sd_ptr.use_count() == sd_ptr.use_count() && "compare error");
 
     std::cout << "-------------2------------------" << std::endl;
-    auto p2(sd_ptr);
-    auto lib_p2(lib_sd_ptr);
+    auto p2(sd_ptr); // ok de
+    auto lib_p2(lib_sd_ptr); // ok de
     assert(lib_p2.use_count() == p2.use_count() && "compare error");
 
     std::cout << "-------------3------------------" << std::endl;
-    auto p3 = sd_ptr;
-    auto lib_p3(lib_sd_ptr);
+    auto p3 = sd_ptr; // ok de
+    auto lib_p3(lib_sd_ptr); //  ok de
     assert(lib_p3.use_count() == p3.use_count() && "compare error");
 
     std::cout << "-------------4------------------" << std::endl;
     std::cout <<"lib: " << lib_sd_ptr.use_count() << "      my: " << sd_ptr.use_count() << std::endl;
-    auto p4 = std::move(sd_ptr);
-    auto lib_p4 = std::move(lib_sd_ptr);
+    
+
+    Shared_Pointer<test> p4_2;
+    std::shared_ptr<test> lib_p4_2;
+    {
+
+    auto p4 = std::move(sd_ptr); //  ok de
+    auto lib_p4 = std::move(lib_sd_ptr); // ok de
 
     std::cout <<"lib: " << lib_p4.use_count() << "      my: " << p4.use_count() << std::endl;
     assert(lib_p4.use_count() == p4.use_count() && "compare error");
+    
+    p4_2 = p4;
+    lib_p4_2 = lib_p4;
+    }
+     std::cout << "------------4 - mid ------------------" << std::endl;
+    assert(lib_p4_2.use_count() == p4_2.use_count() && "compare error");
+    std::cout <<"lib: " << lib_p4_2.use_count() << "      my: " << p4_2.use_count() << std::endl;
+
 
     std::cout << "-------------5------------------" << std::endl;
     // don't need
-    Shared_Pointer<test> p5 = t2;
+    Shared_Pointer<test> p5 = t2; // ok de 
     // std::shared_ptr<test> lib_p5 = lib_t2;
     // assert(lib_p5.use_count() == p5.use_count() && "compare error");
 
     std::cout << "-------------6------------------" << std::endl;
-    p5 = p4;
+    //p5 = p4;
 
     // TODO: 
     //std::cout << "-------------------------------" << std::endl;
     //auto p6(std::move(sd_ptr), df); 
 
     std::cout << "-------------7------------------" << std::endl;
-    (*p4).p();
+    //(*p4).p();
     std::cout << "-------------9------------------" << std::endl;
 
 }
