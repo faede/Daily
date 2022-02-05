@@ -11,7 +11,8 @@
 template<typename T>
 class Shared_Pointer;
 // TODO : lock
-
+template<typename T>
+class Weak_Ponter;
 
 class ControlBlock{
 private:
@@ -28,7 +29,7 @@ public:
 
     template<typename Arg = void>
     ControlBlock(std::function<void()> deleter = de) noexcept
-        : _reference_count(0), _weak_reference_count(0), _deleter(deleter)
+        : _reference_count(1), _weak_reference_count(0), _deleter(deleter)
     {
        // _deleter();
     }
@@ -38,6 +39,11 @@ public:
     {
         std::lock_guard<std::mutex> lock(_r_mutex);
         _reference_count++;
+    }
+    void increase_weak_reference() noexcept
+    {
+        std::lock_guard<std::mutex> lock(_r_mutex);
+        _weak_reference_count++;
     }
     long get_reference() noexcept
     {
@@ -60,18 +66,62 @@ public:
     {
         std::lock_guard<std::mutex> lock(_r_mutex);
         _reference_count--;
-        if(_reference_count == 0){
+        if(_reference_count == 0 && _weak_reference_count == 0){
             std::cout <<"need to be delete"<<std::endl;
             delete __data;
             this->~ControlBlock();
         }
     }
-public:
+
+    template<typename T>
+    void check_weak_reference(T __data) noexcept
+    {
+        std::lock_guard<std::mutex> lock(_r_mutex);
+        _weak_reference_count--;
+        if(_reference_count == 0 && _weak_reference_count == 0){
+            std::cout <<"need to be delete"<<std::endl;
+            delete __data;
+            this->~ControlBlock();
+        }
+    }
+protected:
     ~ControlBlock(){
         std::cout << "control block free, deleter:" << std::endl;
         _deleter();
     }
 };
+
+template<typename T>
+class Weak_Ponter{
+    T * _wk_data;
+    ControlBlock * _wk_control_block;
+    //Shared_Pointer<T> * bind_pointer;
+
+    Weak_Ponter(Shared_Pointer<T> sd_ptr){
+        _wk_data = sd_ptr._data;
+        _wk_control_block = sd_ptr._controlblock;
+        _wk_control_block->increase_reference();
+        //bind_pointer = sd_ptr;
+    }
+
+    bool expired(){
+        if(_wk_control_block == nullptr){
+            return 1;
+        }
+        return _wk_control_block->get_reference() == 0;
+    }
+
+    auto lock(){
+        //return Shared_Pointer<T>
+        // TODO
+    }
+    ~Weak_Ponter(){
+        if(_wk_control_block != nullptr){
+            _wk_control_block->check_weak_reference(_wk_data);
+        }
+    }
+};
+
 
 
 template<typename T>
@@ -85,10 +135,21 @@ Shared_Pointer<T> & make_Shared_Pointer(T && data) noexcept
 template<typename T>
 class Shared_Pointer
 {
+friend  class Weak_Pointer;
 private:
     T * _data;
     ControlBlock * _controlblock;
     int id ;
+/*protected:
+    Shared_Pointer<T> & get_shared_ptr(){
+        auto rt = Shared_Pointer();
+        rt._data = _data;
+        rt._controlblock = _controlblock;
+        _controlblock->increase_reference();
+        return rt;
+    }*/
+
+
 public:
     Shared_Pointer() noexcept
     {
@@ -105,7 +166,6 @@ public:
         std::cout << "id -----> " << id << " construct " << std::endl;
         _data = data;
         _controlblock = new ControlBlock();
-        _controlblock->increase_reference(); // set it to 1
         std::cout << "do a copy  constructor form new" << std::endl;
         _controlblock->print_reference();
     }
@@ -127,7 +187,6 @@ public:
         };        
         _data = data;
         _controlblock = new ControlBlock(wrapper_func);
-        _controlblock->increase_reference(); // set it to 1
         std::cout << "do a copy  constructor form new" << std::endl;
         _controlblock->print_reference();
     }
