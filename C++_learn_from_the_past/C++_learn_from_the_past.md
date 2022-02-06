@@ -1417,6 +1417,52 @@ The based indexed and scaled indexed forms of 32-bit addressing require the SIB 
 
 ![image-20220205092901854](C++ learn from the past.assets/image-20220205092901854.png)
 
+
+
+### [Is RBP/EBP register really necessary to support Variable-Size Stack Frames?](https://stackoverflow.com/questions/37583449/is-rbp-ebp-register-really-necessary-to-support-variable-size-stack-frames)
+
+
+
+https://stackoverflow.com/questions/37583449/is-rbp-ebp-register-really-necessary-to-support-variable-size-stack-frames
+
+3
+
+
+
+
+
+
+
+You're correct. If you keep the size you used in the variable-size `sub xxx, %rsp`, you can reverse it with an `add` at the end (or with an `lea fixed_size(%rsp,%rdi,4), %rsp` to also deallocate any fixed-size stack-space reservations.
+
+As @Ross points out, this doesn't scale well to multiple variable-length allocations in the same function. Even with a single VLA, it's not faster than a `mov %rbp, %rsp` (or `leave`) at the end of the function. It would let the compiler spill the size and have 15 free registers instead of 14 for parts of the function, which it never chooses to do with `%rbp` when using it as a frame pointer. Anyway, this means gcc would still want to fall back to using a frame pointer for complex cases. (The default is `-fomit-frame-pointer`, but don't worry about the fact that it doesn't force gcc to never use one).
+
+**Having `%rbp` as a frame pointer has some minor advantages**, especially in code-size: An [addressing mode](https://stackoverflow.com/questions/34058101/referencing-the-contents-of-a-memory-location-x86-addressing-modes) with `%rsp` as the base register always needs a SIB byte (Scale/Index/Base), because the Mod/RM encoding that would mean `(%rsp)` is actually an escape sequence to indicate that there's a SIB byte. Similarly, the encoding that would mean `(%rbp)` with no displacement actually means there's no base register at all, so you always need a `disp8` byte like `0(%rbp)`.
+
+For example, `mov %eax, 16(%rsp)` is 1B longer than `mov %eax, -8(%rbp)`. [Jan Hubicka suggested](https://gcc.gnu.org/ml/gcc-patches/2014-01/msg00008.html) that it would be good if gcc had a heuristic to enable frame pointers in functions where it saved code size without causing performance regressions, and thinks that this is commonly the case. It can also save some stack-sync uops to avoid using `%e/rsp` directly (after push/pop or call) on Intel CPUs with a stack engine.
+
+gcc always uses `%rbp` as a frame pointer in any function with C99 variable-size arrays. Probably gcc developers found it wasn't worth it to figure out when such a function could still be just as efficient without a frame pointer, and have a lot of code in gcc for those rare special cases.
+
+------
+
+**But what if we really wanted to avoid using a frame pointer in a function with a VLA?**
+
+The 7th and later integer argument (in the SysV ABI, see the [x86](https://stackoverflow.com/questions/tagged/x86) tag wiki) will be on the stack above the return address. Accessing them via `disp(%rsp)` is impossible, because the displacement isn't known at compile time.
+
+`disp(%rsp, %rcx, 1)` would be possible, where `%rcx` holds the variable-length-array size. (Or the total size of all the VLAs). This doesn't cost any extra code-size over `disp(%rsp)` because addressing-modes with `%rsp` as a base register already have to use a SIB byte. But this means that the VLA size needs to stay in a register full-time, gaining us nothing over using a frame pointer. (And losing on code-size).
+
+The alternative is to keep scalar / fixed-size locals below any variable-length allocations, so we can always access them with a fixed displacement relative to `%rsp`. That's good for code-size, since we can use `disp8` (1B) instead of `disp32` (4B) to access within [-128,+127] bytes of `%rsp`.
+
+But it only works if you can determine the VLA size(s) early, before you need to spill anything to the locals. So again you have a complex special-case for the compiler to check for, and it needs a bunch of code-generation code in gcc for that special case.
+
+If you spill the VLA size and reload / use it before `ret`urn, you make the value of `%rsp` dependent on a reload from memory. Out-of-order execution can probably hide that extra latency, but there will be cases where that extra latency does delay everything else that's using `%rsp`, including restoring the caller's registers.
+
+This style of code-gen would probably also have some corner cases for gcc to deal with to make correct and efficient code. Since it's little-used, the "efficient" part of that might not get much attention.
+
+It's pretty easy to see why gcc chose to simply fall back to frame-pointer mode for any case where it's non-trival to omit it. Normally it gains you an extra register nearly for free, so it's worth giving up the code-size advantage even if you do reference a lot of locals. This is especially true in 32-bit code where you go from 6 to 7 general registers (not including `esp`). That difference is usually smaller in 64-bit code, where 14 vs. 15 is a much smaller difference. It still saves the push/mov / pop instructions in functions that don't need them, which is a separate benefit. (Using `%rbp` as a general-purpose register still requires pushing/popping it.)
+
+
+
 ### new A() new A
 
 int

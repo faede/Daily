@@ -3294,6 +3294,8 @@ x 十六进制数
 
 # Ubuntu环境配置
 
+## 基本环境
+
 
 
 ```shell
@@ -3409,6 +3411,156 @@ or:
 ssh zyy@zyy  # usr_name@pc_name
 
 
+```
+
+## 主题
+
+
+
+````
+Download plug.vim and put it in the "autoload" directory.
+
+curl -fLo ~/.vim/autoload/plug.vim --create-dirs \
+    https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim
+    
+（dns出错可以换热点）
+https://github.com/liuchengxu/space-vim-theme
+https://github.com/junegunn/vim-plug
+
+~/.vimrc 中加入
+```
+let data_dir = has('nvim') ? stdpath('data') . '/site' : '~/.vim'
+if empty(glob(data_dir . '/autoload/plug.vim'))
+  silent execute '!curl -fLo '.data_dir.'/autoload/plug.vim --create-dirs  https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim'
+  autocmd VimEnter * PlugInstall --sync | source $MYVIMRC
+endif
+call plug#begin()
+	Plug 'liuchengxu/space-vim-theme'
+call plug#end()
+
+
+set termguicolors
+set background=dark
+colorscheme space_vim_theme
+let g:space_vim_filetype_hi_groups = 0
+let g:space_vim_italic = 1
+let g:space_vim_transp_bg = 1
+let g:space_vim_italicize_strings = 1
+set nu
+
+```
+vim中执行          :PlugInstall 
+````
+
+
+
+## YCM
+
+代码补全工具YouCompleteMe 项目地址
+https://github.com/ycm-core/YouCompleteMe
+
+1.安装Vundle
+https://github.com/VundleVim/Vundle.vim#about
+git clone https://github.com/VundleVim/Vundle.vim.git ~/.vim/bundle/Vundle.vim
+
+Put this at the top of your .vimrc to use Vundle. Remove plugins you don't need, they are for illustration purposes.
+
+修改.vimrc
+```
+set nocompatible              " be iMproved, required
+filetype off                  " required
+
+" set the runtime path to include Vundle and initialize
+set rtp+=~/.vim/bundle/Vundle.vim
+call vundle#begin()
+" alternatively, pass a path where Vundle should install plugins
+"call vundle#begin('~/some/path/here')
+
+" let Vundle manage Vundle, required
+Plugin 'VundleVim/Vundle.vim'
+
+
+" All of your Plugins must be added before the following line
+call vundle#end()            " required
+filetype plugin indent on    " required
+" To ignore plugin indent changes, instead use:
+"filetype plugin on
+"
+" Brief help
+" :PluginList       - lists configured plugins
+" :PluginInstall    - installs plugins; append `!` to update or just :PluginUpdate
+" :PluginSearch foo - searches for foo; append `!` to refresh local cache
+" :PluginClean      - confirms removal of unused plugins; append `!` to auto-approve removal
+"
+" see :h vundle for more details or wiki for FAQ
+" Put your non-Plugin stuff after this line
+"
+"
+let data_dir = has('nvim') ? stdpath('data') . '/site' : '~/.vim'
+if empty(glob(data_dir . '/autoload/plug.vim'))
+  silent execute '!curl -fLo '.data_dir.'/autoload/plug.vim --create-dirs  https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim'
+  autocmd VimEnter * PlugInstall --sync | source $MYVIMRC
+endif
+call plug#begin()
+	Plug 'liuchengxu/space-vim-theme'
+call plug#end()
+
+set termguicolors
+set background=dark
+colorscheme space_vim_theme
+let g:space_vim_filetype_hi_groups = 0
+let g:space_vim_italic = 1
+let g:space_vim_transp_bg = 1
+let g:space_vim_italicize_strings = 1
+set nu
+
+```
+Launch vim and run :PluginInstall
+
+or
+`vim +PluginInstall +qall`
+
+2.Install CMake, Vim and Python
+`sudo apt install build-essential cmake vim-nox python3-dev`
+3.Install CMake, Vim and Python
+`sudo apt install mono-complete golang nodejs default-jdk npm`
+
+4. Compile YCM
+
+在.vimrc vundle plug call和end中间加入
+如：
+
+```
+call vundle#begin()
+  Plugin 'Valloric/YouCompleteMe
+call vundle#end()
+```
+
+运行
+:VundleInstall
+
+之后
+```
+cd ~/.vim/bundle/YouCompleteMe
+python3 install.py --all
+```
+
+## NERDTree
+
+call vundle#begin()
+  Plugin 'preservim/nerdtree'
+call vundle#end()
+运行
+:VundleInstall
+
+
+~/.vimrc
+map:
+```
+nnoremap <leader>n :NERDTreeFocus<CR>
+nnoremap <C-n> :NERDTree<CR>
+nnoremap <C-t> :NERDTreeToggle<CR>
+nnoremap <C-f> :NERDTreeFind<CR>
 ```
 
 
