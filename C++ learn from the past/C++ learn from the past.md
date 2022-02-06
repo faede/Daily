@@ -1349,3 +1349,115 @@ Here are a couple of reasons for having different naming of C vs C++ headers:
 
 Remember, C is **not** C++ and it can be very dangerous to mix and match unless you know what you are doing. Naming your sources appropriately helps you tell the languages apart.
 
+### SIB (Scaled Index Byte) Layout
+
+**Instruction Format**
+
+https://www.scs.stanford.edu/05au-cs240c/lab/i386/s17_02.htm
+
+All instruction encodings are subsets of the general instruction format shown in [Figure 17-1](https://www.scs.stanford.edu/05au-cs240c/lab/i386/s17_02.htm#fig17-1) . Instructions consist of optional instruction prefixes, one or two primary opcode bytes, possibly an address specifier consisting of the ModR/M byte and the SIB (Scale Index Base) byte, a displacement, if required, and an immediate data field, if required.
+
+Smaller encoding fields can be defined within the primary opcode or opcodes. These fields define the direction of the operation, the size of the displacements, the register encoding, or sign extension; encoding fields vary depending on the class of operation.
+
+Most instructions that can refer to an operand in memory have an addressing form byte following the primary opcode byte(s). This byte, called the ModR/M byte, specifies the address form to be used. Certain encodings of the ModR/M byte indicate a second addressing byte, the SIB (Scale Index Base) byte, which follows the ModR/M byte and is required to fully specify the addressing form.
+
+Addressing forms can include a displacement immediately following either the ModR/M or SIB byte. If a displacement is present, it can be 8-, 16- or 32-bits.
+
+If the instruction specifies an immediate operand, the immediate operand always follows any displacement bytes. The immediate operand, if specified, is always the last field of the instruction.
+
+The following are the allowable instruction prefix codes:
+
+```
+   F3H    REP prefix (used only with string instructions)
+   F3H    REPE/REPZ prefix (used only with string instructions
+   F2H    REPNE/REPNZ prefix (used only with string instructions)
+   F0H    LOCK prefix
+```
+
+The following are the segment override prefixes:
+
+```
+   2EH    CS segment override prefix
+   36H    SS segment override prefix
+   3EH    DS segment override prefix
+   26H    ES segment override prefix
+   64H    FS segment override prefix
+   65H    GS segment override prefix
+   66H    Operand-size override
+   67H    Address-size override
+```
+
+![image-20220205095216042](C++ learn from the past.assets/image-20220205095216042.png)
+
+
+
+The ModR/M and SIB bytes follow the opcode byte(s) in many of the 80386 instructions. They contain the following information:
+
+* The indexing type or register number to be used in the instruction
+* The register to be used, or more information to select the instruction
+* The base, index, and scale information
+
+The ModR/M byte contains three fields of information:
+
+* The mod field, which occupies the two most significant bits of the byte, combines with the r/m field to form 32 possible values: eight registers and 24 indexing modes
+
+* The reg field, which occupies the next three bits following the mod field, specifies either a register number or three more bits of opcode information. The meaning of the reg field is determined by the first (opcode) byte of the instruction.
+
+* The r/m field, which occupies the three least significant bits of the byte, can specify a register as the location of an operand, or can form part of the addressing-mode encoding in combination with the field as described above
+
+The based indexed and scaled indexed forms of 32-bit addressing require the SIB byte. The presence of the SIB byte is indicated by certain encodings of the ModR/M byte. The SIB byte then includes the following fields:
+
+* The ss field, which occupies the two most significant bits of the byte, specifies the scale factor
+* The index field, which occupies the next three bits following the ss field and specifies the register number of the index register
+* The base field, which occupies the three least significant bits of the byte, specifies the register number of the base registe
+
+![image-20220205095611318](C++ learn from the past.assets/image-20220205095611318.png)
+
+
+
+![image-20220205092901854](C++ learn from the past.assets/image-20220205092901854.png)
+
+### new A() new A
+
+int
+
+new A()  A.a (a integer) = 0
+
+new A     A.a (a integer) = any
+
+### inline
+
+
+https://stackoverflow.com/questions/1759300/when-should-i-write-the-keyword-inline-for-a-function-method
+
+`inline` is more like `static` or `extern` than a directive telling the compiler to inline your functions. `extern`, `static`, `inline` are linkage directives, used almost exclusively by the linker, not the compiler.
+
+It is said that `inline` hints to the compiler that you think the function should be inlined. That may have been true in 1998, but a decade later the compiler needs no such hints. Not to mention humans are usually wrong when it comes to optimizing code, so most compilers flat out ignore the 'hint'.
+
+- **`static`** - the variable/function name cannot be used in other translation units. Linker needs to make sure it doesn't accidentally use a statically defined variable/function from another translation unit.
+- **`extern`** - use this variable/function name in this translation unit but don't complain if it isn't defined. The linker will sort it out and make sure all the code that tried to use some extern symbol has its address.
+- **`inline`** - this function will be defined in multiple translation units, don't worry about it. The linker needs to make sure all translation units use a single instance of the variable/function.
+
+**Note:** Generally, declaring templates `inline` is pointless, as they have the linkage semantics of `inline` already. However, explicit specialization and instantiation of templates [require `inline`](https://stackoverflow.com/a/10536588/183120) to be used.
+
+------
+
+Specific answers to your questions:
+
+- > When should I write the keyword 'inline' for a function/method in C++?
+
+  Only when you want the function to be defined in a header. More exactly only when the function's definition can show up in multiple translation units. It's a good idea to define small (as in one liner) functions in the header file as it gives the compiler more information to work with while optimizing your code. It also increases compilation time.
+
+- > When should I not write the keyword 'inline' for a function/method in C++?
+
+  Don't add inline just because you think your code will run faster if the compiler inlines it.
+
+- > When will the compiler not know when to make a function/method 'inline'?
+
+  Generally, the compiler will be able to do this better than you. However, the compiler doesn't have the option to inline code if it doesn't have the function definition. In maximally optimized code usually all `private` methods are inlined whether you ask for it or not.
+
+  As an aside to prevent inlining in GCC, use `__attribute__(( noinline ))`, and in Visual Studio, use `__declspec(noinline)`.
+
+- > Does it matter if an application is multithreaded when one writes 'inline' for a function/method?
+
+  Multithreading doesn't affect inlining in any way.
