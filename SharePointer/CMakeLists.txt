@@ -6,7 +6,7 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
 
-add_library(SharePointer SharePointer.cpp)
+add_library(SharePointer Shared_Pointer.cpp)
 
 add_executable(shared_main main.cpp)
 target_link_libraries(shared_main SharePointer)

@@ -8,7 +8,7 @@
 #include <memory>
 #include <random>
 
-#include "SharePointer.cpp"
+#include "Shared_Pointer.cpp"
 
 int main(){
 

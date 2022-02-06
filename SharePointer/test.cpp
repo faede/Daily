@@ -1,7 +1,7 @@
 #include <memory>
 
 #include <gtest/gtest.h>
-#include "SharePointer.cpp"
+#include "Shared_Pointer.cpp"
 
 int main(int argc, char ** argv){
   ::testing::InitGoogleTest(&argc, argv);
