@@ -2,7 +2,6 @@
 
 #include <gtest/gtest.h>
 #include "SharePointer.cpp"
-// Demonstrate some basic assertions.
 
 int main(int argc, char ** argv){
   ::testing::InitGoogleTest(&argc, argv);
