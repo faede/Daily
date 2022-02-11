@@ -1495,7 +1495,7 @@ this has *two copies* of the lambda. As they cannot share the same address, `siz
 
 lambda is a class overload operator of (),  ----old
 
-##### mutable
+#### mutable
 
 here
 
@@ -1892,3 +1892,314 @@ Specific answers to your questions:
 
   Multithreading doesn't affect inlining in any way.
 
+### enum
+
+```cpp
+// c98:
+//enumerator names leak into the scope containing their enum 
+// definition gives rise to the official term for this kind of enum
+enum Color { black, white, red }; 
+// black, white, red are
+// in same scope as Color
+auto white = false;  // error, beacuse unscoped
+
+// c11:
+enum class Color { black, white, red }; // ok! don't ;leak
+auto white = false;
+Color c = white; //error
+Color c = Color::white; // ok
+return 0;
+```
+
+### template bind
+
+### Binding rules
+
+Non-dependent names are looked up and bound at the point of template definition. This binding holds even if at the point of template instantiation there is a better match:
+
+Run this code
+
+```cpp
+#include <iostream>
+ 
+void g(double) { std::cout << "g(double)\n"; }
+ 
+template<class T>
+struct S
+{
+    void f() const
+    {
+        g(1); // "g" is a non-dependent name, bound now
+    }
+};
+ 
+void g(int) { std::cout << "g(int)\n"; }
+ 
+int main()
+{
+    g(1);  // calls g(int)
+ 
+    S<int> s;
+    s.f(); // calls g(double)
+}
+```
+
+If the meaning of a *non-dependent name* changes between the definition context and the point of instantiation of a specialization of the template, the program is ill-formed, no diagnostic required. This is possible in the following situations:
+
+- a type used in a non-dependent name is [incomplete](https://en.cppreference.com/w/cpp/language/incomplete_type) at the point of definition but complete at the point of instantiation
+
+| lookup for a name in the template definition found a [using-declaration](https://en.cppreference.com/w/cpp/language/using_declaration), but the lookup in the corresponding scope in the instantiation does not find any declarations because the using-declaration was a pack expansion and the corresponding pack is empty | (since C++17) |
+| ------------------------------------------------------------ | ------------- |
+|                                                              |               |
+
+- an instantiation uses a default argument or default template argument that had not been defined at the point of definition
+- a [constant expression](https://en.cppreference.com/w/cpp/language/constant_expression) at the point of instantiation uses the value of a const object of integral or unscoped enum type, the value of a constexpr object, the value of a reference, or the definition of a constexpr function (since C++11), and that object/reference/function (since C++11) was not defined at the point of definition
+- the template uses a non-dependent class template specialization or variable template specialization (since C++14) at the point of instantiation, and this template it uses is either instantiated from a partial specialization that was not defined at the point of definition or names an explicit specialization that was not declared at the point of definition
+
+Binding of *dependent names* is postponed until lookup takes place.
+
+
+
+
+
+**test**:
+
+```cpp
+#include <iostream>
+#include <algorithm>
+#include <memory>
+#include <typeinfo>
+//#include "foo.c"
+
+using namespace std;
+
+// scope of template definition
+
+double foo(double n){
+    cout << "2--" << endl;
+    return n;
+}
+template <typename type>
+class ScopeRules{
+public:
+    void invariant(){
+        _member = foo(_val);
+    }
+
+    type type_dependent(){
+        return foo(_member);
+    }
+
+private:
+    int _val;
+    type _member;
+};
+
+int foo(int n){
+    cout << "1--" << endl;
+    return n;
+}
+
+using namespace  std;
+int main(){
+
+    ScopeRules<int> sr0;
+    sr0.invariant();
+    sr0.type_dependent();
+
+
+    return 0;
+}
+```
+
+### type_info Class
+
+https://docs.microsoft.com/en-us/cpp/cpp/type-info-class?view=msvc-170
+
+The **type_info** class describes type information generated within the program by the compiler. Objects of this class effectively store a pointer to a name for the type. The **type_info** class also stores an encoded value suitable for comparing two types for equality or collating order. The encoding rules and collating sequence for types are unspecified and may differ between programs.
+
+The `<typeinfo>` header file must be included in order to use the **type_info** class. The interface for the **type_info** class is:
+
+C++Copy
+
+```cpp
+class type_info {
+public:
+    type_info(const type_info& rhs) = delete; // cannot be copied
+    virtual ~type_info();
+    size_t hash_code() const;
+    _CRTIMP_PURE bool operator==(const type_info& rhs) const;
+    type_info& operator=(const type_info& rhs) = delete; // cannot be copied
+    _CRTIMP_PURE bool operator!=(const type_info& rhs) const;
+    _CRTIMP_PURE int before(const type_info& rhs) const;
+    size_t hash_code() const noexcept;
+    _CRTIMP_PURE const char* name() const;
+    _CRTIMP_PURE const char* raw_name() const;
+};
+```
+
+You cannot instantiate objects of the **type_info** class directly, because the class has only a private copy constructor. The only way to construct a (temporary) **type_info** object is to use the [typeid](https://docs.microsoft.com/en-us/cpp/cpp/typeid-operator?view=msvc-170) operator. Since the assignment operator is also private, you cannot copy or assign objects of class **type_info**.
+
+`type_info::hash_code` defines a hash function suitable for mapping values of type **typeinfo** to a distribution of index values.
+
+The operators `==` and `!=` can be used to compare for equality and inequality with other **type_info** objects, respectively.
+
+There is no link between the collating order of types and inheritance relationships. Use the `type_info::before` member function to determine the collating sequence of types. There is no guarantee that `type_info::before` will yield the same result in different programs or even different runs of the same program. In this manner, `type_info::before` is similar to the address-of `(&)` operator.
+
+The `type_info::name` member function returns a `const char*` to a null-terminated string representing the human-readable name of the type. The memory pointed to is cached and should never be directly deallocated.
+
+The `type_info::raw_name` member function returns a `const char*` to a null-terminated string representing the decorated name of the object type. The name is actually stored in its decorated form to save space. Consequently, this function is faster than `type_info::name` because it doesn't need to undecorate the name. The string returned by the `type_info::raw_name` function is useful in comparison operations but is not readable. If you need a human-readable string, use the `type_info::name` function instead.
+
+Type information is generated for polymorphic classes only if the [/GR (Enable Run-Time Type Information)](https://docs.microsoft.com/en-us/cpp/build/reference/gr-enable-run-time-type-information?view=msvc-170) compiler option is specified.
+
+## 
+
+
+
+
+
+### dynamic_cast  & RTTI support
+
+v1 : error
+
+```cpp
+#include <iostream>
+#include <algorithm>
+#include <memory>
+#include <typeinfo>
+using namespace  std;
+
+
+class node{
+
+};
+
+class type : public node{
+};
+
+class fct : public type { };
+class gen : public type { };
+
+using ptype= type *;
+using pfct = fct *;
+
+void simplify_conv_op(ptype pt){
+    if(pfct pf = dynamic_cast<pfct> (pt))// error, here 'type' is not polymorphic
+    {
+        
+    }else{
+
+    }
+}
+
+int main(){
+
+
+    return 0;
+}
+```
+
+
+
+version 2:
+
+ok !
+
+```cpp
+// struct of vtable
+/*
+Point pt;
+------------
+float _x;
+__vptr__Point ------> ------------
+                      |       ---|-----------> | type_info for Point |
+                      ------------
+                      |       ---|-----------> | other virtual function |
+                      ------------
+                      |       ---|-----------> | other virtual function |                    
+                      ------------
+                      
+                      Virtual table for Point
+*/
+
+```
+
+code:
+
+we could using **type_info**
+
+```cpp
+#include <iostream>
+#include <algorithm>
+#include <memory>
+#include <typeinfo>
+using namespace  std;
+
+
+class node{
+
+};
+
+class type : public node{
+    // here, we build a vtable, which
+    // could help compiler solve pl
+    virtual void help_build_vtable() {}
+};
+
+class fct : public type { };
+class gen : public type { };
+
+using ptype= type *;
+using pfct = fct *;
+
+void simplify_conv_op(ptype pt){
+    if(pfct pf = dynamic_cast<pfct> (pt)){
+
+    }else{
+        // dynamic_cast set pf as 0
+        // ...
+    }
+}
+
+void simplify_conv_op(type & rt){
+    // we can't set reference as 0, we need generate a temp object
+    // so it will throw a exp
+    try{
+        fct & rf = dynamic_cast<fct &> (rt);
+    }
+    catch (bad_cast){
+        // ...
+    }
+}
+int main(){
+
+
+    return 0;
+}
+```
+
+or we could use
+
+```cpp
+void simplify_conv_op(type & rt){
+    // we can't set reference as 0, we need generate a temp object
+    // so it will throw a exp
+    if(typeid(rt) == typeid(fct)){
+        fct & rf = static_cast<fct &> (rt); // dosn't do check
+    }else{
+        // ..,
+    }
+}
+```
+
+### reinterpret cast
+
+https://stackoverflow.com/questions/28002/regular-cast-vs-static-cast-vs-dynamic-cast
+
+To force the pointer conversion, in the same way as the C-style cast does in the background, the reinterpret cast would be used instead.
+
+```cpp
+int *r = reinterpret_cast<int*>(&c); // forced conversion
+```
+
+This cast handles conversions between certain unrelated types, such as from one pointer type to another incompatible pointer type. It will simply perform a binary copy of the data without altering the underlying bit pattern. Note that the result of such a low-level operation is system-specific and therefore not portable. It should be used with caution if it cannot be avoided altogether.
