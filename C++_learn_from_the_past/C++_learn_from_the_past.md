@@ -2194,6 +2194,10 @@ void simplify_conv_op(type & rt){
 
 ### reinterpret cast
 
+always success, rather than dyanmic_cast (do RT check) and static_cast (don't) may fail
+
+
+
 https://stackoverflow.com/questions/28002/regular-cast-vs-static-cast-vs-dynamic-cast
 
 To force the pointer conversion, in the same way as the C-style cast does in the background, the reinterpret cast would be used instead.
