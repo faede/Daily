@@ -76,7 +76,7 @@ int main()
 
 The `constexpr` specifier declares that it is possible to evaluate the value of the function or variable at compile time. Such variables and functions can then be used where only compile time [constant expressions](https://en.cppreference.com/w/cpp/language/constant_expression) are allowed (provided that appropriate function arguments are given). A constexpr specifier used in an object declaration or non-static member function (until C++14) implies const. A constexpr specifier used in a function or [static](https://en.cppreference.com/w/cpp/language/static) member variable (since C++17) declaration implies inline. If any declaration of a function or function template has a `constexpr` specifier, then every declaration must contain that specifier.
 
-### lambda
+### 
 
 
 
@@ -1337,6 +1337,390 @@ ii ->forward int && -> static_cast<int && &&> -> static_cast<int &&>
 -> int &&
 ```
 
+
+
+### sizeof(xx) = 0?
+
+
+
+https://stackoverflow.com/questions/2632021/can-sizeof-return-0-zero
+
+In C++ an empty class or struct has a `sizeof` at least 1 by definition. From the C++ standard, 9/3 "Classes": "Complete objects and member subobjects of class type shall have nonzero size."
+
+In C an empty struct is not permitted, except by extension (or a flaw in the compiler).
+
+This is a consequence of the grammar (which requires that there be something inside the braces) along with this sentence from 6.7.2.1/7 "Structure and union specifiers": "If the struct-declaration-list contains no named members, the behavior is undefined".
+
+If a zero-sized structure is permitted, then it's a language extension (or a flaw in the compiler). For example, in GCC the extension is documented in ["Structures with No Members"](http://gcc.gnu.org/onlinedocs/gcc-4.4.3/gcc/Empty-Structures.html#Empty-Structures), which says:
+
+> GCC permits a C structure to have no members:
+>
+> ```csharp
+>  struct empty {
+>  };
+> ```
+>
+> The structure will have size zero. In C++, empty structures are part of the language. G++ treats empty structures as if they had a single member of type `char`.
+
+
+
+Every object in C must have a unique address. Worded another way, an address must hold no more than one object of a given type (in order for pointer dereferencing to work). That being said, consider an 'empty' struct:
+
+```csharp
+struct emptyStruct {};
+```
+
+and, more specifically, an array of them:
+
+```ocaml
+struct emptyStruct array[10];
+struct emptyStruct* ptr = &array[0];
+```
+
+If the objects were indeed empty (that is, if `sizeof(struct emptyStruct) == 0`), then `ptr++ ==> (void*)ptr + sizeof(struct emptyStruct) ==> ptr`, which doesn't make sense. Which object would `*ptr` then refer to, `ptr[0]` or `ptr[1]`?
+
+Even if a structure has no contents, the compiler should treat it as if it is one byte in length in order to maintain the "one address, one object" principle.
+
+The C language specification (section A7.4.8) words this requirement as
+
+> when applied to a structure or union, the result (of the `sizeof` operator) is the number of bytes in the object, including any padding required to make the object tile an array
+
+Since a padding byte must be added to an "empty" object in order for it to work in an array, `sizeof()` must therefore return a value of at least 1 for any valid input.
+
+**Edit:** Section A8.3 of the C spec calls a struct without a list of members an *incomplete type*, and the definition of `sizeof` specifically states (with emphasis added):
+
+> The operator (sizeof) **may not be applied to an operand** of function type, or **of incomplete type**, or to a bit-field.
+
+That would imply that using `sizeof` on an empty struct would be equally as invalid as using it on a data type that has not been defined. If your compiler allows the use of empty structs, be aware that using `sizeof` on them is not allowed as per the C spec. If your compiler allows you to do this anyway, understand that this is non-standard behavior that will not work on all compilers; do not rely on this behavior.
+
+**Edit:** See also [this entry](http://www2.research.att.com/~bs/bs_faq2.html#sizeof-empty) in Bjarne Stroustrup's FAQ.
+
+### lambda
+
+#### sizeof(lambda) ?
+
+https://stackoverflow.com/questions/37481767/why-does-a-lambda-have-a-size-of-1-byte#:~:text=The%20internal%20class%20that%20represents,sizeof()%20will%20indicate%20accordingly.
+
+
+
+The lambda in question actually has *no state*.
+
+Examine:
+
+```cpp
+struct lambda {
+  auto operator()() const { return 17; }
+};
+```
+
+And if we had `lambda f;`, it is an empty class. Not only is the above `lambda` functionally similar to your lambda, it is (basically) how your lambda is implemented! (It also needs an implicit cast to function pointer operator, and the name `lambda` is going to be replaced with some compiler-generated pseudo-guid)
+
+In C++, objects are not pointers. They are actual things. They only use up the space required to store the data in them. A pointer to an object can be larger than an object.
+
+While you might think of that lambda as a pointer to a function, it isn't. You cannot reassign the `auto f = [](){ return 17; };` to a different function or lambda!
+
+```cpp
+ auto f = [](){ return 17; };
+ f = [](){ return -42; };
+```
+
+the above is *illegal*. There is no room in `f` to store *which* function is going to be called -- that information is stored in the *type* of `f`, not in the value of `f`!
+
+If you did this:
+
+```cpp
+int(*f)() = [](){ return 17; };
+```
+
+or this:
+
+```cpp
+std::function<int()> f = [](){ return 17; };
+```
+
+you are no longer storing the lambda directly. In both of these cases, `f = [](){ return -42; }` is legal -- so in these cases, we are storing *which* function we are invoking in the value of `f`. And `sizeof(f)` is no longer `1`, but rather `sizeof(int(*)())` or larger (basically, be pointer sized or larger, as you expect. `std::function` has a min size implied by the standard (they have to be able to store "inside themselves" callables up to a certain size) which is at least as large as a function pointer in practice).
+
+In the `int(*f)()` case, you are storing a function pointer to a function that behaves as-if you called that lambda. This only works for stateless lambdas (ones with an empty `[]` capture list).
+
+In the `std::function<int()> f` case, you are creating a type-erasure class `std::function<int()>` instance that (in this case) uses placement new to store a copy of the size-1 lambda in an internal buffer (and, if a larger lambda was passed in (with more state), would use heap allocation).
+
+As a guess, something like these is probably what you think is going on. That a lambda is an object whose type is described by its signature. In C++, it was decided to make lambdas *zero cost* abstractions over the manual function object implementation. This lets you pass a lambda into a `std` algorithm (or similar) and have its contents be fully visible to the compiler when it instantiates the algorithm template. If a lambda had a type like `std::function<void(int)>`, its contents would not be fully visible, and a hand-crafted function object might be faster.
+
+The goal of C++ standardization is high level programming with zero overhead over hand-crafted C code.
+
+Now that you understand that your `f` is in fact stateless, there should be another question in your head: the lambda has no state. Why does it not size have `0`?
+
+------
+
+There is the short answer.
+
+All objects in C++ must have a minimium size of 1 under the standard, and two objects of the same type cannot have the same address. These are connected, because an array of type `T` will have the elements placed `sizeof(T)` apart.
+
+Now, as it has no state, sometimes it can take up no space. This cannot happen when it is "alone", but in some contexts it can happen. `std::tuple` and similar library code exploits this fact. Here is how it works:
+
+As a lambda is equivalent to a class with `operator()` overloaded, stateless lambdas (with a `[]` capture list) are all empty classes. They have `sizeof` of `1`. In fact, if you inherit from them (which is allowed!), they will take up no space *so long as it doesn't cause a same-type address collision*. (This is known as the empty base optimization).
+
+```cpp
+template<class T>
+struct toy:T {
+  toy(toy const&)=default;
+  toy(toy &&)=default;
+  toy(T const&t):T(t) {}
+  toy(T &&t):T(std::move(t)) {}
+  int state = 0;
+};
+
+template<class Lambda>
+toy<Lambda> make_toy( Lambda const& l ) { return {l}; }
+```
+
+the `sizeof(make_toy( []{std::cout << "hello world!\n"; } ))` is `sizeof(int)` (well, the above is illegal because you cannot create a lambda in a non-evaluated context: you have to create a named `auto toy = make_toy(blah);` then do `sizeof(blah)`, but that is just noise). `sizeof([]{std::cout << "hello world!\n"; })` is still `1` (similar qualifications).
+
+If we create another toy type:
+
+```cpp
+template<class T>
+struct toy2:T {
+  toy2(toy2 const&)=default;
+  toy2(T const&t):T(t), t2(t) {}
+  T t2;
+};
+template<class Lambda>
+toy2<Lambda> make_toy2( Lambda const& l ) { return {l}; }
+```
+
+this has *two copies* of the lambda. As they cannot share the same address, `sizeof(toy2(some_lambda))` is `2`!
+
+#### lambda implemention
+
+lambda is a class overload operator of (),  ----old
+
+##### mutable
+
+here
+
+```cpp
+ auto f = [] (auto & f, int n) ->int {
+        if(n == 0 || n == 1)
+            return 1;
+        return f(f, n-1) + f(f, n-2);
+    };
+```
+
+n is non-mutable, so we can change it ,such as `n++`
+
+we can set it by
+
+`[] (auto & f, int n) mutable {`
+
+so ,we can change it
+
+**but why it does not always be set mutable?**
+
+https://stackoverflow.com/questions/5501959/why-does-c11s-lambda-require-mutable-keyword-for-capture-by-value-by-defau
+
+It requires `mutable` because by default, a function object should produce the same result every time it's called. This is the difference between an object orientated function and a function using a global variable, effectively.
+
+#### anonymous function recursion
+
+##### method 1
+
+```cpp
+ auto f = [] (auto & f, int n) ->int {
+        if(n == 0 || n == 1)
+            return 1;
+        return f(f, n-1) + f(f, n-2);
+    };
+```
+
+##### method 2
+
+```cpp
+std::function<int(int)> f2;
+    f2 = [&](int n)->int {
+        if(n == 0 || n == 1)
+            return 1;
+        return f2(n-1) + f2(n-2);
+    };
+```
+
+##### method 3: y function
+
+https://zhuanlan.zhihu.com/p/45430715
+
+```cpp
+#include <iostream>
+#include <functional>
+
+using namespace std;
+
+template <typename F>
+struct Y
+{
+    Y(F f) : _f(f) {}
+    template <typename... Args>
+    auto operator()(Args&&... t) const
+    {
+        return _f(*this, std::forward<Args>(t)...);
+    }
+    F _f;
+};
+
+template <typename F>
+Y<F> fix(F&& f)
+{
+    return Y<F>(forward<F>(f));
+}
+
+int main()
+{
+    auto gcd = fix(
+        [](auto g, int a, int b)->int{ return b == 0 ? a : g(b, a % b); }
+    );
+    cout << gcd(63, 105) << endl; // => 21
+    return 0;
+}
+```
+
+##### total test
+
+```cpp
+#include <iostream>
+#include <algorithm>
+#include <memory>
+using namespace std;
+
+// Method 3
+template <typename F>
+struct Y
+{
+    Y(F f) : _f(f) {}
+    template <typename... Args>
+    auto operator()(Args&&... t) const
+    {
+        return _f(*this, std::forward<Args>(t)...);
+    }
+    F _f;
+};
+
+template <typename F>
+Y<F> fix(F&& f)
+{
+    return Y<F>(forward<F>(f));
+}
+using namespace  std;
+int main(){
+    // Method 1
+    auto f = [] (auto & f, int n) ->int {
+        if(n == 0 || n == 1)
+            return 1;
+        return f(f, n-1) + f(f, n-2);
+    };
+    cout << f(f, 5) << endl;
+
+    // Method 2
+    std::function<int(int)> f2;
+    f2 = [&](int n)->int {
+        if(n == 0 || n == 1)
+            return 1;
+        return f2(n-1) + f2(n-2);
+    };
+    int * a ;
+
+    auto f3 = [a] (auto & f3, int n) ->int {
+        if(n == 0 || n == 1)
+            return 1;
+        return f3(f3, n-1) + f3(f3, n-2);
+    };
+
+    cout << sizeof(f) <<"  "<< sizeof(f2) <<"  "<< sizeof(a) << "  "<< sizeof(f3) << endl;
+
+    // Method 3
+    function<int(int)> const sqr = [](int x) { return x * x; };
+    auto gcd = fix(
+            [](auto g, int a, int b)->int{ return b == 0 ? a : g(b, a % b); }
+    );
+    cout << gcd(63, 105) << endl; // => 21
+
+    cout << sizeof(sqr) <<"  " <<sizeof(gcd) <<endl;
+
+    return 0;
+}
+```
+
+
+
+```cpp
+#include <iostream>
+#include <algorithm>
+#include <memory>
+using namespace std;
+
+// Method 3
+template <typename F>
+struct Y
+{
+    Y(F f) : _f(f) {}
+    template <typename... Args>
+    auto operator()(Args&&... t) const
+    {
+        return _f(*this, std::forward<Args>(t)...);
+    }
+    F _f;
+};
+
+template <typename F>
+Y<F> fix(F&& f)
+{
+    return Y<F>(forward<F>(f));
+}
+using namespace  std;
+int main(){
+    // Method 1
+    auto f = [] (auto & f, int n) ->int {
+        if(n == 0 || n == 1)
+            return 1;
+        return f(f, n-1) + f(f, n-2);
+    };
+
+    // Method 2
+    std::function<int(int)> f2;
+    f2 = [&](int n)->int {
+        if(n == 0 || n == 1)
+            return 1;
+        return f2(n-1) + f2(n-2);
+    };
+    int * a ;
+
+    auto f3 = [a] (auto & f3, int n) ->int {
+        if(n == 0 || n == 1)
+            return 1;
+        return f3(f3, n-1) + f3(f3, n-2);
+    };
+
+    cout << sizeof(f) <<"  "<< sizeof(f2) <<"  "<< sizeof(a) << "  "<< sizeof(f3) << endl;
+
+    // Method 3
+    function<int(int)> const sqr = [](int x) { return x * x; };
+    auto gcd = fix(
+            [](auto g, int a, int b)->int{ return b == 0 ? a : g(b, a % b); }
+    );
+
+    cout << sizeof(sqr) <<"  " <<sizeof(gcd) <<endl;
+
+    return 0;
+}
+```
+
+res:
+
+```shell
+1  32  8  8
+32  1
+```
+
+
+
 ### .hpp and .h
 
 https://stackoverflow.com/questions/152555/h-or-hpp-for-your-class-definitions#:~:text=h%20is%20a%20valid%20header,hpp%20is%20a%20valid%20header.
@@ -1507,3 +1891,4 @@ Specific answers to your questions:
 - > Does it matter if an application is multithreaded when one writes 'inline' for a function/method?
 
   Multithreading doesn't affect inlining in any way.
+
