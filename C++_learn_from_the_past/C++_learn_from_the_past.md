@@ -1964,21 +1964,38 @@ Binding of *dependent names* is postponed until lookup takes place.
 
 **test**:
 
+foo.c
+
+```c
+#include <iostream>
+using namespace std;
+
+int foo(int n){
+    cout << "int --" << endl;
+    return n;
+}
+```
+
+
+
+main.cpp
+
 ```cpp
 #include <iostream>
 #include <algorithm>
 #include <memory>
 #include <typeinfo>
-//#include "foo.c"
 
 using namespace std;
 
 // scope of template definition
 
 double foo(double n){
-    cout << "2--" << endl;
+    cout << "double --" << endl;
     return n;
 }
+
+
 template <typename type>
 class ScopeRules{
 public:
@@ -1995,14 +2012,125 @@ private:
     type _member;
 };
 
-int foo(int n){
-    cout << "1--" << endl;
+
+// extern int foo(int n); // pos on here, same res
+int main(){
+    extern int foo(int n);
+
+    ScopeRules<double> sr0;
+    sr0.invariant();
+    sr0.type_dependent();
+
+
+    return 0;
+}
+```
+
+output:
+
+```shell
+double --
+double --
+```
+
+
+
+test 2:
+
+```cpp
+#include <iostream>
+#include <algorithm>
+#include <memory>
+#include <typeinfo>
+//#include "foo.c"
+
+using namespace std;
+
+// scope of template definition
+extern int foo(int n); // here
+double foo(double n){
+    cout << "double --" << endl;
     return n;
 }
 
-using namespace  std;
+
+template <typename type>
+class ScopeRules{
+public:
+    void invariant(){
+        _member = foo(_val);
+    }
+
+    type type_dependent(){
+        return foo(_member);
+    }
+
+private:
+    int _val;
+    type _member;
+};
+
+
+
 int main(){
 
+
+    ScopeRules<double> sr0;
+    sr0.invariant();
+    sr0.type_dependent();
+
+
+    return 0;
+}
+```
+
+do resolution
+
+```shell
+int --
+double --
+```
+
+test 3:
+
+```cpp
+#include <iostream>
+#include <algorithm>
+#include <memory>
+#include <typeinfo>
+//#include "foo.c"
+
+using namespace std;
+
+// scope of template definition
+
+double foo(double n){
+    cout << "double --" << endl;
+    return n;
+}
+
+
+template <typename type>
+class ScopeRules{
+public:
+    void invariant(){
+        _member = foo(_val);
+    }
+
+    type type_dependent(){
+        return foo(_member);
+    }
+
+private:
+    int _val;
+    type _member;
+};
+
+
+extern int foo(int n);
+int main(){
+
+    // extern int foo(int n);  // same res
     ScopeRules<int> sr0;
     sr0.invariant();
     sr0.type_dependent();
@@ -2011,6 +2139,67 @@ int main(){
     return 0;
 }
 ```
+
+
+
+```cpp
+double --
+double --
+```
+
+test 4: //深入理解c++对象模型 290
+
+may ? 
+
+```cpp
+#include <iostream>
+#include <algorithm>
+#include <memory>
+#include <typeinfo>
+
+using namespace std;
+
+// scope of template definition
+
+double foo(double n){
+    cout << "double --" << endl;
+    return n;
+}
+template <typename type>
+class ScopeRules{
+public:
+    void invariant(){
+        _member = foo(_val);
+    }
+
+    type type_dependent(){
+         // here, scope of template instantiation ?
+        extern int foo(int n);
+        return foo(_member);
+    }
+
+private:
+    int _val;
+    type _member;
+};
+
+
+int main(){
+    ScopeRules<int> sr0;
+    sr0.invariant();
+    sr0.type_dependent();
+    return 0;
+}
+```
+
+output:
+
+```cpp
+double --
+int --
+```
+
+
 
 ### type_info Class
 
@@ -2207,3 +2396,150 @@ int *r = reinterpret_cast<int*>(&c); // forced conversion
 ```
 
 This cast handles conversions between certain unrelated types, such as from one pointer type to another incompatible pointer type. It will simply perform a binary copy of the data without altering the underlying bit pattern. Note that the result of such a low-level operation is system-specific and therefore not portable. It should be used with caution if it cannot be avoided altogether.
+
+### __libc_start_main
+
+![image-20220212044958741](C++_learn_from_the_past.assets/image-20220212044958741.png)
+
+```assembly
+
+_start:
+	endbr64
+	xor    %ebp,%ebp
+	mov    %rdx,%r9
+	pop    %rsi
+	mov    %rsp,%rdx
+	and    $0xfffffffffffffff0,%rsp
+	push   %rax
+	push   %rsp
+	lea    0x2a6(%rip),%r8            ; 0x55db5a264380 <__libc_csu_fini>
+	lea    0x22f(%rip),%rcx           ; 0x55db5a264310 <__libc_csu_init>
+	lea    0x13f(%rip),%rdi           ; 0x55db5a264227 <main()>
+	call   *0x2ef2(%rip)              ; 0x55db5a266fe0
+	hlt
+
+
+__libc_start_main:
+	endbr64
+	push   %r15
+	xor    %eax,%eax
+	push   %r14
+	push   %r13
+	push   %r12
+	push   %rbp
+	push   %rbx
+	mov    %rcx,%rbx
+	sub    $0x98,%rsp
+	mov    %rdx,0x8(%rsp)
+	mov    0x1c3f8a(%rip),%rdx        ; 0x7f7d43524f40
+	mov    %rdi,0x18(%rsp)
+	mov    %r9,%rdi
+	mov    %esi,0x14(%rsp)
+	test   %rdx,%rdx
+	je     0x7f7d43360fd0             ; <__libc_start_main+64>
+	mov    (%rdx),%edx
+	xor    %eax,%eax
+	test   %edx,%edx
+	sete   %al
+	mov    %eax,0x1c41ca(%rip)        ; 0x7f7d435251a0 <__libc_multiple_libcs>
+	test   %rdi,%rdi
+	je     0x7f7d43360fe4             ; <__libc_start_main+84>
+	xor    %edx,%edx
+	xor    %esi,%esi
+	call   0x7f7d43383f30             ; <__GI___cxa_atexit>
+	mov    0x1c3e75(%rip),%rdx        ; 0x7f7d43524e60
+	mov    (%rdx),%ebp
+	and    $0x2,%ebp
+	jne    0x7f7d4336108a             ; <__libc_start_main+250>
+	test   %rbx,%rbx
+	je     0x7f7d43361010             ; <__libc_start_main+128>
+	mov    0x1c3eae(%rip),%rax        ; 0x7f7d43524eb0
+	mov    0x8(%rsp),%rsi
+	mov    0x14(%rsp),%edi
+	mov    (%rax),%rdx
+	call   *%rbx
+	mov    0x1c3e49(%rip),%rdx        ; 0x7f7d43524e60
+	mov    0x210(%rdx),%eax
+	test   %eax,%eax
+	jne    0x7f7d433610ec             ; <__libc_start_main+348>
+	test   %ebp,%ebp
+	jne    0x7f7d43361150             ; <__libc_start_main+448>
+	lea    0x20(%rsp),%rdi
+	call   0x7f7d4337fdd0             ; <_setjmp>
+	endbr64
+	test   %eax,%eax
+	jne    0x7f7d433610a6             ; <__libc_start_main+278>
+	mov    %fs:0x300,%rax
+	mov    %rax,0x68(%rsp)
+	mov    %fs:0x2f8,%rax
+	mov    %rax,0x70(%rsp)
+	lea    0x20(%rsp),%rax
+	mov    %rax,%fs:0x300
+	mov    0x1c3e40(%rip),%rax        ; 0x7f7d43524eb0
+	mov    0x8(%rsp),%rsi
+	mov    0x14(%rsp),%edi
+	mov    (%rax),%rdx
+	mov    0x18(%rsp),%rax
+	call   *%rax
+	mov    %eax,%edi
+	call   0x7f7d43383b90             ; <__GI_exit>
+	mov    0x8(%rsp),%rax
+	lea    0x18fdd2(%rip),%rdi        ; 0x7f7d434f0e68
+	mov    (%rax),%rsi
+	xor    %eax,%eax
+	call   *0x1d0(%rdx)
+	jmp    0x7f7d43360ff6             ; <__libc_start_main+102>
+	mov    0x1ca0ab(%rip),%rax        ; 0x7f7d4352b158 <__libc_pthread_functions+312>
+	ror    $0x11,%rax
+	xor    %fs:0x30,%rax
+	call   *%rax
+	mov    0x1ca085(%rip),%rax        ; 0x7f7d4352b148 <__libc_pthread_functions+296>
+	ror    $0x11,%rax
+	xor    %fs:0x30,%rax
+	lock decl (%rax)
+	sete   %dl
+	test   %dl,%dl
+	jne    0x7f7d433610e8             ; <__libc_start_main+344>
+	mov    $0x3c,%edx
+	nop
+	xor    %edi,%edi
+	mov    %edx,%eax
+	syscall
+	jmp    0x7f7d433610e0             ; <__libc_start_main+336>
+	xor    %eax,%eax
+	jmp    0x7f7d43361083             ; <__libc_start_main+243>
+	mov    0x1c3cfd(%rip),%r13        ; 0x7f7d43524df0
+	mov    %eax,%r12d
+	mov    0x208(%rdx),%r14
+	shl    $0x4,%r12
+	mov    0x0(%r13),%r15
+	mov    %r15,%rbx
+	add    %r15,%r12
+	cmp    %r12,%rbx
+	je     0x7f7d43361025             ; <__libc_start_main+149>
+	mov    0x18(%r14),%rax
+	test   %rax,%rax
+	je     0x7f7d43361139             ; <__libc_start_main+425>
+	mov    0x1c3ccc(%rip),%rdx        ; 0x7f7d43524df0
+	lea    0x480(%rbx),%rdi
+	add    $0x988,%rdx
+	cmp    %rdx,%r15
+	je     0x7f7d43361147             ; <__libc_start_main+439>
+	call   *%rax
+	mov    0x40(%r14),%r14
+	add    $0x10,%r13
+	add    $0x10,%rbx
+	jmp    0x7f7d4336110b             ; <__libc_start_main+379>
+	lea    0xe08(%r13),%rdi
+	jmp    0x7f7d43361137             ; <__libc_start_main+423>
+	mov    0x8(%rsp),%rax
+	mov    0x1c3d04(%rip),%rdx        ; 0x7f7d43524e60
+	lea    0x18fd1f(%rip),%rdi        ; 0x7f7d434f0e82
+	mov    (%rax),%rsi
+	xor    %eax,%eax
+	call   *0x1d0(%rdx)
+	jmp    0x7f7d4336102d             ; <__libc_start_main+157>
+
+
+```
+
