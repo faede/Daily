@@ -76,7 +76,7 @@ int main()
 
 The `constexpr` specifier declares that it is possible to evaluate the value of the function or variable at compile time. Such variables and functions can then be used where only compile time [constant expressions](https://en.cppreference.com/w/cpp/language/constant_expression) are allowed (provided that appropriate function arguments are given). A constexpr specifier used in an object declaration or non-static member function (until C++14) implies const. A constexpr specifier used in a function or [static](https://en.cppreference.com/w/cpp/language/static) member variable (since C++17) declaration implies inline. If any declaration of a function or function template has a `constexpr` specifier, then every declaration must contain that specifier.
 
-### 
+
 
 
 
@@ -2150,6 +2150,10 @@ double --
 test 4: //深入理解c++对象模型 290
 
 may ? 
+
+为什么要实例化为int？ 
+
+因为另一个是double ， 如果non-dependent的输出double就说明当前scope里只有一个function---double的，否则一定会选择int，同时第二个输出为int表明确实做了两次resolution，否则不会调用不同的函数。
 
 ```cpp
 #include <iostream>
