@@ -543,6 +543,160 @@ main:
         ret
 ```
 
+### Virtual Function
+
+#### tip
+
+> Virtuals are resolved at run time *only* if the call is made through a reference or pointer. Only in these cases is it possible for an object’s dynamic type to differ from its static type.
+
+> A function that is **virtual** in a base class is implicitly **virtual** in its derived classes. When a derived class overrides a virtual, the parameters in the base and derived classes must match exactly.
+
+> Virtual functions that have default arguments should use the same ar- gument values in the base and derived classes
+
+> The base-class arguments will be used even when the derived version of the function is run. In this case, the derived function will be passed the default arguments defined for the base-class version of the function
+
+#### final  and override
+
+it is legal for a derived class to define a function with the same name as a virtual in its base class but with a different parameter list. The compiler considers such a function to be independent from the base-class function.
+
+Finding such bugs can be surprisingly hard.The compiler will reject a program if a function marked override does not override an existing virtual function.
+
+```c++
+struct B {
+	virtual void f1(int) const;
+	virtual void f2();
+	void f3();
+};
+struct D1 : B {
+	void f1(int) const override; // ok: f1 matches f1 in the base
+	void f2(int) override; // error: B has no f2(int) function
+	void f3() override;
+	// error: f3 not virtual
+	void f4() override;
+	// error: B doesn’t have a function named f4
+};
+```
+
+We can also designate a function as final. Any attempt to override a function that has been defined as final will be flagged as an error:
+
+```c++
+struct D2 : B {
+	// inherits f2() and f3() from B and overrides f1(int)
+	void f1(int) const final; // subsequent classes can’t override 	f1(int)
+};
+struct D3 : D2 {
+	void f2();
+	// ok: overrides f2 inherited from the indirect base, B
+	void f1(int) const; // error: D2 declared f2 as final
+};
+```
+
+#### Circumventing the Virtual Mechanism
+
+If a derived virtual function that intended to call its base-class version omits the scope operator, the call will be resolved at run time as a call to the derived version itself, resulting in an infinite recursion.
+
+```c++
+#include <iostream>
+#include <string>
+using  namespace  std;
+class base {
+public:
+    string name() { return basename; }
+    virtual void print(ostream &os) { os << basename; }
+private:
+    string basename;
+};
+class derived : public base {
+public:
+    void print(ostream &os) { print(os); os << " " << i; }
+private:
+    int i;
+};
+int main(){
+    base * b = new derived();
+    b->print(cout); // error
+    b->base::print(cout); // ok
+}
+```
+
+#### Virtual Destructors
+
+The primary direct impact that inheritance has on copy control for a base class is that a base class generally should define a virtual destructor (§ 15.2.1, p. 594). The destructor needs to be virtual to allow objects in the inheritance hierarchy to be dynamically allocated.
+
+> Executing delete on a pointer to base that points to a derived object has undefined behavior if the base’s destructor is not virtual.
+
+#### Pure Virtual Functions
+
+We specify that
+a virtual function is a pure virtual by writing = 0 in place of a function body (i.e., just before the semicolon that ends the declaration). The = 0 may appear only on the declaration of a virtual function in the class body, and  the function body must be defined outside the class. That is, we cannot provide a function body inside the class for a function that is = 0.
+
+#### Abstract Base Classes
+
+A class containing (or inheriting without overridding) a pure virtual function is an abstract base class.
+
+> We may not create objects of a type that is an abstract base class.
+
+#### Virtual Inheritance
+
+
+
+### Local Classes
+
+A local class can access only type names, static variables (§ 6.1.1, p. 205), and enumerators defined within the enclosing local scopes. A local class may not use the ordinary local variables of the function in which the class is defined:
+
+```c++
+int a, val;
+void foo(int val)
+{
+	static int si;
+	enum Loc { a = 1024, b };
+// Bar is local to foo
+	struct Bar {
+		Loc locVal; // ok: uses a local type name
+		int barVal;
+		void fooBar(Loc l = a) // ok: default argument is Loc::a
+		{
+			barVal = val; // error: val is local to foo
+			barVal = ::val; // ok: uses a global object
+			barVal = si; // ok: uses a static local object
+			locVal = b; // ok: uses an enumerator
+		}
+};
+// . . .
+}
+```
+
+
+
+### Bit-fields
+
+use `:` to declear
+
+The memory layout of a bit-field is machine dependent.
+
+```c++
+typedef unsigned int Bit;
+class File {
+	Bit mode: 2; // mode has 2 bits
+	Bit modified: 1; // modified has 1 bit
+	Bit prot_owner: 3; // prot_owner has 3 bits
+	Bit prot_group: 3; // prot_group has 3 bits
+	Bit prot_world: 3; // prot_world has 3 bits
+	// operations and data members of File
+public:
+	// file modes specified as octal literals; see § 2.1.3 (p. 38)
+	enum modes { READ = 01, WRITE = 02, EXECUTE = 03 };
+	File &open(modes);
+	void close();
+	void write();
+	bool isRead() const;
+	void setWrite();
+};	
+```
+
+>Ordinarily it is best to make a bit-field an **unsigned** type. The behavior
+>of bit-fields stored in a signed type is implementation defined.
+
 ### 函数指针
 
 ```cpp
