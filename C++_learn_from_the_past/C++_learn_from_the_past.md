@@ -608,14 +608,14 @@ private:
 };
 class derived : public base {
 public:
-    void print(ostream &os) { print(os); os << " " << i; }
+    void print(ostream &os) { print(os); os << " " << i; } // error
+    void print(ostream &os) { base::print(os); os << " " << i; } // error
 private:
     int i;
 };
 int main(){
     base * b = new derived();
-    b->print(cout); // error
-    b->base::print(cout); // ok
+    b->print(cout);
 }
 ```
 
