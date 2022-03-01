@@ -250,6 +250,88 @@ text       data        bss        dec        hex    filename
 960        248         8          1216       4c0    memory-layout
 ```
 
+### Old Lua  double to int
+
+base on :
+
+https://stackoverflow.com/questions/17035464/a-fast-method-to-round-a-double-to-a-32-bit-int-explained
+
+program:
+
+```c++
+int double2int(double d)
+{
+    d += 6755399441055744.0;
+    return reinterpret_cast<int&>(d);
+}
+```
+
+**sweet range**
+
+https://en.wikipedia.org/wiki/Double-precision_floating-point_format#IEEE_754_double-precision_binary_floating-point_format:_binary64
+
+The bits are laid out as follows:
+
+[![IEEE 754 Double Floating Point Format.svg](https://upload.wikimedia.org/wikipedia/commons/thumb/a/a9/IEEE_754_Double_Floating_Point_Format.svg/618px-IEEE_754_Double_Floating_Point_Format.svg.png)](https://en.wikipedia.org/wiki/File:IEEE_754_Double_Floating_Point_Format.svg)
+
+The real value assumed by a given 64-bit double-precision datum with a given [biased exponent](https://en.wikipedia.org/wiki/Exponent_bias) {\displaystyle e}![e](https://wikimedia.org/api/rest_v1/media/math/render/svg/cd253103f0876afc68ebead27a5aa9867d927467) and a 52-bit fraction is
+
+$$(-1)^{\text{sign}}(1.b_{51}b_{50}...b_{0})_{2}\times 2^{e-1023}  $$
+
+or
+
+$$(-1)^{\text{sign}}\left(1+\sum _{i=1}^{52}b_{52-i}2^{-i}\right)\times 2^{e-1023}$$
+
+Between $2^{52}$=4,503,599,627,370,496 and $2^{53}$=9,007,199,254,740,992 the representable numbers are exactly the integers. For the next range, from $2^{53}$ to $2^{54}$, everything is multiplied by 2, so the representable numbers are the even ones, etc. Conversely, for the previous range from $2^{51}$ to $2^{52}$, the spacing is 0.5, etc.
+
++$2^{52}$ for pos number
+
+>actually 
+>
+>$(-1)^{\text{sign}}\left(1+\sum _{i=1}^{52}b_{52-i}2^{-i}\right)\times 2^{52}$
+>
+>= $(-1)^{\text{sign}}\left(2^{52}+\sum _{i=1}^{52}b_{52-i}2^{52-i}\right)$
+>
+>= $(-1)^{\text{sign}}\left(2^{52}+\sum _{i=0}^{51}b_{i}2^{i}\right)$           (convert to int)
+>
+>+$2^{52}$ => base = 52 , and low bits correct pos
+
+do test 
+
+```c++
+int double2int(double d)
+{
+    d += 4503599627370496.5; // 2^52
+    //d += 6755399441055744.0;
+    return reinterpret_cast<int&>(d);
+}
+
+int main(){
+    for(int i = 0 ; i <= (int)INT32_MAX; i++){
+        if(i != double2int(i+0.3)){
+            cout << "i: " << i << " double2int:" <<double2int(i+0.3) << endl;
+        }
+        if(i == INT32_MAX){
+            break;
+        }
+    }
+}
+```
+
+and
+
++$2^{51}$ for neg number (complement digital)
+
+**reason**
+
+This kind of "trick" comes from older x86 processors, using the 8087 intructions/interface for floating point. On these machines, there's an instruction for converting floating point to integer "fist", but it uses the current fp rounding mode. Unfortunately, the C spec requires that fp->int conversions truncate towards zero, while all other fp operations round to nearest, so doing an
+fp->int conversion requires first changing the fp rounding mode, then doing a fist, then restoring the fp rounding mode.
+
+Now on the original 8086/8087, this wasn't too bad, but on later processors that started to get super-scalar and out-of-order execution, altering the fp rounding mode generally serializes the CPU core and is quite expensive. So on a CPU like a Pentium-III or Pentium-IV, this overall cost is quite high -- a normal fp->int conversion is 10x or more expensive than this add+store+load trick.
+
+On x86-64, however, floating point is done with the xmm instructions, and the cost of converting
+fp->int is pretty small, so this "optimization" is likely slower than a normal conversion.
+
 ### 字符串转换
 
 c = > c++
@@ -545,6 +627,18 @@ main:
 
 ### Virtual Function
 
+#### what
+
+Without "virtual" you get "early binding". Which implementation of the method is used gets decided at compile time based on the type of the pointer that you call through.
+
+With "virtual" you get "late binding". Which implementation of the method is used gets decided at run time based on the type of the pointed-to object - what it was originally constructed as. This is not necessarily what you'd think based on the type of the pointer that points to that object.
+
+https://stackoverflow.com/questions/2391679/why-do-we-need-virtual-functions-in-c
+
+#### FAQ
+
+http://www.parashift.com/c++-faq-lite/virtual-functions.html
+
 #### tip
 
 > Virtuals are resolved at run time *only* if the call is made through a reference or pointer. Only in these cases is it possible for an object’s dynamic type to differ from its static type.
@@ -636,9 +730,20 @@ A class containing (or inheriting without overridding) a pure virtual function i
 
 > We may not create objects of a type that is an abstract base class.
 
-#### Virtual Inheritance
+#### Virtual Inheritance and virtual base class
 
+As an example, the IO library `istream` and `ostream` classes each inherit from a common abstract base class named `basic_ios`. That class holds the stream’s buffer and manages the stream’s condition state. The class `iostream`, which can both read and write to a stream, inherits directly from both `istream` and `ostream`. Because both types inherit from `basic_ios`, `iostream` inherits that base class twice, once through `istream` and once through `ostream`.
 
+This default doesn’t work for a class such as `iostream`. An `iostream` object wants to use the same buffer for both reading and writing, and it wants its condition state to reflect both input and output operations. If an `iostream` object has two copies of its `basic_ios` class, this sharing isn’t possible.
+
+In C++ we solve this kind of problem by using **virtual inheritance**. Virtual inheritance lets a class specify that it is willing to share its base class. The shared base-class subobject is called a **virtual base class**. Regardless of how often the same virtual base appears in an inheritance hierarchy, the derived object contains only one, shared subobject for that virtual base class.
+
+**How a Virtually Inherited Object Is Constructe**
+
+The construction order for an object with a virtual base is slightly modified from the normal order: The virtual base subparts of the object are initialized first, using initializers provided in the constructor for the most derived class. Once the virtual base subparts of the object are constructed, the direct base subparts are constructed in the order in which they appear in the derivation list.
+
+>Virtual base classes are always constructed prior to nonvirtual base
+>classes regardless of where they appear in the inheritance hierarchy.
 
 ### Local Classes
 
@@ -2697,7 +2802,249 @@ __libc_start_main:
 	xor    %eax,%eax
 	call   *0x1d0(%rdx)
 	jmp    0x7f7d4336102d             ; <__libc_start_main+157>
+```
+
+### Lock-Free Programming
+
+https://preshing.com/20120612/an-introduction-to-lock-free-programming/
 
 
+
+**InterlockedCompareExchange**
+
+https://baike.baidu.com/item/InterlockedCompareExchange/659889
+
+#### Memory Reordering Caught in the Act
+
+https://preshing.com/20120515/memory-reordering-caught-in-the-act/
+
+no matter which processor writes 1 to memory first, it’s natural to expect the *other* processor to read that value back, which means we should end up with either r1 = 1, r2 = 1, or perhaps both. But according to Intel’s specification, that won’t necessarily be the case. The specification says it’s legal for both r1 and r2 to equal 0 at the end of this example – a counterintuitive result, to say the least!
+
+form
+
+![img](C++_learn_from_the_past.assets/marked-example2.png)
+
+to
+
+![img](C++_learn_from_the_past.assets/reordered.png)
+
+```c++
+sem_t beginSema1;
+sem_t endSema;
+
+int X, Y;
+int r1, r2;
+
+void *thread1Func(void *param)
+{
+    MersenneTwister random(1);                // Initialize random number generator
+    for (;;)                                  // Loop indefinitely
+    {
+        sem_wait(&beginSema1);                // Wait for signal from main thread
+        while (random.integer() % 8 != 0) {}  // Add a short, random delay
+
+        // ----- THE TRANSACTION! -----
+        X = 1;
+        asm volatile("" ::: "memory");        // Prevent compiler reordering
+        r1 = Y;
+
+        sem_post(&endSema);                   // Notify transaction complete
+    }
+    return NULL;  // Never returns
+};
+```
+
+
+
+#### ABA problem
+
+https://en.wikipedia.org/wiki/ABA_problem
+
+#### RCU
+
+https://www.kernel.org/doc/html/latest/RCU/whatisRCU.html
+
+#### atomic
+
+https://en.cppreference.com/w/cpp/atomic/atomic
+
+https://blog.csdn.net/wanxuexiang/article/details/104280021
+
+```c++
+bool compare_exchange_strong(T & expected ,T desired)
+{
+     if(this->load() == expected){
+		this->strore(desired)
+ 		return true;
+     }else{
+        expected = this->load();
+        return false;
+     }
+}
+```
+
+### SSO(Small String Optimization)
+
+```c++
+#include <string>
+#include <new>
+#include <cstdio>
+#include <cstdlib>
+#include <iostream>
+
+std::size_t allocated = 0;
+
+void* operator new (size_t sz)
+{
+    std::cout << "Allocating " << sz << " bytes\n";
+    void* p = std::malloc(sz);
+    allocated += sz;
+    return p;
+}
+
+void operator delete(void* mem) noexcept
+{
+    return std::free(mem);
+}
+
+/*
+void operator delete(void* mem, size_t sz) noexcept
+{
+	std::cout << "Freeing " << sz << " bytes\n";
+    return std::free(mem);
+}
+*/
+
+int
+main()
+{
+    allocated = 0;
+    std::string s("hi");
+    std::printf("stack space = %zu, heap space = %zu, capacity = %zu\n",
+                sizeof(s), allocated, s.capacity());
+}
+```
+
+res:
+
+```shell
+gcc 4.9.1:
+stack space = 8, heap space = 27, capacity = 2
+
+gcc 5.0.0:
+stack space = 32, heap space = 0, capacity = 15
+
+clang/libc++:
+stack space = 24, heap space = 0, capacity = 22
+
+VS-2015:
+stack space = 32, heap space = 0, capacity = 15
+```
+
+
+
+https://stackoverflow.com/questions/10315041/meaning-of-acronym-sso-in-the-context-of-stdstring
+
+**Background / Overview**
+
+Operations on automatic variables ("from the stack", which are variables that you create without calling `malloc` / `new`) are generally much faster than those involving the free store ("the heap", which are variables that are created using `new`). However, the size of automatic arrays is fixed at compile time, but the size of arrays from the free store is not. Moreover, the stack size is limited (typically a few MiB), whereas the free store is only limited by your system's memory.
+
+SSO is the Short / Small String Optimization. A `std::string` typically stores the string as a pointer to the free store ("the heap"), which gives similar performance characteristics as if you were to call `new char [size]`. This prevents a stack overflow for very large strings, but it can be slower, especially with copy operations. As an optimization, many implementations of `std::string` create a small automatic array, something like `char [20]`. If you have a string that is 20 characters or smaller (given this example, the actual size varies), it stores it directly in that array. This avoids the need to call `new` at all, which speeds things up a bit.
+
+EDIT:
+
+I wasn't expecting this answer to be quite so popular, but since it is, let me give a more realistic implementation, with the caveat that I've never actually read any implementation of SSO "in the wild".
+
+**Implementation details**
+
+At the minimum, a `std::string` needs to store the following information:
+
+- The size
+- The capacity
+- The location of the data
+
+The size could be stored as a `std::string::size_type` or as a pointer to the end. The only difference is whether you want to have to subtract two pointers when the user calls `size` or add a `size_type` to a pointer when the user calls `end`. The capacity can be stored either way as well.
+
+**You don't pay for what you don't use.**
+
+First, consider the naive implementation based on what I outlined above:
+
+```cpp
+class string {
+public:
+    // all 83 member functions
+private:
+    std::unique_ptr<char[]> m_data;
+    size_type m_size;
+    size_type m_capacity;
+    std::array<char, 16> m_sso;
+};
+```
+
+For a 64-bit system, that generally means that `std::string` has 24 bytes of 'overhead' per string, plus another 16 for the SSO buffer (16 chosen here instead of 20 due to padding requirements). It wouldn't really make sense to store those three data members plus a local array of characters, as in my simplified example. If `m_size <= 16`, then I will put all of the data in `m_sso`, so I already know the capacity and I don't need the pointer to the data. If `m_size > 16`, then I don't need `m_sso`. There is absolutely no overlap where I need all of them. A smarter solution that wastes no space would look something a little more like this (untested, example purposes only):
+
+```cpp
+class string {
+public:
+    // all 83 member functions
+private:
+    size_type m_size;
+    union {
+        class {
+            // This is probably better designed as an array-like class
+            std::unique_ptr<char[]> m_data;
+            size_type m_capacity;
+        } m_large;
+        std::array<char, sizeof(m_large)> m_small;
+    };
+};
+```
+
+I'd assume that most implementations look more like this.
+
+### valgrind
+
+for sso
+
+`string s = "0123123"; // Allocating 17 bytes`
+
+more than 15, 2
+
+```c++
+➜  untitled g++ main.cpp && valgrind --tool=memcheck  ./a.out
+==79083== Memcheck, a memory error detector
+==79083== Copyright (C) 2002-2017, and GNU GPL'd, by Julian Seward et al.
+==79083== Using Valgrind-3.18.1 and LibVEX; rerun with -h for copyright info
+==79083== Command: ./a.out
+==79083== 
+==79083== 
+==79083== HEAP SUMMARY:
+==79083==     in use at exit: 0 bytes in 0 blocks
+==79083==   total heap usage: 2 allocs, 2 frees, 72,728 bytes allocated
+==79083== 
+==79083== All heap blocks were freed -- no leaks are possible
+==79083== 
+==79083== For lists of detected and suppressed errors, rerun with: -s
+==79083== ERROR SUMMARY: 0 errors from 0 contexts (suppressed: 0 from 0)
+```
+
+less than 15, 2
+
+```c++
+➜  untitled g++ main.cpp && valgrind --tool=memcheck  ./a.out
+==79094== Memcheck, a memory error detector
+==79094== Copyright (C) 2002-2017, and GNU GPL'd, by Julian Seward et al.
+==79094== Using Valgrind-3.18.1 and LibVEX; rerun with -h for copyright info
+==79094== Command: ./a.out
+==79094== 
+==79094== 
+==79094== HEAP SUMMARY:
+==79094==     in use at exit: 0 bytes in 0 blocks
+==79094==   total heap usage: 1 allocs, 1 frees, 72,704 bytes allocated
+==79094== 
+==79094== All heap blocks were freed -- no leaks are possible
+==79094== 
+==79094== For lists of detected and suppressed errors, rerun with: -s
+==79094== ERROR SUMMARY: 0 errors from 0 contexts (suppressed: 0 from 0)
 ```
 
