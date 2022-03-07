@@ -332,6 +332,34 @@ Now on the original 8086/8087, this wasn't too bad, but on later processors that
 On x86-64, however, floating point is done with the xmm instructions, and the cost of converting
 fp->int is pretty small, so this "optimization" is likely slower than a normal conversion.
 
+### Fast inverse square root
+
+https://en.wikipedia.org/wiki/Fast_inverse_square_root
+
+https://mrob.com/pub/math/numbers-16.html#le009_16
+
+http://www.lomont.org/papers/2003/InvSqrt.pdf
+
+(in dir)
+
+```c++
+  /* Note: This assumes "int" and "float" are both 32 bits */
+  float InvSqrt (float x)
+  {
+    float xhalf = 0.5f * x;
+    int i = *(int*)&x;         // evil floating point bit level hacking
+    i = 0x5f3759df - (i>>1);   // First approximation (WTF ?!?)
+    x = *(float*)&i;
+    x = x*(1.5f - xhalf*x*x);  // Newton iteration
+ // x = x*(1.5f - xhalf*x*x);  // Iterate again if you need full accuracy
+    return x;
+  }
+```
+
+### Bit Twiddling Hacks
+
+https://graphics.stanford.edu/~seander/bithacks.html
+
 ### 字符串转换
 
 c = > c++
@@ -2068,15 +2096,9 @@ The based indexed and scaled indexed forms of 32-bit addressing require the SIB 
 
 https://stackoverflow.com/questions/37583449/is-rbp-ebp-register-really-necessary-to-support-variable-size-stack-frames
 
-3
 
 
-
-
-
-
-
-You're correct. If you keep the size you used in the variable-size `sub xxx, %rsp`, you can reverse it with an `add` at the end (or with an `lea fixed_size(%rsp,%rdi,4), %rsp` to also deallocate any fixed-size stack-space reservations.
+If you keep the size you used in the variable-size `sub xxx, %rsp`, you can reverse it with an `add` at the end (or with an `lea fixed_size(%rsp,%rdi,4), %rsp` to also deallocate any fixed-size stack-space reservations.
 
 As @Ross points out, this doesn't scale well to multiple variable-length allocations in the same function. Even with a single VLA, it's not faster than a `mov %rbp, %rsp` (or `leave`) at the end of the function. It would let the compiler spill the size and have 15 free registers instead of 14 for parts of the function, which it never chooses to do with `%rbp` when using it as a frame pointer. Anyway, this means gcc would still want to fall back to using a frame pointer for complex cases. (The default is `-fomit-frame-pointer`, but don't worry about the fact that it doesn't force gcc to never use one).
 
@@ -3046,5 +3068,135 @@ less than 15, 2
 ==79094== 
 ==79094== For lists of detected and suppressed errors, rerun with: -s
 ==79094== ERROR SUMMARY: 0 errors from 0 contexts (suppressed: 0 from 0)
+```
+
+### hack class private member
+
+http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2017/p0692r1.html
+
+https://www.zhihu.com/question/37692782/answer/1212413278
+
+dirty_hacks.hpp
+
+```c++
+#pragma once
+
+#include <type_traits>
+
+namespace dirty_hacks
+{
+
+    template <class T>
+    using remove_cvref_t = typename std::remove_cv_t<std::remove_reference_t<T>>;
+
+    template <class T>
+    struct type_identity { using type = T; };
+    template <class T>
+    using type_identity_t = typename type_identity<T>::type;
+
+    namespace impl
+    {
+
+        template <class T>
+        struct complete
+        {
+            template <class U>
+            static auto test(U*) -> decltype(sizeof(U), std::true_type{});
+            static auto test(...) -> std::false_type;
+            using type = decltype(test(static_cast<T*>(nullptr)));
+        };
+
+    } // namespace impl
+
+    template <class T>
+    struct is_complete : impl::complete<T>::type {};
+
+} // namespace dirty_hacks
+
+/** Yet another concat implementation. */
+#define YA_CAT_IMPL(x, y) x##y
+/** Yet another concat. */
+#define YA_CAT(x, y) YA_CAT_IMPL(x, y)
+/**
+ * Init private class member hijacker.
+ * @param class_ Class name.
+ * @param member Private member to hijack.
+ * @param __VA_ARGS__ Member type.
+ * @remark All HIJACKERs should appear before any HIJACK.
+ */
+#define HIJACKER(class_, member, ...) \
+    namespace dirty_hacks { namespace hijack { \
+    template <class> struct tag_##member; \
+    inline auto get(tag_##member<class_>) -> type_identity_t<__VA_ARGS__> class_::*; \
+    template <> struct tag_##member<class_> { \
+        tag_##member(tag_##member*) {} \
+        template <class T, class = std::enable_if_t< \
+            !is_complete<tag_##member<T>>::value && std::is_base_of<class_, T>::value>> \
+        tag_##member(tag_##member<T>*) {} \
+    }; \
+    template <type_identity_t<__VA_ARGS__> class_::* Ptr> struct YA_CAT(hijack_##member##_, __LINE__) { \
+        friend auto get(tag_##member<class_>) -> type_identity_t<__VA_ARGS__> class_::* { return Ptr; } \
+    }; \
+    template struct YA_CAT(hijack_##member##_, __LINE__)<&class_::member>; \
+    }}
+/**
+ * Hijack private class member.
+ * @param ptr Pointer to class instance.
+ * @param member Private member to hijack.
+ * @remark All HIJACKs should appear after any HIJACKER.
+ */
+#define HIJACK(ptr, member) \
+    ((ptr)->*dirty_hacks::hijack::get( \
+        static_cast<std::add_pointer_t<dirty_hacks::hijack::tag_##member< \
+            dirty_hacks::remove_cvref_t<decltype(*ptr)>>>>(nullptr)))
+```
+
+main.cpp
+
+```c++
+#include <iostream>
+
+#include "dirty_hacks.hpp"
+
+class base
+{
+    int x_ = 0;
+
+public:
+    int x() { return x_; }
+}; // class base
+
+class derived1 : public base
+{
+    int x_ = 1;
+
+public:
+    int x() { return x_; }
+}; // class derived1
+
+class derived2 : public base
+{
+    int x_ = 2;
+
+public:
+    int x() { return x_; }
+}; // class derived2
+
+HIJACKER(base, x_, int);
+HIJACKER(derived1, x_, int);
+
+int main()
+{
+    derived1 d1;
+    derived2 d2;
+    base& b1 = d1;
+    base& b2 = d2;
+    std::cout << "(" << b1.x() << ", " << d1.x() << "), (" << b2.x() << ", " << d2.x() << ")\n";
+    HIJACK(&b1, x_) = HIJACK(&b2, x_) = 233;
+    std::cout << "(" << b1.x() << ", " << d1.x() << "), (" << b2.x() << ", " << d2.x() << ")\n";
+    HIJACK(&d1, x_) = HIJACK(&d2, x_) = 666;
+    std::cout << "(" << b1.x() << ", " << d1.x() << "), (" << b2.x() << ", " << d2.x() << ")" << std::endl;
+    return 0;
+}
 ```
 
