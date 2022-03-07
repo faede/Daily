@@ -3200,23 +3200,25 @@ int main()
 }
 ```
 
-## Hash Table Section
 
-A hash table consists of `Elf32_Word` or `Elf64_Word` objects that provide for symbol table access. The `SHT_HASH` section provides this hash table. The symbol table to which the hashing is associated is specified in the `sh_link` entry of the hash table's section header. Labels are used in the following figure to help explain the hash table organization, but these labels are not part of the specification.
 
 
 
 ### linker & Symbol Hash Table
 
-**linker**
+#### **linker**
 
 The linker then initializes a chain of symbol tables with pointers to the program’s symbol table and the linker’s own symbol table. Conceptually, the program file and all of the libraries loaded into a process share a single symbol table. But rather than build a merged symbol table at runtime, the linker keeps a linked list of the symbol tables in each file. each file contains a hash table to speed symbol lookup, with a set of hash headers and a hash chain for each header. The linker can search for a symbol quickly by computing the symbol’s hash value once, then running through apprpriate hash chain in each of the symbol tables in the list.
 
-![image:ELF hash table information example.](C++_learn_from_the_past.assets/HashTbl.png)
 
-**hash table**
+
+#### Hash Table Section
 
 https://docs.oracle.com/cd/E23824_01/html/819-0690/chapter6-48031.html
+
+A hash table consists of `Elf32_Word` or `Elf64_Word` objects that provide for symbol table access. The `SHT_HASH` section provides this hash table. The symbol table to which the hashing is associated is specified in the `sh_link` entry of the hash table's section header. Labels are used in the following figure to help explain the hash table organization, but these labels are not part of the specification.
+
+![image:ELF hash table information example.](C++_learn_from_the_past.assets/HashTbl.png)
 
 The `bucket` array contains `nbucket` entries, and the `chain` array contains `nchain` entries. Indexes start at `0`. Both `bucket` and `chain` hold symbol table indexes. Chain table entries parallel the symbol table. The number of symbol table entries should equal `nchain`, so symbol table indexes also select chain table entries.
 
