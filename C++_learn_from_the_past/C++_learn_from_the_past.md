@@ -544,6 +544,20 @@ https://blog.csdn.net/astrotycoon/article/details/8008629
 
 scanf读入数字 将0开头解析为8进制,0x开头16进制
 
+### callee and caller saved registers
+
+https://stackoverflow.com/questions/9268586/what-are-callee-and-caller-saved-registers
+
+> **Caller-saved registers** (AKA **volatile** registers, or **call-clobbered**) are used to hold temporary quantities that need not be preserved across calls.
+
+For that reason, it is the caller's responsibility to push these registers onto the stack or copy them somewhere else *if* it wants to restore this value after a procedure call.
+
+It's normal to let a `call` destroy temporary values in these registers, though.
+
+> **Callee-saved registers** (AKA **non-volatile** registers, or **call-preserved**) are used to hold long-lived values that should be preserved across calls.
+
+When the caller makes a procedure call, it can expect that those registers will hold the same value after the callee returns, making it the responsibility of the callee to save them and restore them before returning to the caller. Or to not touch them.
+
 ### GDB
 
 **Show current assembly instruction in GDB**
