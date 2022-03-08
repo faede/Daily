@@ -391,6 +391,60 @@ sprintf(buf,"test");
 cout<<buf;
 ```
 
+### int const * & int * const
+
+https://stackoverflow.com/questions/1143262/what-is-the-difference-between-const-int-const-int-const-and-int-const
+
+Read it backwards (as driven by [Clockwise/Spiral Rule](http://c-faq.com/decl/spiral.anderson.html)):
+
+- `int*` - pointer to int
+- `int const *` - pointer to const int
+- `int * const` - const pointer to int
+- `int const * const` - const pointer to const int
+
+Now the first `const` can be on either side of the type so:
+
+- `const int *` == `int const *`
+- `const int * const` == `int const * const`
+
+If you want to go really crazy you can do things like this:
+
+- `int **` - pointer to pointer to int
+- `int ** const` - a const pointer to a pointer to an int
+- `int * const *` - a pointer to a const pointer to an int
+- `int const **` - a pointer to a pointer to a const int
+- `int * const * const` - a const pointer to a const pointer to an int
+- ...
+
+And to make sure we are clear on the meaning of `const`:
+
+```csharp
+int a = 5, b = 10, c = 15;
+
+const int* foo;     // pointer to constant int.
+foo = &a;           // assignment to where foo points to.
+
+/* dummy statement*/
+*foo = 6;           // the value of a can´t get changed through the pointer.
+
+foo = &b;           // the pointer foo can be changed.
+
+
+
+int *const bar = &c;  // constant pointer to int 
+                      // note, you actually need to set the pointer 
+                      // here because you can't change it later ;)
+
+*bar = 16;            // the value of c can be changed through the pointer.    
+
+/* dummy statement*/
+bar = &a;             // not possible because bar is a constant pointer.           
+```
+
+`foo` is a variable pointer to a constant integer. This lets you change what you point to but not the value that you point to. Most often this is seen with C-style strings where you have a pointer to a `const char`. You may change which string you point to but you can't change the content of these strings. This is important when the string itself is in the data segment of a program and shouldn't be changed.
+
+`bar` is a constant or fixed pointer to a value that can be changed. This is like a reference without the extra syntactic sugar. Because of this fact, usually you would use a reference where you would use a `T* const` pointer unless you need to allow `NULL` pointers.
+
 
 
 ### inplace_merge
@@ -422,7 +476,65 @@ int main()
 }
 ```
 
+### switch var
 
+https://stackoverflow.com/questions/92396/why-cant-variables-be-declared-in-a-switch-statement
+
+qs:
+
+```cpp
+switch (val)  
+{  
+case VAL:  
+  // This won't work
+  int newVal = 42;  
+  break;
+case ANOTHER_VAL:  
+  ...
+  break;
+} 
+```
+
+aws:
+
+`Case` statements are only **labels**. This means the compiler will interpret this as a jump directly to the label. In C++, the problem here is one of scope. Your curly brackets define the scope as everything inside the `switch` statement. This means that you are left with a scope where a jump will be performed further into the code skipping the initialization.
+
+The correct way to handle this is to define a scope specific to that `case` statement and define your variable within it:
+
+```cpp
+switch (val)
+{   
+case VAL:  
+{
+  // This will work
+  int newVal = 42;  
+  break;
+}
+case ANOTHER_VAL:  
+...
+break;
+}
+```
+
+
+
+Because if you doesn't use curly bracket,  case 1: , case 2: ,... , case n: , they all in the scope of switch, so maybe you will init var in case 1, and use it in case 2, but case jmp may skip init , then will generate error, so we need use  bracket to generate a new scope , independent to other case.
+
+### nop sled
+
+https://stackoverflow.com/questions/14760587/how-does-a-nop-sled-work
+
+Some attacks consist of making the program jump to a specific address and continue running from there. The injected code has to be loaded previously somehow in that exact location.
+
+Stack randomization and other runtime differences may make the address where the program will jump impossible to predict, so the attacker places a NOP sled in a big range of memory. If the program jumps to anywhere into the sled, it will run all the remaining NOPs, doing nothing, and then will run the payload code, just next to the sled.
+
+The reason the attacker uses the NOP sled is to make the target address bigger: the code can jump anywhere in the sled, instead of exactly at the beginning of the injected code.
+
+A 128-byte NOP sled is just a group of NOP intructions 128 bytes wide.
+
+NOTE #1: NOP (No-OPeration) is an instruction available in most (all?) architectures that does nothing, other than occupying memory and some runtime.
+
+NOTE #2: in architectures with variable length instructions, a NOP instruction is usually just one byte in length, so it can be used as a convenient instruction padding. Unfortunately, that also makes it easy to do a NOP sled.
 
 ### C语言中的强符号与弱符号
 
@@ -432,11 +544,212 @@ https://blog.csdn.net/astrotycoon/article/details/8008629
 
 scanf读入数字 将0开头解析为8进制,0x开头16进制
 
-### C语言数组下标可以为负数
+### GDB
 
-个人觉得[]被实现为*(array+i)的话那自然要和i为负数的时候统一.
+**Show current assembly instruction in GDB**
 
-并且似乎将指针索引隐式转换成正数并不能带来什么好处, 访问一个很大的索引未必比访问一个绝对值小的负数来的更加安全(虽然可能都是危险行为)
+```
+(gdb) layout asm
+```
+
+### noreturn
+
+https://stackoverflow.com/questions/45981545/why-does-noreturn-function-return
+
+```cpp
+noreturn void func()
+{
+        printf("noreturn func\n");
+}
+```
+
+ass
+
+```assembly
+.LC0:
+        .string "func"
+func:
+        pushq   %rbp
+        movq    %rsp, %rbp
+        movl    $.LC0, %edi
+        call    puts
+        nop
+        popq    %rbp
+        ret   // ==> Here function return value.
+main:
+        pushq   %rbp
+        movq    %rsp, %rbp
+        movl    $0, %eax
+        call    func
+```
+
+**Why does function `func()` return after providing `noreturn` attribute?**
+
+The function specifiers in C are a *hint* to the compiler, the degree of acceptance is implementation defined.
+
+First of all, `_Noreturn` function specifier (or, `noreturn`, using `<stdnoreturn.h>`) is a hint to the compiler about a *theoretical promise* made by the programmer that this function will never return. Based on this promise, compiler can make certain decisions, perform some optimizations for the code generation.
+
+IIRC, if a function specified with `noreturn` function specifier eventually returns to its caller, either
+
+- by using and explicit `return` statement
+- by reaching end of function body
+
+the [behaviour is undefined](https://en.wikipedia.org/wiki/Undefined_behavior). You **MUST NOT** return from the function.
+
+To make it clear, using `noreturn` function specifier **does not stop** a function form returning to its caller. It is a promise made by the programmer to the compiler to allow it some more degree of freedom to generate optimized code.
+
+Now, in case, you made a promise earlier and later, choose to violate this, the result is UB. Compilers are encouraged, but not required, to produce warnings when a `_Noreturn` function appears to be capable of returning to its caller.
+
+According to chapter §6.7.4, `C11`, Paragraph 8
+
+> A function declared with a `_Noreturn` function specifier shall not return to its caller.
+
+and, the paragraph 12, (*Note the comments!!*)
+
+> ```c
+> EXAMPLE 2
+> _Noreturn void f () {
+> abort(); // ok
+> }
+> _Noreturn void g (int i) { // causes undefined behavior if i <= 0
+> if (i > 0) abort();
+> }
+> ```
+
+------
+
+For `C++`, the behaviour is quite similar. Quoting from chapter §7.6.4, `C++14`, paragraph 2 (*emphasis mine*)
+
+> **If a function `f` is called where `f` was previously declared with the `noreturn` attribute and `f` eventually returns, the behavior is undefined.** *[ Note: The function may terminate by throwing an exception. —end note ]*
+>
+> *[ Note: Implementations are encouraged to issue a warning if a function marked `[[noreturn]]` might return. —end note ]*
+>
+> 3 *[ Example:*
+>
+> ```c
+> [[ noreturn ]] void f() {
+> throw "error"; // OK
+> }
+> [[ noreturn ]] void q(int i) { // behavior is undefined if called with an argument <= 0
+> if (i > 0)
+> throw "positive";
+> }
+> ```
+>
+> *—end example ]*
+
+### @plt
+
+https://stackoverflow.com/questions/5469274/what-does-plt-mean-here
+
+It's a way to get code fixups (adjusting addresses based on where code sits in virtual memory, which may be different across different processes) without having to maintain a separate copy of the code for each process. The PLT is the **procedure linkage table**, one of the structures which makes dynamic loading and linking easier to use.
+
+`printf@plt` is actually a small stub which (eventually) calls the real `printf` function, modifying things on the way to make subsequent calls faster.
+
+The *real* `printf` function may be mapped into *any* location in a given process (virtual address space) as may the code that is trying to call it.
+
+So, in order to allow proper code sharing of calling code (left side below) and called code (right side below), you don't want to apply any fixups to the calling code directly since that will restrict where it can be located in *other* processes.
+
+So the `PLT` is a smaller *process-specific* area at a reliably-calculated-at-runtime address that *isn't* shared between processes, so any given process is free to change it however it wants to, without adverse effects.
+
+------
+
+Examine the following diagram which shows both your code and the library code mapped to different virtual addresses in two different processes, `ProcA` and `ProcB`:
+
+```
+Address: 0x1234          0x9000      0x8888
+        +-------------+ +---------+ +---------+
+        |             | | Private | |         |
+ProcA   |             | | PLT/GOT | |         |
+        | Shared      | +---------+ | Shared  |
+========| application |=============| library |==
+        | code        | +---------+ | code    |
+        |             | | Private | |         |
+ProcB   |             | | PLT/GOT | |         |
+        +-------------+ +---------+ +---------+
+Address: 0x2020          0x9000      0x6666
+```
+
+This particular example shows a simple case where the PLT maps to a fixed location. In *your* scenario, it's located relative to the current program counter as evidenced by your program-counter-relative lookup:
+
+```
+<printf@plt+0>: jmpq  *0x2004c2(%rip)  ; 0x600860 <_GOT_+24>
+```
+
+I've just used fixed addressing to keep the example simpler.
+
+The *original* way in which code was shared meant it they had to be loaded at the *same* memory location in each virtual address space of every process that used it. Either that or it couldn't be shared, since the act of fixing up the *single* shared copy for one process would totally stuff up other processes where it was mapped to a different location.
+
+By using position independent code, along with the PLT and a global offset table (GOT), the *first* call to a function `printf@plt` (in the PLT) is a multi-stage operation, in which the following actions take place:
+
+- You call `printf@plt` in the PLT.
+- It calls the GOT version (via a pointer) which *initially* points back to some set-up code in the PLT.
+- This set-up code loads the relevant shared library if not yet done, then *modifies* the GOT pointer so that subsequent calls directly to the real `printf` rather than the PLT set-up code.
+- It then calls the loaded `printf` code at the correct address for this process.
+
+On subsequent calls, because the GOT pointer has been modified, the multi-stage approach is simplified:
+
+- You call `printf@plt` in the PLT.
+- It calls the GOT version (via pointer), which now points to the *real* `printf`.
+
+A good article can be found [here](http://dustin.schultz.io/blog/2010/10/02/how-is-glibc-loaded-at-runtime/), detailing how `glibc` is loaded at run time.
+
+### CFI
+
+https://stackoverflow.com/questions/2529185/what-are-cfi-directives-in-gnu-assembler-gas-used-for/16007194#16007194
+
+I've got a feeling it stands for [Call Frame Information](http://en.wikipedia.org/wiki/Call_frame#Structure) and is a GNU AS extension to manage call frames. From [DeveloperWorks](http://www.ibm.com/developerworks/systems/library/es-gnutool/):
+
+> On some architectures, exception handling must be managed with Call Frame Information directives. These directives are used in the assembly to direct exception handling. These directives are available on Linux on POWER, if, for any reason (portability of the code base, for example), the GCC generated exception handling information is not sufficient.
+
+It looks like these are generated on some platforms depending on need for exception handling.
+
+To disable these, use the gcc option
+
+```
+-fno-asynchronous-unwind-tables
+```
+
+### why C++ cin slow?
+
+https://stackoverflow.com/questions/9371238/why-is-reading-lines-from-stdin-much-slower-in-c-than-python
+
+**Because of different default settings in C++ requiring more system calls. **
+
+By default, `cin` is synchronized with stdio, which causes it to avoid any input buffering. If you add this to the top of your main, you should see much better performance:
+
+```cpp
+std::ios_base::sync_with_stdio(false);
+```
+
+Normally, when an input stream is buffered, instead of reading one character at a time, the stream will be read in larger chunks. This reduces the number of system calls, which are typically relatively expensive. However, since the `FILE*` based `stdio` and `iostreams` often have separate implementations and therefore separate buffers, this could lead to a problem if both were used together. For example:
+
+```cpp
+int myvalue1;
+cin >> myvalue1;
+int myvalue2;
+scanf("%d",&myvalue2);
+```
+
+If more input was read by `cin` than it actually needed, then the second integer value wouldn't be available for the `scanf` function, which has its own independent buffer. This would lead to unexpected results.
+
+To avoid this, by default, streams are synchronized with `stdio`. One common way to achieve this is to have `cin` read each character one at a time as needed using `stdio` functions. Unfortunately, this introduces a lot of overhead. For small amounts of input, this isn't a big problem, but when you are reading millions of lines, the performance penalty is significant.
+
+Fortunately, the library designers decided that you should also be able to disable this feature to get improved performance if you knew what you were doing, so they provided the [`sync_with_stdio`](http://en.cppreference.com/w/cpp/io/ios_base/sync_with_stdio) method. From this link (emphasis added):
+
+### C could a[-1] ? a[neg]
+
+yes
+
+### POD
+
+https://stackoverflow.com/questions/146452/what-are-pod-types-in-c
+
+*POD* stands for *Plain Old Data* - that is, a class (whether defined with the keyword `struct` or the keyword `class`) without constructors, destructors and virtual members functions. [Wikipedia's article on POD](http://en.wikipedia.org/wiki/Plain_Old_Data_Structures) goes into a bit more detail and defines it as:
+
+> A Plain Old Data Structure in C++ is an aggregate class that contains only PODS as members, has no user-defined destructor, no user-defined copy assignment operator, and no nonstatic members of pointer-to-member type.
+
+Greater detail can be found in [this answer for C++98/03](https://stackoverflow.com/a/4178176/734069). C++11 changed the rules surrounding POD, relaxing them greatly, thus [necessitating a follow-up answer here](https://stackoverflow.com/a/7189821/734069).
 
 ### 探索C++析构函数
 
@@ -2192,9 +2505,9 @@ Color c = Color::white; // ok
 return 0;
 ```
 
-### template bind
+### template bind 
 
-### Binding rules
+### Binding rules & dependent type
 
 Non-dependent names are looked up and bound at the point of template definition. This binding holds even if at the point of template instantiation there is a better match:
 
@@ -2484,7 +2797,57 @@ double --
 int --
 ```
 
+### typename` and `class
 
+https://stackoverflow.com/questions/2023977/difference-of-keywords-typename-and-class-in-templates
+
+`typename` and `class` are interchangeable in the basic case of specifying a template:
+
+```cpp
+template<class T>
+class Foo
+{
+};
+```
+
+and
+
+```cpp
+template<typename T>
+class Foo
+{
+};
+```
+
+are equivalent.
+
+Having said that, there are specific cases where there is a difference between `typename` and `class`.
+
+The first one is in the case of dependent types. `typename` is used to declare when you are referencing a nested type that depends on another template parameter, such as the `typedef` in this example:
+
+```cpp
+template<typename param_t>
+class Foo
+{
+    typedef typename param_t::baz sub_t;
+};
+```
+
+The second one you actually show in your question, though you might not realize it:
+
+```cpp
+template < template < typename, typename > class Container, typename Type >
+```
+
+When specifying a **template template**, the `class` keyword MUST be used as above -- it is **not** interchangeable with `typename` in this case *(note: since C++17 both keywords are allowed in this case)*.
+
+You also must use `class` when explicitly instantiating a template:
+
+```cpp
+template class Foo<int>;
+```
+
+I'm sure that there are other cases that I've missed, but the bottom line is: these two keywords are not equivalent, and these are some common cases where you need to use one or the other.
 
 ### type_info Class
 
