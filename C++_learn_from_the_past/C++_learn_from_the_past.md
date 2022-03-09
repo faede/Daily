@@ -76,7 +76,12 @@ int main()
 
 The `constexpr` specifier declares that it is possible to evaluate the value of the function or variable at compile time. Such variables and functions can then be used where only compile time [constant expressions](https://en.cppreference.com/w/cpp/language/constant_expression) are allowed (provided that appropriate function arguments are given). A constexpr specifier used in an object declaration or non-static member function (until C++14) implies const. A constexpr specifier used in a function or [static](https://en.cppreference.com/w/cpp/language/static) member variable (since C++17) declaration implies inline. If any declaration of a function or function template has a `constexpr` specifier, then every declaration must contain that specifier.
 
+### using & typdef
 
+• typedefs don’t support templatization, but alias declarations do.
+• Alias templates avoid the “::type” suffix and, in templates, the “typename”
+prefix often required to refer to typedefs.
+• C++14 offers alias templates for all the C++11 type traits transformations.
 
 
 
@@ -152,8 +157,8 @@ int main(void)
 ```
 
 ```shell
-[narendra@CentOS]$ gcc memory-layout.c -o memory-layout
-[narendra@CentOS]$ size memory-layout
+$ gcc memory-layout.c -o memory-layout
+$ size memory-layout
 text       data        bss        dec        hex    filename
 960        248         8          1216       4c0    memory-layout
 ```
@@ -172,8 +177,8 @@ int main(void)
 ```
 
 ```shell
-[narendra@CentOS]$ gcc memory-layout.c -o memory-layout
-[narendra@CentOS]$ size memory-layout
+$ gcc memory-layout.c -o memory-layout
+$ size memory-layout
 text       data        bss        dec        hex    filename
 960        248         12         1220       4c4    memory-layout
 #last
@@ -196,8 +201,8 @@ int main(void)
 ```
 
 ```shell
-[narendra@CentOS]$ gcc memory-layout.c -o memory-layout
-[narendra@CentOS]$ size memory-layout
+$ gcc memory-layout.c -o memory-layout
+$ size memory-layout
 text       data        bss        dec        hex    filename
 960        248         16         1224       4c8    memory-layout
 #last
@@ -219,8 +224,8 @@ int main(void)
 ```
 
 ```shell
-[narendra@CentOS]$ gcc memory-layout.c -o memory-layout
-[narendra@CentOS]$ size memory-layout
+$ gcc memory-layout.c -o memory-layout
+$ size memory-layout
 text       data        bss        dec        hex    filename
 960        252         12         1224       4c8    memory-layout
 #last
@@ -242,8 +247,8 @@ int main(void)
 ```
 
 ```shell
-[narendra@CentOS]$ gcc memory-layout.c -o memory-layout
-[narendra@CentOS]$ size memory-layout
+$ gcc memory-layout.c -o memory-layout
+$ size memory-layout
 text       data        bss        dec        hex    filename
 960        256         8          1224       4c8    memory-layout
 #last
