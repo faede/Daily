@@ -1,0 +1,23 @@
+digraph "CFG for 'foo' function" {
+	label="CFG for 'foo' function";
+
+	Node0x20a8860 [shape=record,label="{entry:\l  %n.addr = alloca i32, align 4\l  %m.addr = alloca i32, align 4\l  %sum = alloca i32, align 4\l  %c0 = alloca i32, align 4\l  %c1 = alloca i32, align 4\l  store i32 %n, i32* %n.addr, align 4\l  store i32 %m, i32* %m.addr, align 4\l  store i32 0, i32* %sum, align 4\l  %0 = load i32, i32* %n.addr, align 4\l  store i32 %0, i32* %c0, align 4\l  br label %for.cond\l}"];
+	Node0x20a8860 -> Node0x20a9400;
+	Node0x20a9400 [shape=record,label="{for.cond:                                         \l  %1 = load i32, i32* %c0, align 4\l  %cmp = icmp sgt i32 %1, 0\l  br i1 %cmp, label %for.body, label %for.end7\l|{<s0>T|<s1>F}}"];
+	Node0x20a9400:s0 -> Node0x20a95d0;
+	Node0x20a9400:s1 -> Node0x20a96b0;
+	Node0x20a95d0 [shape=record,label="{for.body:                                         \l  %2 = load i32, i32* %m.addr, align 4\l  store i32 %2, i32* %c1, align 4\l  br label %for.cond1\l}"];
+	Node0x20a95d0 -> Node0x20a9840;
+	Node0x20a9840 [shape=record,label="{for.cond1:                                        \l  %3 = load i32, i32* %c1, align 4\l  %cmp2 = icmp sgt i32 %3, 0\l  br i1 %cmp2, label %for.body3, label %for.end\l|{<s0>T|<s1>F}}"];
+	Node0x20a9840:s0 -> Node0x20a9b90;
+	Node0x20a9840:s1 -> Node0x20a9c70;
+	Node0x20a9b90 [shape=record,label="{for.body3:                                        \l  %4 = load i32, i32* %c0, align 4\l  %5 = load i32, i32* %c1, align 4\l  %cmp4 = icmp sgt i32 %4, %5\l  %6 = zext i1 %cmp4 to i64\l  %cond = select i1 %cmp4, i32 1, i32 0\l  %7 = load i32, i32* %sum, align 4\l  %add = add nsw i32 %7, %cond\l  store i32 %add, i32* %sum, align 4\l  br label %for.inc\l}"];
+	Node0x20a9b90 -> Node0x20aa070;
+	Node0x20aa070 [shape=record,label="{for.inc:                                          \l  %8 = load i32, i32* %c1, align 4\l  %dec = add nsw i32 %8, -1\l  store i32 %dec, i32* %c1, align 4\l  br label %for.cond1, !llvm.loop !4\l}"];
+	Node0x20aa070 -> Node0x20a9840;
+	Node0x20a9c70 [shape=record,label="{for.end:                                          \l  br label %for.inc5\l}"];
+	Node0x20a9c70 -> Node0x20a9d40;
+	Node0x20a9d40 [shape=record,label="{for.inc5:                                         \l  %9 = load i32, i32* %c0, align 4\l  %dec6 = add nsw i32 %9, -1\l  store i32 %dec6, i32* %c0, align 4\l  br label %for.cond, !llvm.loop !6\l}"];
+	Node0x20a9d40 -> Node0x20a9400;
+	Node0x20a96b0 [shape=record,label="{for.end7:                                         \l  %10 = load i32, i32* %sum, align 4\l  ret i32 %10\l}"];
+}
