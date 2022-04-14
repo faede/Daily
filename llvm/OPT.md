@@ -384,3 +384,146 @@ fix:
 
 
 
+### second
+
+```cpp
+#include "llvm/Pass.h"
+#include "llvm/IR/Function.h"
+#include "llvm/Support/raw_ostream.h"
+using namespace llvm;
+
+
+//#undef LLVM_ENABLE_ABI_BREAKING_CHECKS 
+namespace{
+	struct FuncBlockCount : public FunctionPass{
+		static char ID;
+		FuncBlockCount() : FunctionPass(ID){}
+		
+		// count blocks 
+		void countBlocksInLoop(Loop * L, unsigned nest){
+			unsigned num_Blocks = 0;
+			Loop::block_iterator bb;
+			for(bb = L->block_begin(); bb != L->block_end(); ++bb)
+				num_Blocks++;
+			errs() << "Loop level " << nest << " has" << num_Blocks << " blocks\n";
+			std::vector<Loop *> subLoops = L->getSubLoops();
+			Loop::iterator j, f;
+			for(j = subLoops.begin(); f = subLoops.end(); j != f)
+				countBlocksInLoop(*j, nest + 1);
+		}
+
+		// every function
+		virtual bool runOnFunction(Function & F) {
+			LoopInfo * LI = &getAnalysis<LoopInfoWrapperPass>().getLoopInfo();
+			errs() << "Functinon " << F.getName() << '\n';
+			for(Loop * L : * LI){
+				countBlocksInLoop(L, 0);
+			}
+			return false;
+		}
+	};
+};
+char FuncBlockCount::ID = 0;
+static RegisterPass<FuncBlockCount> X("funcblockcount", "Function Block Count", false, false);
+
+```
+
+shell:
+
+```shell
+clang -O0 -S -emit-llvm sample.c -o sample.ll 
+
+opt -load ~/files/llvm-project/build/lib/LLVMFuncBlockCount.so -funcblockcount sample.ll -enable-new-pm=0
+```
+
+error:
+
+```shell
+opt: /home/zyy/files/llvm-project/llvm/include/llvm/PassAnalysisSupport.h:243: AnalysisType& llvm::Pass::getAnalysisID(llvm::AnalysisID) const [with AnalysisType = llvm::LoopInfoWrapperPass; llvm::AnalysisID = const void*]: Assertion `ResultPass && "getAnalysis*() called on an analysis that was not " "'required' by pass!"' failed.
+```
+
+fix:
+
+https://stackoverflow.com/questions/30351725/llvm-loopinfo-in-functionpass-doesnt-compile
+
+actually: https://llvm.org/docs/WritingAnLLVMPass.html#the-getanalysis-and-getanalysisifavailable-methods
+
+```
+The Pass::getAnalysis<> method is automatically inherited by your class, providing you with access to the passes that you declared that you required with the getAnalysisUsage method. It takes a single template argument that specifies which pass class you want, and returns a reference to that pass. 
+```
+
+code:
+
+```cpp
+#include "llvm/Pass.h"
+#include "llvm/IR/Function.h"
+#include "llvm/Support/raw_ostream.h"
+//#include <vector>
+#include "llvm/Analysis/LoopInfo.h"
+
+using namespace llvm;
+
+
+//#undef LLVM_ENABLE_ABI_BREAKING_CHECKS 
+namespace{
+	struct FuncBlockCount : public FunctionPass{
+		static char ID;
+		FuncBlockCount() : FunctionPass(ID){}
+		
+		// count blocks 
+		void countBlocksInLoop(Loop * L, unsigned nest){
+			unsigned num_Blocks = 0;
+			Loop::block_iterator bb;
+			for(bb = L->block_begin(); bb != L->block_end(); ++bb)
+				num_Blocks++; 
+			errs() << "Loop level " << nest << " has " << num_Blocks << " blocks\n";
+			std::vector<Loop *> subLoops = L->getSubLoops();
+			Loop::iterator j, f;
+			for(j = subLoops.begin(), f = subLoops.end(); j != f; ++j)
+				countBlocksInLoop(*j, nest + 1);
+		}
+
+		// rewrite function
+		virtual void getAnalysisUsage(AnalysisUsage &AU) const {
+            AU.setPreservesCFG();
+            AU.addRequired<LoopInfoWrapperPass>();
+        }
+		// every function
+		virtual bool runOnFunction(Function & F) {
+			LoopInfo  *LI = &getAnalysis<LoopInfoWrapperPass>().getLoopInfo();
+			errs() << "Functinon " << F.getName() + "\n";
+			for(Loop * L :  *LI){
+				countBlocksInLoop(L, 0);
+			}
+			return false;
+		}
+	};
+};
+char FuncBlockCount::ID = 0;
+static RegisterPass<FuncBlockCount> X("funcblockcount", "Function Block Count", false, false);
+
+```
+
+output:
+
+```shell
+Functinon main
+Loop level 0 has 11 blocks
+Loop level 1 has 3 blocks
+Loop level 1 has 3 blocks
+Loop level 0 has 15 blocks
+Loop level 1 has 7 blocks
+Loop level 2 has 3 blocks
+Loop level 1 has 3 blocks
+```
+
+
+
+
+
+
+
+### new pass manager
+
+https://llvm.org/docs/WritingAnLLVMPass.html#introduction-what-is-a-pass
+

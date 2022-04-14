@@ -1,11 +1,24 @@
-int foo(int n, int m){
-	int sum = 0;
-	int c0 ;
-	for(c0 = n; c0 > 0; c0--){
-		int c1 = m;
-		for(; c1 > 0; c1--){
-			sum += c0 > c1 ? 1: 0;
+int main(int argc, char ** argv){
+	int i, j, k, t = 0;
+	for(i = 0; i < 10; i++){
+		for(j = 0; j < 10; j++){
+			for(k = 0; k < 10; k++){
+				t ++;
+			}
+		}
+		for(j = 0; j < 10; j++){
+			t++;
 		}
 	}
-	return sum;
+
+
+	for(i = 0; i < 20; i++){
+		for(j = 0; j < 20; j++){
+			t++;
+		}
+		for(j = 0 ;j < 20; j++){
+			t++;
+		}
+	}
+	return t;
 }
