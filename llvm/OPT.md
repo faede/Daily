@@ -485,7 +485,7 @@ namespace{
 
 		// rewrite function
 		virtual void getAnalysisUsage(AnalysisUsage &AU) const {
-            AU.setPreservesCFG();
+            // AU.setPreservesCFG();
             AU.addRequired<LoopInfoWrapperPass>();
         }
 		// every function
@@ -517,7 +517,70 @@ Loop level 2 has 3 blocks
 Loop level 1 has 3 blocks
 ```
 
+### Opcode Analysis
 
+```cpp
+#define DEBUG_TYPE "opcodeCounter"
+#include "llvm/Pass.h"
+#include "llvm/IR/Function.h"
+#include "llvm/Support/raw_ostream.h"
+#include <map>
+using namespace llvm;
+
+namespace{
+    struct CountOpcode : public FunctionPass{
+        // save map
+        std::map<std::string, int> opcodeCounter;
+        static char ID;
+        
+        CountOpcode() : FunctionPass(ID){ }
+        
+        virtual bool runOnFunction(Function &F) {
+            
+            llvm::outs() << "FunctionName:" << F.getName() << "\n";
+            for(Function::iterator bb = F.begin(), e = F.end(); bb != e; ++bb){
+                // fix bug "redefine e"
+                for(BasicBlock::iterator i = bb->begin(), block_e = bb->end(); i != block_e; ++i){
+                    if(opcodeCounter.find(i->getOpcodeName()) == opcodeCounter.end()){
+                        // not find
+                        opcodeCounter[i->getOpcodeName()] = 1;
+                    }else{
+                        // exist
+                        opcodeCounter[i->getOpcodeName()] += 1;
+                    }
+                }
+            }
+            
+            
+            for(auto &v : opcodeCounter){
+                llvm::outs() << v.first << ": " << v.second << "\n";
+            }
+            llvm::outs() << "\n";
+            opcodeCounter.clear();
+            return false;
+        }
+    };
+}
+
+char CountOpcode::ID = 0;
+static RegisterPass<CountOpcode> X("opcodeCounter", "Count number of opcode in a functions", false, false);
+```
+
+ans:
+
+```shell
+➜  llvm git:(master) ✗ opt -load ~/files/llvm-project/build/lib/LLVMCountopcodes.so -opcodeCounter testcode.bc -disable-output -enable-new-pm=0
+FunctionName:func
+add: 3
+alloca: 5
+br: 8
+icmp: 3
+load: 10
+ret: 1
+select: 1
+store: 8
+zext: 1
+```
 
 
 
