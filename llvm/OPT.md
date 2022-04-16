@@ -1,5 +1,7 @@
 
 
+### test on llvm 15
+
 ### optmize
 
 example.c
@@ -582,11 +584,356 @@ store: 8
 zext: 1
 ```
 
+### AA
+
+EverythingMustAlias.cpp
+
+error :
+
+```cpp
+#include "llvm/Pass.h"
+#include "llvm/Analysis/AliasAnalysis.h"
+#include "llvm/IR/DataLayout.h"
+#include "llvm/IR/LLVMContext.h"
+#include "llvm/IR/Module.h"
+using namespace llvm;
+
+namespace {
+    
+    INITIALIZE_AG_PASS(EverythingMustAlias, AliasAnalysis, "must-aa", 
+                "Everything Alias(always return 'must' alias)", 
+                true, 
+                true, 
+                true);
+    
+    struct EverythingMustAlias : public ImmutablePass , public AliasAnalysis{
+        static char ID;
+        EverythingMustAlias() : ImmutablePass(ID) {}
+        
+        EverythingMustAliasPass() : FunctionPass(ID){
+            initializeEverythingMustAliasPass(*PassRegistry::getPassRegistry());
+        }
+
+
+        void getAnalysisUsage(AnalysisUsage &AU) const {
+            AU.setPreservesAll();
+            // AliasAnalysis::getAnalysisUsage(AU);
+            // declare your dependencies here.
+        }   
+        void *getAdjustedAnalysisPointer(const void* ID) override {
+            if (ID == &AliasAnalysis::ID)
+                return (AliasAnalysis*)this;
+            return this;
+        }   
+
+        bool doInitialization(Module &M) override{
+            const DataLayout * DL = &M.getDataLayout();
+            return true;
+        } 
+
+        ImmutablePass * llvm::createEverythingMustAliasPass(){
+            return new EverythingMustAlias();
+        }
+
+        bool run(Module &M) {
+            //InitializeAliasAnalysis(this);
+            doInitialization(M);
+            // Perform analysis here...
+            return false;
+        }   
+    };
+}
+
+char EverythingMustAlias::ID = 0;
 
 
 
+```
 
-### new pass manager
+testcode1.c
 
-https://llvm.org/docs/WritingAnLLVMPass.html#introduction-what-is-a-pass
+```c
+void func(){
+    int i;
+    char C[2];
+    char A[10];
+    for(int i = 0; i != 10; i++){
+        ((short *)C)[0] = A[i];
+        C[1] = A[9-i];
+    }
+}
+```
+
+other aa:
+
+```shell
+➜  llvm git:(master) ✗ clang -c -emit-llvm testcode1.c -o testcode1.bc
+➜  llvm git:(master) ✗ opt -aa-eval  -disable-output testcode1.bc  -enable-new-pm=0
+===== Alias Analysis Evaluator Report =====
+  10 Total Alias Queries Performed
+  8 no alias responses (80.0%)
+  1 may alias responses (10.0%)
+  1 partial alias responses (10.0%)
+  0 must alias responses (0.0%)
+  Alias Analysis Evaluator Pointer Alias Summary: 80%/10%/10%/0%
+  Alias Analysis Mod/Ref Evaluator Summary: no mod/ref!
+➜  llvm git:(master) ✗ opt -print-dom-info  -disable-output testcode1.bc  -enable-new-pm=0
+=============================--------------------------------
+Inorder Dominator Tree: DFSNumbers invalid: 0 slow queries.
+  [1] %entry {4294967295,4294967295} [0]
+    [2] %for.cond {4294967295,4294967295} [1]
+      [3] %for.body {4294967295,4294967295} [2]
+        [4] %for.inc {4294967295,4294967295} [3]
+      [3] %for.end {4294967295,4294967295} [2]
+Roots: %entry
+```
+
+### test on llvm 12
+
+### optimize pass
+
+ref: **"llvm cookbook"**
+
+https://csstormq.github.io/blog/LLVM%20%E4%B9%8B%20IR%20%E7%AF%87%EF%BC%884%EF%BC%89%EF%BC%9A%E5%A6%82%E4%BD%95%E5%9F%BA%E4%BA%8E%E4%BC%A0%E7%BB%9F%20Pass%20%E6%A1%86%E6%9E%B6%E6%89%A9%E5%B1%95%20LLVM%20IR%20%E4%BC%98%E5%8C%96%E5%99%A8
+
+```
+we need rename function by adding 'Legacy' keyword, or will terminal with error
+```
+
+
+
+```
+-S                    - Write output as LLVM assembly
+```
+
+testcode.ll
+
+```llvm
+declare i32 @strlen(i8*) readonly nounwind
+define void @test(){
+    call i32 @strlen (i8* null)
+    ret void
+}
+```
+
+MyADCE.cpp in `llvm/lib/Transforms/Scalar`
+
+```cpp
+//===- DCE.cpp - Code to perform dead code elimination --------------------===//
+//
+//                     The LLVM Compiler Infrastructure
+//
+// This file is distributed under the University of Illinois Open Source
+// License. See LICENSE.TXT for details.
+//
+//===----------------------------------------------------------------------===//
+//
+// This file implements the Aggressive Dead Code Elimination pass.  This pass
+// optimistically assumes that all instructions are dead until proven otherwise,
+// allowing it to eliminate dead computations that other DCE passes do not
+// catch, particularly involving loop computations.
+//
+//===----------------------------------------------------------------------===//
+
+#include "llvm/InitializePasses.h"
+#include "llvm/Transforms/Scalar.h"
+#include "llvm/IR/Function.h"
+#include "llvm/Pass.h"
+#include "llvm/Support/raw_ostream.h"
+#include "llvm/ADT/SmallVector.h"
+#include "llvm/ADT/SmallPtrSet.h"
+#include "llvm/IR/Instructions.h"
+#include "llvm/IR/InstIterator.h"
+
+
+using namespace llvm;
+
+#define DEBUG_TYPE "myadce"
+
+
+
+namespace {
+struct MyADCELegacyPass : public FunctionPass {
+  static char ID; // Pass identification, replacement for typeid
+  MyADCELegacyPass() : FunctionPass(ID) {
+    initializeMyADCELegacyPassPass(*PassRegistry::getPassRegistry());
+  }
+
+  bool runOnFunction(Function &F) override;
+
+  void getAnalysisUsage(AnalysisUsage &AU) const override {
+    AU.setPreservesCFG();
+  }
+};
+} // namespace
+
+char MyADCELegacyPass::ID = 0;
+INITIALIZE_PASS(MyADCELegacyPass, DEBUG_TYPE, 
+        "My Aggressive Dead Code Elimination", 
+        false,
+        false)
+
+bool MyADCELegacyPass::runOnFunction(Function &F) {
+  if (skipFunction(F))
+    return false;
+
+  SmallPtrSet<Instruction *, 32> Alive;
+  SmallVector<Instruction *, 128> Worklist;
+
+  // Collect the set of "root" instructions that are known live.
+  for (Instruction &I : instructions(F)) {
+    if (I.isDebugOrPseudoInst() || !I.isSafeToRemove()) {
+      Alive.insert(&I);
+      Worklist.push_back(&I);
+    }
+  }
+
+  // Propagate liveness backwards to operands.
+  while (!Worklist.empty()) {
+    Instruction *Curr = Worklist.pop_back_val();
+    for (Use &OI : Curr->operands()) {
+      if (Instruction *Inst = dyn_cast<Instruction>(OI))
+        if (Alive.insert(Inst).second)
+          Worklist.push_back(Inst);
+    }
+  }
+
+  // The inverse of the live set is the dead set.  These are those instructions
+  // which have no side effects and do not influence the control flow or return
+  // value of the function, and may therefore be deleted safely.
+  // NOTE: We reuse the Worklist vector here for memory efficiency.
+  for (Instruction &I : instructions(F)) {
+    if (!Alive.count(&I)) {
+      Worklist.push_back(&I);
+      I.dropAllReferences();
+    }
+  }
+
+  for (Instruction *&I : Worklist) {
+    I->eraseFromParent();
+  }
+
+  return !Worklist.empty();
+}
+
+
+FunctionPass *llvm::createMyADCELegacyPass() {
+    return new MyADCELegacyPass();
+}
+```
+
+replace old code: **lib/IR/Instruction.cpp ** `isa`
+
+```c++
+bool Instruction::isDebugOrPseudoInst() const {
+   return isa<DbgInfoIntrinsic>(this) || isa<PseudoProbeInst>(this);
+ }
+
+ bool Instruction::isSafeToRemove() const {
+   return (!isa<CallInst>(this) || !this->mayHaveSideEffects()) &&
+          !this->isTerminator() && !this->isEHPad();
+ }
+
+```
+
+**lib/IR/Pass.cpp**  `inst_range`
+
+```c++
+ bool FunctionPass::skipFunction(const Function &F) const {
+   OptPassGate &Gate = F.getContext().getOptPassGate();
+   if (Gate.isEnabled() && !Gate.shouldRunPass(this, getDescription(F)))
+     return true;
+  
+   if (F.hasOptNone()) {
+     LLVM_DEBUG(dbgs() << "Skipping pass '" << getPassName() << "' on function "
+                       << F.getName() << "\n");
+     return true;
+   }
+   return false;
+ }
+```
+
+and **include/llvm/IR/InstIterator.h**
+
+```c++
+inst_range 	llvm::instructions (Function *F)
+```
+
+
+
+in `llvm/include/llvm/InitializePasses.h`
+
+```c++
+void initializeMyADCELegacyPassPass(PassRegistry&);
+```
+
+in `llvm/include/llvm/LinkAllPasses.h` (optional)
+
+```c++
+(void) llvm::createMyADCELegacyPass();
+```
+
+```c++
+// LinkAllPasses.h
+namespace {
+  struct ForcePassLinking {
+    ForcePassLinking() {
+      // We must reference the passes in such a way that compilers will not
+      // delete it all as dead code, even with whole program optimization,
+      // yet is effectively a NO-OP. As the compiler isn't smart enough
+      // to know that getenv() never returns -1, this will do the job.
+```
+
+in `llvm/include/llvm/Transforms/Scalar.h`
+
+```c++
+FunctionPass *createMyADCELegacyPass();
+```
+
+in `llvm/include/llvm-c/Transforms/Scalar.h`
+
+```c++
+void LLVMAddMYAggressiveDCELegacyPass(LLVMPassManagerRef PM);
+```
+
+in `llvm/lib/Transforms/Scalar/Scalar.cpp`
+
+```c++
+void llvm::initializeScalarOpts(PassRegistry &Registry) {
+  ...
+  initializeMyADCELegacyPassPass(Registry);
+}
+```
+
+and
+
+```c++
+void LLVMAddMYAggressiveDCELegacyPass(LLVMPassManagerRef PM) {
+  unwrap(PM)->add(createMyADCELegacyPass());
+}
+```
+
+in `llvm/lib/Transforms/Scalar/CMakeLists.txt`
+
+```cmake
+MyADCE.cpp
+```
+
+res:
+
+```shell
+➜  llvm git:(master) ✗ opt -S -myadce testcode.ll
+; ModuleID = 'testcode.ll'
+source_filename = "testcode.ll"
+
+; Function Attrs: nounwind readonly
+declare i32 @strlen(i8*) #0
+
+define void @test() {
+  ret void
+}
+
+attributes #0 = { nounwind readonly }
+
+```
 
